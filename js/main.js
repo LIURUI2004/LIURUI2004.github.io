@@ -2150,6 +2150,47 @@
     });
   }
 
+  // ---- Email icon: copy the address to clipboard instead of mailto: ----
+  // Any <a href="mailto:..."> inside a socials block becomes a copy button:
+  // clicking it copies the address and shows a small paper-style toast.
+  var socialEmailLinks = document.querySelectorAll('.socials a[href^="mailto:"]');
+  if (socialEmailLinks.length) {
+    var copyToast = null;
+    var toastTimer = null;
+    function showCopyToast(message) {
+      if (!copyToast) {
+        copyToast = document.createElement('div');
+        copyToast.className = 'copy-toast';
+        document.body.appendChild(copyToast);
+      }
+      copyToast.textContent = message;
+      copyToast.classList.add('is-visible');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () {
+        copyToast.classList.remove('is-visible');
+      }, 1800);
+    }
+    function copyEmail(text, done) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () {
+          fallbackCopy(text); done();
+        });
+      } else {
+        fallbackCopy(text); done();
+      }
+    }
+    socialEmailLinks.forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        var email = (a.getAttribute('href') || '').replace(/^mailto:/i, '');
+        if (!email) return;
+        copyEmail(email, function () {
+          showCopyToast(email + ' ✓ ' + (t('profile.email_copied') || '已复制'));
+        });
+      });
+    });
+  }
+
   // ---- Back-to-top button: reveal once the reader has scrolled down ----
   var backToTop = document.querySelector('.back-to-top');
   if (backToTop) {

@@ -3198,6 +3198,40 @@ a.site-info__item:focus-visible strong {
   background: var(--color-accent-soft);
   transform: translateY(-1px);
 }
+.copy-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  z-index: 2000;
+  transform: translateX(-50%) translateY(12px) rotate(-1deg);
+  max-width: 88vw;
+  padding: 10px 16px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-handdrawn-wide);
+  background: var(--paper);
+  box-shadow: var(--soft-shadow);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.copy-toast::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 12px;
+  height: 10px;
+  background-color: var(--tape-blue);
+  transform: translateX(-50%) rotate(-3deg);
+}
+.copy-toast.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) rotate(-1deg);
+}
 .tag-card {
   overflow: visible;
 }
