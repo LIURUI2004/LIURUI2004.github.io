@@ -10,39 +10,39 @@
 <meta name="description" content="VIT把图像分割成一系列图像块，每个图像块看作是一个token，再结合位置编码送入transformer encoder CLIP推理过程：让每个图像类别生成一句描述，然后通过文本编码器把每一个描述压缩成文本向量，然后把要预测的图片通过图像编码器得到对应的图像向量，把图片和文字分别编码成向量，然后把它们放到同一个语义空间里比较相似度，去对应文本向量做点积，看...">
 <meta property="og:type" content="article">
 <meta property="og:title" content="lorena的小博客">
-<meta property="og:url" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/">
+<meta property="og:url" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9_backup/">
 <meta property="og:site_name" content="lorena的小博客">
 <meta property="og:description" content="VIT把图像分割成一系列图像块，每个图像块看作是一个token，再结合位置编码送入transformer encoder CLIP推理过程：让每个图像类别生成一句描述，然后通过文本编码器把每一个描述压缩成文本向量，然后把要预测的图片通过图像编码器得到对应的图像向量，把图片和文字分别编码成向量，然后把它们放到同一个语义空间里比较相似度，去对应文本向量做点积，看...">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260826193956246.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260826193956246.png">
 <meta property="og:image" content="c:\Users\23110\AppData\Roaming\Typora\typora-user-images\image-20260826161953390.png">
 <meta property="og:image" content="c:\Users\23110\AppData\Roaming\Typora\typora-user-images\image-20260826160216897.png">
-<meta property="og:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260826185732811.png">
-<meta property="og:image" content="https://liurui2004.github.io/image-20260827141612145.png!%5Bimage-20260827144542680%5D(image-20260827144542680.png">
-<meta property="og:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260827153925352.png">
-<meta property="og:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260827153621059.png">
-<meta property="og:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/d5000845-6b8d-47a2-ada5-9c20f87d1b99.png">
-<meta property="og:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260827160606766.png">
-<meta property="og:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260827160650150.png">
-<meta property="og:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260828202206712.png">
-<meta property="og:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260829161014536.png">
-<meta property="og:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260829164436788.png">
-<meta property="og:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260829165005092.png">
-<meta property="og:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260829165432591.png">
-<meta property="og:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260829165625873.png">
-<meta property="og:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260831204314663.png">
-<meta property="og:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260831204728674.png">
-<meta property="og:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260901194153796.png">
-<meta property="article:published_time" content="2026-09-05T08:13:24.187Z">
-<meta property="article:modified_time" content="2026-09-05T08:13:24.187Z">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260826185732811.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827141612145.png!%5Bimage-20260827144542680%5D(./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827144542680.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827153925352.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827153621059.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/d5000845-6b8d-47a2-ada5-9c20f87d1b99.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827160606766.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827160650150.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260828202206712.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829161014536.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829164436788.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829165005092.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829165432591.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829165625873.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260831204314663.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260831204728674.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260901194153796.png">
+<meta property="article:published_time" content="2026-09-05T07:56:29.098Z">
+<meta property="article:modified_time" content="2026-09-05T07:56:29.098Z">
 <meta property="article:author" content="lorena">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260826193956246.png">
-<link rel="canonical" href="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/">
+<meta name="twitter:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260826193956246.png">
+<link rel="canonical" href="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9_backup/">
 
 <link rel="icon" href="/images/favicon.png" type="image/png">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"","name":"lorena的小博客","description":"VIT把图像分割成一系列图像块，每个图像块看作是一个token，再结合位置编码送入transformer encoder CLIP推理过程：让每个图像类别生成一句描述，然后通过文本编码器把每一个描述压缩成文本向量，然后把要预测的图片通过图像编码器得到对应的图像向量，把图片和文字分别编码成向量，然后把它们放到同一个语义空间里比较相似度，去对应文本向量做点积，看...","url":"https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/","datePublished":"2026-09-05T08:13:24.187Z","dateModified":"2026-09-05T08:13:24.187Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"","name":"lorena的小博客","description":"VIT把图像分割成一系列图像块，每个图像块看作是一个token，再结合位置编码送入transformer encoder CLIP推理过程：让每个图像类别生成一句描述，然后通过文本编码器把每一个描述压缩成文本向量，然后把要预测的图片通过图像编码器得到对应的图像向量，把图片和文字分别编码成向量，然后把它们放到同一个语义空间里比较相似度，去对应文本向量做点积，看...","url":"https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9_backup/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9_backup/","datePublished":"2026-09-05T07:56:29.098Z","dateModified":"2026-09-05T07:56:29.098Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"}}</script>
 
 <script>
   (function () {
@@ -322,7 +322,7 @@
 
 
   <div class="article-content">
-    <h1 id="VIT"><a href="#VIT" class="headerlink" title="VIT"></a>VIT</h1><p>把图像分割成一系列图像块，每个图像块看作是一个token，再结合位置编码送入transformer encoder<img src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260826193956246.png" alt="image-20260826193956246"></p>
+    <h1 id="VIT"><a href="#VIT" class="headerlink" title="VIT"></a>VIT</h1><p>把图像分割成一系列图像块，每个图像块看作是一个token，再结合位置编码送入transformer encoder<img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260826193956246.png" alt="image-20260826193956246"></p>
 <h1 id="CLIP"><a href="#CLIP" class="headerlink" title="CLIP"></a>CLIP</h1><p>推理过程：让每个图像类别生成一句描述，然后通过文本编码器把每一个描述压缩成文本向量，然后把要预测的图片通过图像编码器得到对应的图像向量，把图片和文字分别编码成向量，然后把它们放到同一个语义空间里比较相似度，去对应文本向量做点积，看谁的结果更高就是哪个类别</p>
 <ol>
 <li><strong>image encoder（图像编码器）</strong>：接收图像输入，通过卷积 &#x2F; Transformer 网络，把图像转化为固定维度的图像 embedding。</li>
@@ -339,31 +339,31 @@
 <p>​	可以利用文本来查询图像</p>
 <p>● 不用预先定义固定类别的标签</p>
 <p>​	通过Prompt来查询</p>
-<p><img src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260826185732811.png" alt="image-20260826185732811"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260826185732811.png" alt="image-20260826185732811"></p>
 <h1 id="SAM"><a href="#SAM" class="headerlink" title="SAM"></a>SAM</h1><p>分割基础模型，借用prompt来分割实例，这里的prompt不一定是文字，也可能是一个点，一个mask，一个prompt可能会产生不同的对象，那么模型必须得输出所有可能的对象。</p>
 <p>&#x3D;&#x3D;这里如果prompt是文字，就直接使用的是CLIP模型。&#x3D;&#x3D;</p>
 <p>&#x3D;&#x3D;prompt和image enconder得到的特征拼在一起，经过vit逐一token的计算attention来进行融合&#x3D;&#x3D;</p>
 <p>&#x3D;&#x3D;focal loss：给容易预测的像素权重低，难分割的权重高&#x3D;&#x3D;</p>
 <p>&#x3D;&#x3D;dice loss：预测mask和真实mask的重叠度类似LOU，mask交集&#x2F;mask并集&#x3D;&#x3D;</p>
 <p>c：自动打假：&#x3D;&#x3D;先用一个有标签的去训练第一版分割的模型，然后再拿这个模型去无标签数据去预测，得到这个数据就有了标签，再拿这个有标签数据去训练模型，还有一个监督网络（有可能是人工监督）去监督每次预测是否正确，就这样不断预测获得到了一个庞大的带标签数据集</p>
-<p>![image-20260827153616998](image-20260827153616998.png</p>
-<p><img src="/image-20260827141612145.png!%5Bimage-20260827144542680%5D(image-20260827144542680.png" alt="image-20260827141612145"></p>
-<p><img src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260827153925352.png" alt="image-20260827153925352"></p>
-<p><img src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260827153621059.png" alt="image-20260827153621059">1、支持灵活的prompt<br>2、实时生成mask(图像编码器只运行一次),CPU and 50 ms<br>3、对于模糊prompt输出valid mask</p>
+<p>![image-20260827153616998](.&#x2F;小知识点.assets&#x2F;image-20260827153616998.png</p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827141612145.png!%5Bimage-20260827144542680%5D(./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827144542680.png" alt="image-20260827141612145"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827153925352.png" alt="image-20260827153925352"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827153621059.png" alt="image-20260827153621059">1、支持灵活的prompt<br>2、实时生成mask(图像编码器只运行一次),CPU and 50 ms<br>3、对于模糊prompt输出valid mask</p>
 <h1 id="DINO"><a href="#DINO" class="headerlink" title="DINO"></a>DINO</h1><p>DINO名称源自“Distillation(蒸馏)“与“NO labels(无标签)”,既体现其自蒸馏方法属<br>性,也凸显无监督核心特点。基于Transformer架构的自监督视觉深度学习模型,核心逻辑为“无监督自蒸馏”:具体通过双分支设计实现 – 学生分支负责主动学习掌握基础知识表示,老师分支则通过指数移动平均(EMA)跟随学生分支缓慢更新,以保持输出稳定;之后老师分支对无标注图像的输出会作为“伪标签”,学生分支再以靠近这一伪标签为目标重新训练,最终实现性能与泛化能力的提升。</p>
 <p>不同于监督学习需人工贴标签,DINO依赖的自监督学习无需显式标签,仅通过图像旋转、随机裁<br>剪等变换,或图像局部块补全、颜色预测等自预测任务,即可让模型理解图像语义;且能在大规模无标<br>签数据上训练,既充分利用数据资源,也解决了监督学习依赖标注的瓶颈问题。</p>
 <p>student是普通encoder，teacher是momentum encoder</p>
-<p><img src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/d5000845-6b8d-47a2-ada5-9c20f87d1b99.png" alt="d5000845-6b8d-47a2-ada5-9c20f87d1b99"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/d5000845-6b8d-47a2-ada5-9c20f87d1b99.png" alt="d5000845-6b8d-47a2-ada5-9c20f87d1b99"></p>
 <h1 id="DINOv2（Distillation-with-NO-labels）"><a href="#DINOv2（Distillation-with-NO-labels）" class="headerlink" title="DINOv2（Distillation with NO labels）"></a>DINOv2（Distillation with NO labels）</h1><p><strong>DINO模型的核心是自监督视觉Transformer</strong>：它通过无标签的自蒸馏机制学习图像特征，适用于各种下游任务，如分类和分割<br>	<strong>它解决了无标签数据利用的难题</strong>：在数据标注成本高企的背景下，DINO允许模型从海量图像中自动学习表示，减少对人工干预的依赖<br>	<strong>面向多样化场景</strong>：从通用图像处理到专业领域如卫星遥感，DINO的通用特征在多任务中表现出色，但需注意在极度专业化任务中可能需微调<br>	<strong>作用显著，但存在争议</strong>：研究表明DINO提升了视觉任务的基准性能，但一些批评者认为其在极低资源环境下的泛化仍有提升空间。</p>
 <h1 id="BERT"><a href="#BERT" class="headerlink" title="BERT"></a>BERT</h1><p>在encoder处有三个embedding</p>
-<p><img src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260827160606766.png" alt="image-20260827160606766"></p>
-<p><img src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260827160650150.png" alt="image-20260827160650150"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827160606766.png" alt="image-20260827160606766"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827160650150.png" alt="image-20260827160650150"></p>
 <h1 id="Open-Vocabulary-Detection"><a href="#Open-Vocabulary-Detection" class="headerlink" title="Open Vocabulary Detection"></a>Open Vocabulary Detection</h1><p>争对全景分割（语义分割+实例分割） </p>
 <p><strong>论文：Open-Vocabulary Panoptic Segmentation with Diffusion Model</strong></p>
 <p>利用CLIP模型：强大的鉴别能力</p>
 <p>Text2Image Diffusion Model：文本和图像之间细粒度对齐能力</p>
 <p>去做开放词汇学习的全景分割任务</p>
-<p><img src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260828202206712.png" alt="image-20260828202206712"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260828202206712.png" alt="image-20260828202206712"></p>
 <h1 id="Grounding-DINO（开集目标检测器）"><a href="#Grounding-DINO（开集目标检测器）" class="headerlink" title="Grounding DINO（开集目标检测器）"></a>Grounding DINO（开集目标检测器）</h1><p>闭集目标检测器:只能检测预先定义的类别的对象。<br>	开集目标检测器:可以检测指定的任意对象,其关键设计思路是在闭集检测器中引入语言特征。</p>
 <p>相比于DINO多了文本的  backbone，提取文本特征</p>
 <p><strong>特点：</strong></p>
@@ -371,12 +371,12 @@
 <p><strong>总体结构：</strong></p>
 <p>1.对于每个图像-文本对,分别使用图像Backbone和文本Backbone提取图像特征和文本特征,将提取到的特征送入特征增强器模块,用于跨模态特征融合。<br>	2.在获得跨模态文本和图像特征后,使用语言引导的查询选择模块从特征中选择跨模态查询。这些跨模态查询将被送到跨模态解码器中,从两个模态特征中提取所需的特征并更新自已。最后一层解码器的输出查询将用于预测对象框并提取相应的短语。</p>
 <p>这种深度融合策略有效地提升了开集目标检测的性能。</p>
-<p><img src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260829161014536.png" alt="image-20260829161014536"></p>
-<p><img src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260829164436788.png" alt="image-20260829164436788"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829161014536.png" alt="image-20260829161014536"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829164436788.png" alt="image-20260829164436788"></p>
 <p><strong>query初始化：</strong></p>
-<p><img src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260829165005092.png" alt="image-20260829165005092"></p>
-<p><img src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260829165432591.png" alt="image-20260829165432591"></p>
-<p><img src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260829165625873.png" alt="image-20260829165625873"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829165005092.png" alt="image-20260829165005092"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829165432591.png" alt="image-20260829165432591"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829165625873.png" alt="image-20260829165625873"></p>
 <p>以DINO为基础,提出了GroundingDINO的方法,使得目标检测器具有开集目标检测能力。<br>	提出了一种紧密融合的方法来更好地融合图像-文本模态信息。<br>	提出了一种子句级表示,以合理使用文本提示的检测数据。<br>	将开集对象检测器应用于指代对象检测任务。</p>
 <h2 id="CVA：（Change-Vector-Analysis变化向量分析）"><a href="#CVA：（Change-Vector-Analysis变化向量分析）" class="headerlink" title="CVA：（Change Vector Analysis变化向量分析）"></a>CVA：（Change Vector Analysis变化向量分析）</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">t1像素/特征</span><br><span class="line">      ↓</span><br><span class="line">     差异</span><br><span class="line">      ↑</span><br><span class="line">t2像素/特征</span><br></pre></td></tr></table></figure>
 
@@ -409,11 +409,11 @@
 <p>然后通过相似度计算来算loss。这就是：</p>
 <blockquote>
 <p><strong>Contrastive Learning。</strong></p>
-<p><img src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260831204314663.png" alt="image-20260831204314663"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260831204314663.png" alt="image-20260831204314663"></p>
 <h3 id="模型1：SimCLR："><a href="#模型1：SimCLR：" class="headerlink" title="模型1：SimCLR："></a>模型1：SimCLR：</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">一张图片</span><br><span class="line">   ↓</span><br><span class="line">两次随机增强</span><br><span class="line">   ↓</span><br><span class="line">两个视图</span><br><span class="line">   ↓</span><br><span class="line">Encoder</span><br><span class="line">   ↓</span><br><span class="line">两个Embedding</span><br><span class="line">   ↓</span><br><span class="line">相似度</span><br><span class="line">   ↓</span><br><span class="line">Contrastive Loss</span><br></pre></td></tr></table></figure></blockquote>
 <p>CLIP也是对比学习，CLIP比较的是图片和文字，Simclr比较的是图片和图片</p>
 <h2 id="模型2：MoCo模型"><a href="#模型2：MoCo模型" class="headerlink" title="模型2：MoCo模型"></a>模型2：MoCo模型</h2><p>m是近似1的一个数，特点：用队列的形式排好样本特征，减少计算，动量encoder来更新</p>
-<p><img src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260831204728674.png" alt="image-20260831204728674"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260831204728674.png" alt="image-20260831204728674"></p>
 <h2 id="基于掩码（mask）重建"><a href="#基于掩码（mask）重建" class="headerlink" title="基于掩码（mask）重建"></a>基于掩码（mask）重建</h2><p>mask的好处，比较整张图片变成比较用户指出的一个物体&#x2F;区域</p>
 <p>模型：</p>
 <blockquote>
@@ -463,7 +463,7 @@
 
 <h1 id="多模态网络的要素"><a href="#多模态网络的要素" class="headerlink" title="多模态网络的要素"></a>多模态网络的要素</h1><h6 id="■-Encoder-针对每个模态的Encoder（把图片-向量）："><a href="#■-Encoder-针对每个模态的Encoder（把图片-向量）：" class="headerlink" title="■ Encoder: 针对每个模态的Encoder（把图片-&gt;向量）："></a>■ Encoder: 针对每个模态的Encoder（把图片-&gt;向量）：</h6><p>技术：对于图像vit，cnn；对于文本，先进行分词，tokenizer的操作，然后进入文本transformer网络，最后还是转为向量形式</p>
 <h6 id="■-Align-Strategy-不同模态的对齐-融合方式"><a href="#■-Align-Strategy-不同模态的对齐-融合方式" class="headerlink" title="■ Align Strategy: 不同模态的对齐&#x2F;融合方式"></a>■ Align Strategy: 不同模态的对齐&#x2F;融合方式</h6><p>让图像和文本的embedding对齐融合：CLIP</p>
-<h6 id="■-LLM-Optional-以大语言模型为核心的网络"><a href="#■-LLM-Optional-以大语言模型为核心的网络" class="headerlink" title="■ LLM(Optional):以大语言模型为核心的网络"></a>■ LLM(Optional):以大语言模型为核心的网络</h6><p><img src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260901194153796.png" alt="image-20260901194153796"></p>
+<h6 id="■-LLM-Optional-以大语言模型为核心的网络"><a href="#■-LLM-Optional-以大语言模型为核心的网络" class="headerlink" title="■ LLM(Optional):以大语言模型为核心的网络"></a>■ LLM(Optional):以大语言模型为核心的网络</h6><p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260901194153796.png" alt="image-20260901194153796"></p>
 
   </div>
 
@@ -493,16 +493,16 @@
 
   <nav class="article-actions">
     
-      <span class="article-action article-action--prev is-disabled" aria-disabled="true">
+      <a class="article-action article-action--prev" href="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/">
         
 <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-left"></use></svg>
 
         <span class="action-label">上一篇</span>
-        <span class="action-title">没有更早的文章了</span>
-      </span>
+        <span class="action-title"></span>
+      </a>
     
     
-      <a class="article-action article-action--next" href="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9_backup/">
+      <a class="article-action article-action--next" href="/2026/08/11/%E5%A4%8D%E7%8E%B0github%E9%A1%B9%E7%9B%AE/">
         <span class="action-label">下一篇</span>
         <span class="action-title"></span>
         
