@@ -1,0 +1,581 @@
+<!doctype html>
+
+<html lang="zh-CN" data-fancybox-enabled="1">
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f3e9" data-flatpaper-theme-color>
+
+<title>lorena的小博客</title>
+<meta name="description" content="VIT把图像分割成一系列图像块，每个图像块看作是一个token，再结合位置编码送入transformer encoder CLIP推理过程：让每个图像类别生成一句描述，然后通过文本编码器把每一个描述压缩成文本向量，然后把要预测的图片通过图像编码器得到对应的图像向量，把图片和文字分别编码成向量，然后把它们放到同一个语义空间里比较相似度，去对应文本向量做点积，看...">
+<meta property="og:type" content="article">
+<meta property="og:title" content="lorena的小博客">
+<meta property="og:url" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/">
+<meta property="og:site_name" content="lorena的小博客">
+<meta property="og:description" content="VIT把图像分割成一系列图像块，每个图像块看作是一个token，再结合位置编码送入transformer encoder CLIP推理过程：让每个图像类别生成一句描述，然后通过文本编码器把每一个描述压缩成文本向量，然后把要预测的图片通过图像编码器得到对应的图像向量，把图片和文字分别编码成向量，然后把它们放到同一个语义空间里比较相似度，去对应文本向量做点积，看...">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260826193956246.png">
+<meta property="og:image" content="c:\Users\23110\AppData\Roaming\Typora\typora-user-images\image-20260826161953390.png">
+<meta property="og:image" content="c:\Users\23110\AppData\Roaming\Typora\typora-user-images\image-20260826160216897.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260826185732811.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827141612145.png!%5Bimage-20260827144542680%5D(./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827144542680.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827153925352.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827153621059.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/d5000845-6b8d-47a2-ada5-9c20f87d1b99.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827160606766.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827160650150.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260828202206712.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829161014536.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829164436788.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829165005092.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829165432591.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829165625873.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260831204314663.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260831204728674.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260901194153796.png">
+<meta property="article:published_time" content="2026-09-05T07:03:22.760Z">
+<meta property="article:modified_time" content="2026-09-05T07:01:46.155Z">
+<meta property="article:author" content="lorena">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liurui2004.github.io/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260826193956246.png">
+<link rel="canonical" href="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/">
+
+<link rel="icon" href="/images/favicon.png" type="image/png">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"","name":"lorena的小博客","description":"VIT把图像分割成一系列图像块，每个图像块看作是一个token，再结合位置编码送入transformer encoder CLIP推理过程：让每个图像类别生成一句描述，然后通过文本编码器把每一个描述压缩成文本向量，然后把要预测的图片通过图像编码器得到对应的图像向量，把图片和文字分别编码成向量，然后把它们放到同一个语义空间里比较相似度，去对应文本向量做点积，看...","url":"https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/","datePublished":"2026-09-05T07:03:22.760Z","dateModified":"2026-09-05T07:01:46.155Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"}}</script>
+
+<script>
+  (function () {
+    var accents = { orange: 1, purple: 1, sakura: 1, blue: 1, pink: 1, green: 1, black: 1 };
+    var match = document.cookie.match(/(?:^|;\s*)flatpaper-accent=([^;]+)/);
+    var accent = 'green';
+    if (match) {
+      try { accent = decodeURIComponent(match[1]); } catch (e) {}
+    }
+    if (!accents[accent]) accent = 'green';
+    document.documentElement.setAttribute('data-accent', accent);
+    try {
+      if (localStorage.getItem('flatpaper-mode') === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+      }
+    } catch (e) {}
+  })();
+</script>
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css">
+<script defer src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+
+
+  
+  <link rel="stylesheet" href="/css/custom-cursor.css?v=2">
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body
+  class="is-post tag-style-tape bg-style-default"
+  data-default-accent="green"
+  data-code-theme="simple"
+  data-note-style="sticky"
+  data-note-icons="on"
+  data-button-style="circle"
+  data-strong-accent="on"
+>
+  
+    <div class="page-grain"></div>
+  
+  <svg width="0" height="0" style="position:absolute;z-index:-1;" aria-hidden="true">
+    <defs>
+      <filter id="paper-edge" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+  
+  <header class="site-header">
+  
+  <button class="icon-button js-sidebar-toggle sidebar-toggle" type="button" aria-label="打开侧边栏" aria-controls="paper-sidebar-drawer" aria-expanded="false">
+    
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-menu"></use></svg>
+
+  </button>
+
+  <div class="brand">
+    <div class="brand-mark-wrapper">
+      
+        <a class="brand-mark" href="/" aria-label="FlatPaper 首页">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-layout-grid"></use></svg>
+
+        </a>
+      
+    </div>
+    <a class="brand-text" href="/">lorena的小博客</a>
+  </div>
+
+  <nav class="site-nav" aria-label="主导航">
+    
+  </nav>
+
+  <div class="header-tools">
+    <button class="icon-button js-search-open" type="button" aria-label="搜索文章">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+    </button>
+    <div class="accent-picker">
+      <button class="icon-button accent-toggle" type="button" aria-label="选择主题色" title="选择主题色" aria-haspopup="true" aria-expanded="false" aria-controls="accent-menu">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-palette flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-palette"></use></svg>
+
+      </button>
+      <div class="accent-menu" id="accent-menu" role="menu" aria-label="主题色">
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="橙色" aria-checked="false" data-accent-option="orange">
+          <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="紫色" aria-checked="false" data-accent-option="purple">
+          <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="樱花粉" aria-checked="false" data-accent-option="sakura">
+          <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="蓝色" aria-checked="false" data-accent-option="blue">
+          <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="粉色" aria-checked="false" data-accent-option="pink">
+          <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="绿色" aria-checked="false" data-accent-option="green">
+          <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="黑色" aria-checked="false" data-accent-option="black">
+          <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+    <button class="theme-toggle" type="button" aria-label="切换颜色模式">
+      <span class="theme-icon theme-icon--sun">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-sun"></use></svg>
+</span>
+      <span class="theme-icon theme-icon--moon">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-moon"></use></svg>
+</span>
+    </button>
+  </div>
+</header>
+
+
+  
+  <main class="paper-shell paper-shell--article">
+    
+
+<aside id="paper-sidebar-drawer" class="paper-sidebar paper-sidebar--right" aria-label="侧边栏">
+  <div class="drawer-toolbar" aria-label="侧边栏工具">
+    <div class="drawer-accent-options" role="group" aria-label="主题色">
+      <button type="button" class="accent-option" aria-label="橙色" aria-pressed="false" data-accent-option="orange">
+        <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="紫色" aria-pressed="false" data-accent-option="purple">
+        <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="樱花粉" aria-pressed="false" data-accent-option="sakura">
+        <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="蓝色" aria-pressed="false" data-accent-option="blue">
+        <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="粉色" aria-pressed="false" data-accent-option="pink">
+        <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="绿色" aria-pressed="false" data-accent-option="green">
+        <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="黑色" aria-pressed="false" data-accent-option="black">
+        <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+      </button>
+    </div>
+    <button class="icon-button drawer-close js-sidebar-close" type="button" aria-label="关闭侧边栏">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+    </button>
+  </div>
+
+  <section class="side-card nav-card">
+    <nav class="site-nav-drawer" aria-label="移动端导航">
+      
+    </nav>
+  </section>
+
+  <section class="side-card profile-card">
+    
+      <div class="avatar avatar--image avatar--circle">
+        <img src="/images/avatar.jpg" alt="lorena" loading="lazy" referrerpolicy="no-referrer">
+      </div>
+    
+    <h3>lorena</h3>
+    <p class="profile-role">isfj 小女孩 · 懒惰但上进</p>
+    <p>希望有一天能成为掌握计算机的小小小佬。喜欢宅家，也喜欢交朋友，想成为e人。</p>
+    
+    <div class="socials">
+      
+        <a href="https://github.com/LIURUI2004" target="_blank" rel="noopener" aria-label="GitHub" data-tooltip="GitHub">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 496 512" fill="currentColor" class="lucide lucide-github flatpaper-icon flatpaper-icon--fa-brands" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-fa-brands-github"></use></svg>
+
+          
+        </a>
+      
+        <a href="mailto:liurui20041008@gmail.com" target="_blank" rel="noopener" aria-label="Email" data-tooltip="Email">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-mail"></use></svg>
+
+          
+        </a>
+      
+        <a href="https://www.xiaohongshu.com/user/profile/66c9fef3000000001d0231f5" target="_blank" rel="noopener" aria-label="小红书" data-tooltip="小红书主页">
+          
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" class="lucide lucide-custom" aria-hidden="true"><path d="M22.405 9.879c.002.016.01.02.07.019h.725a.797.797 0 0 0 .78-.972.794.794 0 0 0-.884-.618.795.795 0 0 0-.692.794c0 .101-.002.666.001.777zm-11.509 4.808c-.203.001-1.353.004-1.685.003a2.528 2.528 0 0 1-.766-.126.025.025 0 0 0-.03.014L7.7 16.127a.025.025 0 0 0 .01.032c.111.06.336.124.495.124.66.01 1.32.002 1.981 0 .01 0 .02-.006.023-.015l.712-1.545a.025.025 0 0 0-.024-.036zM.477 9.91c-.071 0-.076.002-.076.01a.834.834 0 0 0-.01.08c-.027.397-.038.495-.234 3.06-.012.24-.034.389-.135.607-.026.057-.033.042.003.112.046.092.681 1.523.787 1.74.008.015.011.02.017.02.008 0 .033-.026.047-.044.147-.187.268-.391.371-.606.306-.635.44-1.325.486-1.706.014-.11.021-.22.03-.33l.204-2.616.022-.293c.003-.029 0-.033-.03-.034zm7.203 3.757a1.427 1.427 0 0 1-.135-.607c-.004-.084-.031-.39-.235-3.06a.443.443 0 0 0-.01-.082c-.004-.011-.052-.008-.076-.008h-1.48c-.03.001-.034.005-.03.034l.021.293c.076.982.153 1.964.233 2.946.05.4.186 1.085.487 1.706.103.215.223.419.37.606.015.018.037.051.048.049.02-.003.742-1.642.804-1.765.036-.07.03-.055.003-.112zm3.861-.913h-.872a.126.126 0 0 1-.116-.178l1.178-2.625a.025.025 0 0 0-.023-.035l-1.318-.003a.148.148 0 0 1-.135-.21l.876-1.954a.025.025 0 0 0-.023-.035h-1.56c-.01 0-.02.006-.024.015l-.926 2.068c-.085.169-.314.634-.399.938a.534.534 0 0 0-.02.191.46.46 0 0 0 .23.378.981.981 0 0 0 .46.119h.59c.041 0-.688 1.482-.834 1.972a.53.53 0 0 0-.023.172.465.465 0 0 0 .23.398c.15.092.342.12.475.12l1.66-.001c.01 0 .02-.006.023-.015l.575-1.28a.025.025 0 0 0-.024-.035zm-6.93-4.937H3.1a.032.032 0 0 0-.034.033c0 1.048-.01 2.795-.01 6.829 0 .288-.269.262-.28.262h-.74c-.04.001-.044.004-.04.047.001.037.465 1.064.555 1.263.01.02.03.033.051.033.157.003.767.009.938-.014.153-.02.3-.06.438-.132.3-.156.49-.419.595-.765.052-.172.075-.353.075-.533.002-2.33 0-4.66-.007-6.991a.032.032 0 0 0-.032-.032zm11.784 6.896c0-.014-.01-.021-.024-.022h-1.465c-.048-.001-.049-.002-.05-.049v-4.66c0-.072-.005-.07.07-.07h.863c.08 0 .075.004.075-.074V8.393c0-.082.006-.076-.08-.076h-3.5c-.064 0-.075-.006-.075.073v1.445c0 .083-.006.077.08.077h.854c.075 0 .07-.004.07.07v4.624c0 .095.008.084-.085.084-.37 0-1.11-.002-1.304 0-.048.001-.06.03-.06.03l-.697 1.519s-.014.025-.008.036c.006.01.013.008.058.008 1.748.003 3.495.002 5.243.002.03-.001.034-.006.035-.033v-1.539zm4.177-3.43c0 .013-.007.023-.02.024-.346.006-.692.004-1.037.004-.014-.002-.022-.01-.022-.024-.005-.434-.007-.869-.01-1.303 0-.072-.006-.071.07-.07l.733-.003c.041 0 .081.002.12.015.093.025.16.107.165.204.006.431.002 1.153.001 1.153zm2.67.244a1.953 1.953 0 0 0-.883-.222h-.18c-.04-.001-.04-.003-.042-.04V10.21c0-.132-.007-.263-.025-.394a1.823 1.823 0 0 0-.153-.53 1.533 1.533 0 0 0-.677-.71 2.167 2.167 0 0 0-1-.258c-.153-.003-.567 0-.72 0-.07 0-.068.004-.068-.065V7.76c0-.031-.01-.041-.046-.039H17.93s-.016 0-.023.007c-.006.006-.008.012-.008.023v.546c-.008.036-.057.015-.082.022h-.95c-.022.002-.028.008-.03.032v1.481c0 .09-.004.082.082.082h.913c.082 0 .072.128.072.128V11.19s.003.117-.06.117h-1.482c-.068 0-.06.082-.06.082v1.445s-.01.068.064.068h1.457c.082 0 .076-.006.076.079v3.225c0 .088-.007.081.082.081h1.43c.09 0 .082.007.082-.08v-3.27c0-.029.006-.035.033-.035l2.323-.003c.098 0 .191.02.28.061a.46.46 0 0 1 .274.407c.008.395.003.79.003 1.185 0 .259-.107.367-.33.367h-1.218c-.023.002-.029.008-.028.033.184.437.374.871.57 1.303a.045.045 0 0 0 .04.026c.17.005.34.002.51.003.15-.002.517.004.666-.01a2.03 2.03 0 0 0 .408-.075c.59-.18.975-.698.976-1.313v-1.981c0-.128-.01-.254-.034-.38 0 .078-.029-.641-.724-.998z"/></svg>
+          
+        </a>
+      
+      
+        
+        
+        <a href="/atom.xml" aria-label="RSS feed" data-tooltip="RSS feed">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rss flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-rss"></use></svg>
+
+        </a>
+      
+    </div>
+  </section>
+
+  
+
+  
+    <div class="post-sticky-stack">
+      <section class="side-card toc-card">
+        <header class="toc-card__head">
+          <h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table-of-contents flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-table-of-contents"></use></svg>
+文章目录</h2>
+          <button type="button" class="toc-toggle-all" data-action="toggle-toc" aria-pressed="false" aria-label="展开全部目录" title="展开全部目录">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-chevron-down"></use></svg>
+
+          </button>
+        </header>
+        <div class="toc-content">
+          
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#CVA%EF%BC%9A%EF%BC%88Change-Vector-Analysis%E5%8F%98%E5%8C%96%E5%90%91%E9%87%8F%E5%88%86%E6%9E%90%EF%BC%89"><span class="toc-text">CVA：（Change Vector Analysis变化向量分析）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ImageDiff"><span class="toc-text">ImageDiff</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#AnyChange-%E5%88%A9%E7%94%A8-SAM-%E7%89%B9%E5%BE%81%E5%8C%B9%E9%85%8D%E8%BF%9B%E8%A1%8C%E6%97%A0%E7%9B%91%E7%9D%A3%E5%8F%98%E5%8C%96%E6%A3%80%E6%B5%8B"><span class="toc-text">AnyChange:利用 SAM + 特征匹配进行无监督变化检测</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9F%BA%E4%BA%8E%E5%89%8D%E7%BD%AE%E4%BB%BB%E5%8A%A1%EF%BC%9A"><span class="toc-text">基于前置任务：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9F%BA%E4%BA%8E%E5%AF%B9%E6%AF%94%E5%AD%A6%E4%B9%A0"><span class="toc-text">基于对比学习</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%A8%A1%E5%9E%8B1%EF%BC%9ASimCLR%EF%BC%9A"><span class="toc-text">模型1：SimCLR：</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A8%A1%E5%9E%8B2%EF%BC%9AMoCo%E6%A8%A1%E5%9E%8B"><span class="toc-text">模型2：MoCo模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9F%BA%E4%BA%8E%E6%8E%A9%E7%A0%81%EF%BC%88mask%EF%BC%89%E9%87%8D%E5%BB%BA"><span class="toc-text">基于掩码（mask）重建</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#MAE%EF%BC%88Masked-Autoencoder%E6%8E%A9%E7%A0%81%E8%87%AA%E7%BC%96%E7%A0%81%E5%99%A8%EF%BC%89"><span class="toc-text">MAE（Masked Autoencoder掩码自编码器）</span></a></li></ol>
+          
+        </div>
+      </section>
+      
+
+
+    </div>
+  
+
+  
+
+</aside>
+
+    <section class="paper-main">
+      
+
+<div class="article-tape-wrap">
+<span class="tape tape--top-right" aria-hidden="true"></span>
+<article class="article-paper">
+  
+  <header class="article-header">
+    
+    <h1></h1>
+    <div class="meta-line meta-line--article">
+      <span class="meta-date">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-calendar"></use></svg>
+2026-09-05</span>
+      
+    </div>
+  </header>
+
+  
+
+
+  <div class="article-content">
+    <h1 id="VIT"><a href="#VIT" class="headerlink" title="VIT"></a>VIT</h1><p>把图像分割成一系列图像块，每个图像块看作是一个token，再结合位置编码送入transformer encoder<img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260826193956246.png" alt="image-20260826193956246"></p>
+<h1 id="CLIP"><a href="#CLIP" class="headerlink" title="CLIP"></a>CLIP</h1><p>推理过程：让每个图像类别生成一句描述，然后通过文本编码器把每一个描述压缩成文本向量，然后把要预测的图片通过图像编码器得到对应的图像向量，把图片和文字分别编码成向量，然后把它们放到同一个语义空间里比较相似度，去对应文本向量做点积，看谁的结果更高就是哪个类别</p>
+<ol>
+<li><strong>image encoder（图像编码器）</strong>：接收图像输入，通过卷积 &#x2F; Transformer 网络，把图像转化为固定维度的图像 embedding。</li>
+<li><strong>text encoder（文本编码器）</strong>：接收文本提示，基于 Transformer，将文本映射为同维度的文本 embedding。</li>
+<li><strong>contrastive loss（对比损失）</strong>：训练目标，最大化匹配图文对相似度、最小化不匹配样本相似度，对齐图像与文本表征。不仅要拿图片对应文字算损失，还要拿文字对应图片算损失，最后loss &#x3D; (loss_i + loss_t) &#x2F; 2</li>
+<li><strong>embedding similarity（嵌入相似度）</strong>：计算图像、文本 embedding 之间距离（常用余弦相似度），用来衡量图文匹配程度，完成检索、零样本分类。</li>
+</ol>
+<p><img src="C:\Users\23110\AppData\Roaming\Typora\typora-user-images\image-20260826161953390.png" alt="image-20260826161953390"></p>
+<p><img src="C:\Users\23110\AppData\Roaming\Typora\typora-user-images\image-20260826160216897.png" alt="image-20260826160216897"></p>
+<p>好处</p>
+<p>● 利用了丰富的语义作为监督</p>
+<p>​	学习到了很多细节语义特征</p>
+<p>●将图像和文本进行了连接</p>
+<p>​	可以利用文本来查询图像</p>
+<p>● 不用预先定义固定类别的标签</p>
+<p>​	通过Prompt来查询</p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260826185732811.png" alt="image-20260826185732811"></p>
+<h1 id="SAM"><a href="#SAM" class="headerlink" title="SAM"></a>SAM</h1><p>分割基础模型，借用prompt来分割实例，这里的prompt不一定是文字，也可能是一个点，一个mask，一个prompt可能会产生不同的对象，那么模型必须得输出所有可能的对象。</p>
+<p>&#x3D;&#x3D;这里如果prompt是文字，就直接使用的是CLIP模型。&#x3D;&#x3D;</p>
+<p>&#x3D;&#x3D;prompt和image enconder得到的特征拼在一起，经过vit逐一token的计算attention来进行融合&#x3D;&#x3D;</p>
+<p>&#x3D;&#x3D;focal loss：给容易预测的像素权重低，难分割的权重高&#x3D;&#x3D;</p>
+<p>&#x3D;&#x3D;dice loss：预测mask和真实mask的重叠度类似LOU，mask交集&#x2F;mask并集&#x3D;&#x3D;</p>
+<p>c：自动打假：&#x3D;&#x3D;先用一个有标签的去训练第一版分割的模型，然后再拿这个模型去无标签数据去预测，得到这个数据就有了标签，再拿这个有标签数据去训练模型，还有一个监督网络（有可能是人工监督）去监督每次预测是否正确，就这样不断预测获得到了一个庞大的带标签数据集</p>
+<p>![image-20260827153616998](.&#x2F;小知识点.assets&#x2F;image-20260827153616998.png</p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827141612145.png!%5Bimage-20260827144542680%5D(./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827144542680.png" alt="image-20260827141612145"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827153925352.png" alt="image-20260827153925352"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827153621059.png" alt="image-20260827153621059">1、支持灵活的prompt<br>2、实时生成mask(图像编码器只运行一次),CPU and 50 ms<br>3、对于模糊prompt输出valid mask</p>
+<h1 id="DINO"><a href="#DINO" class="headerlink" title="DINO"></a>DINO</h1><p>DINO名称源自“Distillation(蒸馏)“与“NO labels(无标签)”,既体现其自蒸馏方法属<br>性,也凸显无监督核心特点。基于Transformer架构的自监督视觉深度学习模型,核心逻辑为“无监督自蒸馏”:具体通过双分支设计实现 – 学生分支负责主动学习掌握基础知识表示,老师分支则通过指数移动平均(EMA)跟随学生分支缓慢更新,以保持输出稳定;之后老师分支对无标注图像的输出会作为“伪标签”,学生分支再以靠近这一伪标签为目标重新训练,最终实现性能与泛化能力的提升。</p>
+<p>不同于监督学习需人工贴标签,DINO依赖的自监督学习无需显式标签,仅通过图像旋转、随机裁<br>剪等变换,或图像局部块补全、颜色预测等自预测任务,即可让模型理解图像语义;且能在大规模无标<br>签数据上训练,既充分利用数据资源,也解决了监督学习依赖标注的瓶颈问题。</p>
+<p>student是普通encoder，teacher是momentum encoder</p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/d5000845-6b8d-47a2-ada5-9c20f87d1b99.png" alt="d5000845-6b8d-47a2-ada5-9c20f87d1b99"></p>
+<h1 id="DINOv2（Distillation-with-NO-labels）"><a href="#DINOv2（Distillation-with-NO-labels）" class="headerlink" title="DINOv2（Distillation with NO labels）"></a>DINOv2（Distillation with NO labels）</h1><p><strong>DINO模型的核心是自监督视觉Transformer</strong>：它通过无标签的自蒸馏机制学习图像特征，适用于各种下游任务，如分类和分割<br>	<strong>它解决了无标签数据利用的难题</strong>：在数据标注成本高企的背景下，DINO允许模型从海量图像中自动学习表示，减少对人工干预的依赖<br>	<strong>面向多样化场景</strong>：从通用图像处理到专业领域如卫星遥感，DINO的通用特征在多任务中表现出色，但需注意在极度专业化任务中可能需微调<br>	<strong>作用显著，但存在争议</strong>：研究表明DINO提升了视觉任务的基准性能，但一些批评者认为其在极低资源环境下的泛化仍有提升空间。</p>
+<h1 id="BERT"><a href="#BERT" class="headerlink" title="BERT"></a>BERT</h1><p>在encoder处有三个embedding</p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827160606766.png" alt="image-20260827160606766"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260827160650150.png" alt="image-20260827160650150"></p>
+<h1 id="Open-Vocabulary-Detection"><a href="#Open-Vocabulary-Detection" class="headerlink" title="Open Vocabulary Detection"></a>Open Vocabulary Detection</h1><p>争对全景分割（语义分割+实例分割） </p>
+<p><strong>论文：Open-Vocabulary Panoptic Segmentation with Diffusion Model</strong></p>
+<p>利用CLIP模型：强大的鉴别能力</p>
+<p>Text2Image Diffusion Model：文本和图像之间细粒度对齐能力</p>
+<p>去做开放词汇学习的全景分割任务</p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260828202206712.png" alt="image-20260828202206712"></p>
+<h1 id="Grounding-DINO（开集目标检测器）"><a href="#Grounding-DINO（开集目标检测器）" class="headerlink" title="Grounding DINO（开集目标检测器）"></a>Grounding DINO（开集目标检测器）</h1><p>闭集目标检测器:只能检测预先定义的类别的对象。<br>	开集目标检测器:可以检测指定的任意对象,其关键设计思路是在闭集检测器中引入语言特征。</p>
+<p>相比于DINO多了文本的  backbone，提取文本特征</p>
+<p><strong>特点：</strong></p>
+<p>对于图像和语言的处理都使用了transformer架构,处理图像和语言数据更加统一;使得两种模态<br>的融合更方便,可以很容易地在整个pipeline中融合跨模态特征。<br> 	以DINO为基础,DINO是一种基于Transformer的检测器,在大规模数据集上有强大的泛化能力。<br>无需使用NMS等模块,支持端到端训练,极大地简化了模型设计和训练。<br>	作者提出了一个图像-语言特征深度融合的方案,包括特征增强器、语言引导的查询选择和跨模态解码器。<br>	Grounding DINO在COCO检测零样本转移基准测试中达到了52.5AP,而在经过COCO数据微调后,达到了63.0 AP。</p>
+<p><strong>总体结构：</strong></p>
+<p>1.对于每个图像-文本对,分别使用图像Backbone和文本Backbone提取图像特征和文本特征,将提取到的特征送入特征增强器模块,用于跨模态特征融合。<br>	2.在获得跨模态文本和图像特征后,使用语言引导的查询选择模块从特征中选择跨模态查询。这些跨模态查询将被送到跨模态解码器中,从两个模态特征中提取所需的特征并更新自已。最后一层解码器的输出查询将用于预测对象框并提取相应的短语。</p>
+<p>这种深度融合策略有效地提升了开集目标检测的性能。</p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829161014536.png" alt="image-20260829161014536"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829164436788.png" alt="image-20260829164436788"></p>
+<p><strong>query初始化：</strong></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829165005092.png" alt="image-20260829165005092"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829165432591.png" alt="image-20260829165432591"></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260829165625873.png" alt="image-20260829165625873"></p>
+<p>以DINO为基础,提出了GroundingDINO的方法,使得目标检测器具有开集目标检测能力。<br>	提出了一种紧密融合的方法来更好地融合图像-文本模态信息。<br>	提出了一种子句级表示,以合理使用文本提示的检测数据。<br>	将开集对象检测器应用于指代对象检测任务。</p>
+<h2 id="CVA：（Change-Vector-Analysis变化向量分析）"><a href="#CVA：（Change-Vector-Analysis变化向量分析）" class="headerlink" title="CVA：（Change Vector Analysis变化向量分析）"></a>CVA：（Change Vector Analysis变化向量分析）</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">t1像素/特征</span><br><span class="line">      ↓</span><br><span class="line">     差异</span><br><span class="line">      ↑</span><br><span class="line">t2像素/特征</span><br></pre></td></tr></table></figure>
+
+<p>如果差异大：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Change</span><br></pre></td></tr></table></figure>
+
+<p>如果差异小：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">No Change</span><br></pre></td></tr></table></figure>
+
+<h2 id="ImageDiff"><a href="#ImageDiff" class="headerlink" title="ImageDiff"></a>ImageDiff</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">t1</span><br><span class="line"> ↓</span><br><span class="line">Image</span><br><span class="line"></span><br><span class="line">t2</span><br><span class="line"> ↓</span><br><span class="line">Image</span><br><span class="line"></span><br><span class="line">两张图做 Difference</span><br><span class="line"> ↓</span><br><span class="line">差异图</span><br></pre></td></tr></table></figure>
+
+<h2 id="AnyChange-利用-SAM-特征匹配进行无监督变化检测"><a href="#AnyChange-利用-SAM-特征匹配进行无监督变化检测" class="headerlink" title="AnyChange:利用 SAM + 特征匹配进行无监督变化检测"></a>AnyChange:利用 SAM + 特征匹配进行无监督变化检测</h2><h1 id="VLM（自监督学习（无监督学习））："><a href="#VLM（自监督学习（无监督学习））：" class="headerlink" title="VLM（自监督学习（无监督学习））："></a>VLM（自监督学习（无监督学习））：</h1><h2 id="基于前置任务："><a href="#基于前置任务：" class="headerlink" title="基于前置任务："></a>基于前置任务：</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">原始图片</span><br><span class="line">   ↓</span><br><span class="line">人为处理</span><br><span class="line">   ↓</span><br><span class="line">得到一个训练任务</span><br></pre></td></tr></table></figure>
+
+<p>例如把图片遮住一部分：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">████████</span><br><span class="line">██🐶███</span><br><span class="line">████████</span><br></pre></td></tr></table></figure>
+
+<p>然后让模型：</p>
+<blockquote>
+<p>“你猜被遮住的是什么。”</p>
+</blockquote>
+<p>这就是一种：</p>
+<blockquote>
+<p><strong>Pretext Task &#x2F; 前置任务</strong></p>
+</blockquote>
+<h2 id="基于对比学习"><a href="#基于对比学习" class="headerlink" title="基于对比学习"></a>基于对比学习</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">A：狗图片</span><br><span class="line">B：同一只狗增强后的图片</span><br><span class="line"></span><br><span class="line">C：汽车</span><br><span class="line">D：房子</span><br><span class="line">E：树</span><br></pre></td></tr></table></figure>
+
+<p>C,D,E,均为负样本，加强后的一般是正样本。模型应该：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">A ↔ B    拉近</span><br><span class="line"></span><br><span class="line">A ↔ C    推远</span><br><span class="line">A ↔ D    推远</span><br><span class="line">A ↔ E    推远</span><br></pre></td></tr></table></figure>
+
+<p>然后通过相似度计算来算loss。这就是：</p>
+<blockquote>
+<p><strong>Contrastive Learning。</strong></p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260831204314663.png" alt="image-20260831204314663"></p>
+<h3 id="模型1：SimCLR："><a href="#模型1：SimCLR：" class="headerlink" title="模型1：SimCLR："></a>模型1：SimCLR：</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">一张图片</span><br><span class="line">   ↓</span><br><span class="line">两次随机增强</span><br><span class="line">   ↓</span><br><span class="line">两个视图</span><br><span class="line">   ↓</span><br><span class="line">Encoder</span><br><span class="line">   ↓</span><br><span class="line">两个Embedding</span><br><span class="line">   ↓</span><br><span class="line">相似度</span><br><span class="line">   ↓</span><br><span class="line">Contrastive Loss</span><br></pre></td></tr></table></figure></blockquote>
+<p>CLIP也是对比学习，CLIP比较的是图片和文字，Simclr比较的是图片和图片</p>
+<h2 id="模型2：MoCo模型"><a href="#模型2：MoCo模型" class="headerlink" title="模型2：MoCo模型"></a>模型2：MoCo模型</h2><p>m是近似1的一个数，特点：用队列的形式排好样本特征，减少计算，动量encoder来更新</p>
+<p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260831204728674.png" alt="image-20260831204728674"></p>
+<h2 id="基于掩码（mask）重建"><a href="#基于掩码（mask）重建" class="headerlink" title="基于掩码（mask）重建"></a>基于掩码（mask）重建</h2><p>mask的好处，比较整张图片变成比较用户指出的一个物体&#x2F;区域</p>
+<p>模型：</p>
+<blockquote>
+<p>“根据剩下的部分，猜被遮住的内容。”</p>
+</blockquote>
+<p>BEiT：</p>
+<p>图片<br>	 ↓<br>   随机遮挡<br>	 ↓<br>       模型<br>	 ↓<br>预测被遮挡部分</p>
+<pre><code>              自监督视觉学习
+                     │
+      ┌──────────────┼──────────────┐
+      ↓              ↓              ↓
+   对比学习        掩码重建        自蒸馏
+      │              │              │
+  SimCLR            BEiT           DINO
+      ↓
+     MoCo
+      ↓
+   MoCo v3
+      │
+      ↓
+     ViT
+</code></pre>
+<h2 id="MAE（Masked-Autoencoder掩码自编码器）"><a href="#MAE（Masked-Autoencoder掩码自编码器）" class="headerlink" title="MAE（Masked Autoencoder掩码自编码器）"></a>MAE（Masked Autoencoder掩码自编码器）</h2><pre><code>          原始图片
+              ↓
+          切成Patch
+              ↓
+    ┌─────────┴─────────┐
+    ↓                   ↓
+ 随机遮挡              保留
+    ↓                   ↓
+    ██                Patch
+    ██                  ↓
+    ██              Encoder(通过transformer去学残缺图片中有用的feature)
+                        ↓
+                   Visual Feature
+                        ↓
+               Decoder（拿到feature和mask token【被掩盖的token】去恢复原来的图片）
+                        ↑
+                   加入Mask Token
+                        ↓
+                重建被遮挡Patch
+                        ↓
+                       Loss
+</code></pre>
+<p>Encoder负责“看懂剩下的图片”，Decoder负责“根据看懂的内容，把被遮住的图片补回来</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"># 1. 图片切成 Patch</span><br><span class="line">patches = patchify(image)</span><br><span class="line"></span><br><span class="line"># 2. 随机遮掉大部分 Patch</span><br><span class="line">visible, mask = random_mask(patches)</span><br><span class="line"></span><br><span class="line"># 3. Encoder只看没被遮住的Patch</span><br><span class="line">features = encoder(visible)</span><br><span class="line"></span><br><span class="line"># 4. 给被遮住的位置放 Mask Token</span><br><span class="line">features_with_mask = add_mask_token(features, mask)</span><br><span class="line"></span><br><span class="line"># 5. Decoder尝试恢复完整图片</span><br><span class="line">reconstructed = decoder(features_with_mask)</span><br><span class="line"></span><br><span class="line"># 6. 和原来的图片比较</span><br><span class="line">loss = reconstruction_loss(reconstructed, image)</span><br><span class="line"></span><br><span class="line"># 7. 反向传播</span><br><span class="line">loss.backward()</span><br></pre></td></tr></table></figure>
+
+<h1 id="多模态网络的要素"><a href="#多模态网络的要素" class="headerlink" title="多模态网络的要素"></a>多模态网络的要素</h1><h6 id="■-Encoder-针对每个模态的Encoder（把图片-向量）："><a href="#■-Encoder-针对每个模态的Encoder（把图片-向量）：" class="headerlink" title="■ Encoder: 针对每个模态的Encoder（把图片-&gt;向量）："></a>■ Encoder: 针对每个模态的Encoder（把图片-&gt;向量）：</h6><p>技术：对于图像vit，cnn；对于文本，先进行分词，tokenizer的操作，然后进入文本transformer网络，最后还是转为向量形式</p>
+<h6 id="■-Align-Strategy-不同模态的对齐-融合方式"><a href="#■-Align-Strategy-不同模态的对齐-融合方式" class="headerlink" title="■ Align Strategy: 不同模态的对齐&#x2F;融合方式"></a>■ Align Strategy: 不同模态的对齐&#x2F;融合方式</h6><p>让图像和文本的embedding对齐融合：CLIP</p>
+<h6 id="■-LLM-Optional-以大语言模型为核心的网络"><a href="#■-LLM-Optional-以大语言模型为核心的网络" class="headerlink" title="■ LLM(Optional):以大语言模型为核心的网络"></a>■ LLM(Optional):以大语言模型为核心的网络</h6><p><img src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260901194153796.png" alt="image-20260901194153796"></p>
+
+  </div>
+
+  <footer class="article-reactions">
+    <div class="reaction-group">
+      <button type="button" class="reaction reaction--comment" aria-label="跳转到评论区" data-action="scroll-to-comments">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-message-circle"></use></svg>
+
+      </button>
+      <span class="reaction-label">评论</span>
+      
+    </div>
+    <div class="reaction-group reaction-group--right">
+      
+      <button type="button" class="reaction reaction--share" aria-label="分享" data-action="share">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2 flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-share-2"></use></svg>
+
+      </button>
+      <span class="reaction-label">分享</span>
+    </div>
+  </footer>
+
+  
+
+
+  <nav class="article-actions">
+    
+      <span class="article-action article-action--prev is-disabled" aria-disabled="true">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-left"></use></svg>
+
+        <span class="action-label">上一篇</span>
+        <span class="action-title">没有更早的文章了</span>
+      </span>
+    
+    
+      <a class="article-action article-action--next" href="/2026/08/11/%E5%A4%8D%E7%8E%B0github%E9%A1%B9%E7%9B%AE/">
+        <span class="action-label">下一篇</span>
+        <span class="action-title"></span>
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-right"></use></svg>
+
+      </a>
+    
+  </nav>
+</article>
+</div>
+
+<button type="button" class="back-to-top" data-action="scroll-to-top" aria-label="返回顶部" hidden>
+  
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-up"></use></svg>
+
+</button>
+
+
+
+      
+
+
+    </section>
+    
+  </main>
+
+  <div class="sidebar-backdrop js-sidebar-close" aria-hidden="true"></div>
+
+  
+<footer class="site-footer">
+  <span class="site-footer__left">© 2026 By lorena</span>
+  
+    <span class="site-footer__right">
+      
+        <span class="site-footer__row"><span class="site-footer__powered-prefix">Powered by Theme</span> <a href="https://github.com/Homulilly/hexo-theme-flatpaper" target="_blank" rel="noopener">FlatPaper</a></span>
+      
+    </span>
+  
+</footer>
+
+  
+<div class="search-panel" aria-hidden="true" data-index-url="/flatpaper-search.json">
+  <div class="search-backdrop js-search-close"></div>
+  <section class="search-dialog" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <span class="tape tape--top-left" aria-hidden="true"></span>
+    <header class="search-head">
+      <h2><span class="green-dot"></span>搜索文章</h2>
+      <button class="icon-button js-search-close" type="button" aria-label="关闭搜索">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+      </button>
+    </header>
+    <label class="search-field">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+      <input id="flatpaper-search" class="search-input" type="search" placeholder="输入关键词，按 Esc 关闭" autocomplete="off">
+    </label>
+    <div class="search-results" data-empty="输入关键词后显示匹配的文章">
+      <p class="search-empty">输入关键词后显示匹配的文章</p>
+    </div>
+  </section>
+</div>
+
+  <script>
+  window.FLATPAPER_I18N = {"language":"zh-CN","common.posts":"文章","common.categories":"分类","common.tags":"标签","common.comments":"评论","common.share":"分享","common.page":"页面","common.archive":"归档","common.post_list":"文章列表","common.search_posts":"搜索文章","common.random_posts":"随机文章","common.reward":"赞赏","common.view_all":"查看全部","pagination.prev":"上一页","pagination.next":"下一页","pagination.post_pager":"文章分页","pagination.archive_pager":"归档分页","index.featured":"精选文章","index.pinned":"置顶","index.read_more":"阅读全文","index.previous_slide":"上一张","index.next_slide":"下一张","index.carousel_pagination":"轮播页码","index.carousel_slide":"第 %d 张","index.latest_posts":"最新文章","index.empty_posts":"还没有文章。创建第一篇文章后，这里会显示最新内容。","archive.title":"归档","archive.post_list":"文章列表","taxonomy.category_count":"%d 篇","taxonomy.empty_categories":"暂时还没有分类。","taxonomy.empty_tags":"暂时还没有标签。","links.label":"友链","links.title":"友情链接","links.empty_data":"暂未加载到友链数据。请确认 source/_data/links.yml 存在并已 hexo clean。","links.rss_label":"%s 的 RSS","friends_feed.label":"朋友圈","friends_feed.title":"友链朋友圈","friends_feed.loading":"正在加载友链动态…","friends_feed.missing_url":"暂未配置 all.json 地址。","friends_feed.load_failed":"友链动态加载失败，请稍后再试。","friends_feed.empty":"暂时没有抓取到友链文章。","friends_feed.load_more":"加载更多","friends_feed.updated_at":"更新于 %s","friends_feed.friend_count":"%d 位友邻","friends_feed.active_count":"%d 位活跃","friends_feed.article_count":"%d 篇文章","friends_feed.unknown_author":"未知站点","friends_feed.date_unknown":"时间未知","guestbook.label":"留言板","guestbook.title":"留言板","guestbook.loading":"正在铺开留言墙…","guestbook.missing_config":"留言墙需要评论系统：请在主题配置中设置 comments: twikoo（并填写 envId）或 comments: artalk（并填写 server）。","guestbook.load_failed":"留言加载失败，请稍后再试。","guestbook.empty":"墙上还空着，来贴第一张留言吧！","guestbook.load_more":"展开更多留言","guestbook.total_count":"共 %d 条留言","guestbook.latest_note":"墙上展示最新 %d 条","guestbook.jump_to_comment":"查看留言","guestbook.sort_time":"查看最新","guestbook.sort_random":"随机排序","guestbook.anonymous":"匿名访客","guestbook.write_hint":"在下方留言，刷新后就会贴到墙上","post.scroll_to_comments":"跳转到评论区","post.previous":"上一篇","post.next":"下一篇","post.no_previous":"没有更早的文章了","post.no_next":"已经是最新的一篇","post.back_to_top":"返回顶部","post.related_posts":"相关文章","post.view_more":"查看更多","not_found.label":"页面走丢了","not_found.title":"找不到这个页面","not_found.text":"这个地址可能已经移动、删除，或者从未存在。","not_found.home":"返回首页","not_found.search":"搜索文章","search.placeholder":"输入关键词，按 Esc 关闭","search.empty":"输入关键词后显示匹配的文章","search.loading":"正在加载搜索索引…","search.load_failed":"搜索索引加载失败，请重新打开搜索重试","search.no_result":"没有找到与 \"%s\" 相关的文章","search.close":"关闭搜索","code.copy":"复制代码","code.collapse":"折叠代码","code.expand":"展开代码","heading.anchor":"链接到此节: %s","head.tag":"标签：%s","head.category":"分类：%s","head.archive":"归档","head.archive_with_date":"归档：%s","head.page_number":"第 %d 页","navigation.primary":"主导航","navigation.mobile":"移动端导航","navigation.brand_home":"FlatPaper 首页","navigation.brand_menu":"打开站点导航","navigation.open_sidebar":"打开侧边栏","navigation.close_sidebar":"关闭侧边栏","navigation.sidebar":"侧边栏","navigation.sidebar_tools":"侧边栏工具","navigation.site_links":"站点链接","navigation.site_info":"站点信息","colors.choose_theme_color":"选择主题色","colors.theme_color":"主题色","colors.toggle_color_mode":"切换颜色模式","colors.green":"绿色","colors.purple":"紫色","colors.pink":"粉色","colors.sakura":"樱花粉","colors.blue":"蓝色","colors.orange":"橙色","colors.black":"黑色","profile.default_bio":"热爱生活，热爱代码，喜欢分享技术与生活中的点滴。","profile.email_copied":"邮箱已复制","welcome.cta":"开始阅读","welcome.title":"欢迎来到 FlatPaper","welcome.text":"一个专注于内容与阅读体验的博客主题。","home_hero.label":"首页开屏","home_hero.enter":"开始阅读","home_hero.note":"今日","home_hero.default_subtitle":"日常记录","home_hero.nav_links":"开屏导航","home_hero.profile_links":"个人链接","home_hero.tools":"开屏工具","home_hero.shuffle_stickers":"打乱贴纸位置","home_hero.link":"链接","home_hero.sticker_image":"贴纸图片","home_hero.visit_confirm":"要访问 %s 吗？","home_hero.visit":"访问","home_hero.cancel":"取消","toc.title":"文章目录","toc.empty":"目录会根据文章标题自动生成。","toc.expand_all":"展开全部目录","toc.collapse_all":"收起全部目录","sidebar.hot_tags":"热门标签","sidebar.latest_posts":"最新文章"};
+  </script>
+  
+<script src="/js/main.js"></script>
+
+  
+  <script src="/js/custom-cursor.js?v=2" defer></script>
+  
+</body>
+</html>

@@ -14,17 +14,18 @@
 <meta property="og:site_name" content="lorena的小博客">
 <meta property="og:description" content="遥感论文CNN&#x2F;Transformer视觉模型中，feature map的channel数量代表特征种类（feature数量），空间尺寸代表位置信息。Encoder通过降低空间分辨率、增加channel来获得更强语义；Decoder通过增加空间分辨率、调整channel恢复像素级预测。 一、MLP是什么？MLP：Multi-Layer Percep...">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://liurui2004.github.io/images/image-20260808193224312.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87.assets/image-20260813213508169.png">
+<meta property="og:image" content="https://liurui2004.github.io/%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87.assets/dc0e0b79-5c88-4439-84e7-76b0a1b37c02.png">
 <meta property="article:published_time" content="2026-08-09T13:51:42.000Z">
-<meta property="article:modified_time" content="2026-08-11T12:24:49.032Z">
+<meta property="article:modified_time" content="2026-08-13T13:35:15.158Z">
 <meta property="article:author" content="lorena">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://liurui2004.github.io/images/image-20260808193224312.png">
+<meta name="twitter:image" content="https://liurui2004.github.io/%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87.assets/image-20260813213508169.png">
 <link rel="canonical" href="https://liurui2004.github.io/2026/08/09/%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87/">
 
 <link rel="icon" href="/images/favicon.png" type="image/png">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"遥感论文","name":"遥感论文 | lorena的小博客","description":"遥感论文CNN&#x2F;Transformer视觉模型中，feature map的channel数量代表特征种类（feature数量），空间尺寸代表位置信息。Encoder通过降低空间分辨率、增加channel来获得更强语义；Decoder通过增加空间分辨率、调整channel恢复像素级预测。 一、MLP是什么？MLP：Multi-Layer Percep...","url":"https://liurui2004.github.io/2026/08/09/%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/08/09/%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87/","datePublished":"2026-08-09T13:51:42.000Z","dateModified":"2026-08-11T12:24:49.032Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"遥感论文","name":"遥感论文 | lorena的小博客","description":"遥感论文CNN&#x2F;Transformer视觉模型中，feature map的channel数量代表特征种类（feature数量），空间尺寸代表位置信息。Encoder通过降低空间分辨率、增加channel来获得更强语义；Decoder通过增加空间分辨率、调整channel恢复像素级预测。 一、MLP是什么？MLP：Multi-Layer Percep...","url":"https://liurui2004.github.io/2026/08/09/%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/08/09/%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87/","datePublished":"2026-08-09T13:51:42.000Z","dateModified":"2026-08-13T13:35:15.158Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"}}</script>
 
 <script>
   (function () {
@@ -446,11 +447,12 @@
 <td>Attention Fusion</td>
 </tr>
 </tbody></table>
+<h6 id="num-workers-读数据的并行程度（num-workers-是-DataLoader-读取数据时开几个“后台进程”帮你加载图片）"><a href="#num-workers-读数据的并行程度（num-workers-是-DataLoader-读取数据时开几个“后台进程”帮你加载图片）" class="headerlink" title="num_workers &#x3D; 读数据的并行程度（num_workers 是 DataLoader 读取数据时开几个“后台进程”帮你加载图片）"></a>num_workers &#x3D; 读数据的并行程度（<code>num_workers</code> 是 <strong>DataLoader 读取数据时开几个“后台进程”帮你加载图片</strong>）</h6><p>不是模型参数<br>	不影响最终精度<br>	只影响速度和稳定性</p>
 <h2 id="BIT："><a href="#BIT：" class="headerlink" title="BIT："></a>BIT：</h2><p>**诱因：**传统孪生网络效果不够好</p>
 <p><strong>流程</strong>：使用cnn的resnet进行编码，再压缩为token进行 特征融合，再使用decoder解码</p>
 <p><strong>不足</strong>：使用cnn进行特征压缩时会造成边缘信息容易丢失，压缩为token更容易丢失信息，BIT虽然引入Transformer进行特征交互，但其前端仍依赖CNN提取特征，CNN受限于局部感受野，难以充分捕获长距离空间依赖，缺少全局信息关系建立；BIT虽然利用Transformer增强双时相关系建模，但CNN backbone限制了全局特征提取能力，同时token压缩过程可能造成空间细节损失。因此ChangeFormer尝试直接利用Transformer进行多尺度特征提取和融合。</p>
 <p><strong>bit结构图：</strong></p>
-<p><img src="/images/image-20260808193224312.png" alt="image-20260808193224312"></p>
+<p><img src="/./%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87.assets/image-20260813213508169.png" alt="image-20260813213508169"></p>
 <hr>
 <h1 id="ViT（Vision-Transformer）是什么？"><a href="#ViT（Vision-Transformer）是什么？" class="headerlink" title="ViT（Vision Transformer）是什么？"></a>ViT（Vision Transformer）是什么？</h1><blockquote>
 <p>ViT就是把图片切成很多小块，然后把每个小块当成一个token送进Transformer。</p>
@@ -621,6 +623,17 @@
 
   Prediction
 </code></pre>
+<h6 id="代码："><a href="#代码：" class="headerlink" title="代码："></a>代码：</h6><p>输出预测图的流程：</p>
+<p>模型原始输出：<br>[batch_size, 2, H, W]<br>每个像素有 2 个分数，变化的和未变化的分数</p>
+<p>argmax 后：<br>[batch_size, 1, H, W]<br>每个像素只剩类别 0&#x2F;1，变化后的分数大，那么把变化后的染成白色，未变化的分数大，原图不变</p>
+<p>乘 255 后：<br>[batch_size, 1, H, W]<br>0 变黑，1 变白</p>
+<p>for 循环：<br>逐张取出 batch 里的预测图</p>
+<p>pred[0]：<br>去掉单通道维度，变成 [H, W]</p>
+<p>.cpu()：<br>确保数据在 CPU 内存</p>
+<p>.numpy()：<br>转成 NumPy 数组</p>
+<p>save_image：<br>保存成 png</p>
+<p>深度学习模型通常按 batch 输出结果。变化检测模型先输出每个像素属于各类别的分数，再用 argmax 转成类别图。这里类别 0 表示未变化，类别 1 表示变化。为了保存成黑白 png，把 0&#x2F;1 乘以 255，得到 0&#x2F;255。由于 batch 里可能有多张图，所以 for 循环逐张保存。保存前要去掉通道维，把 tensor 放到 CPU，再转成 numpy 数组。</p>
+<p><img src="/./%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87.assets/dc0e0b79-5c88-4439-84e7-76b0a1b37c02.png" alt="dc0e0b79-5c88-4439-84e7-76b0a1b37c02"></p>
 
   </div>
 
