@@ -82,6 +82,15 @@
 
 html {
   scroll-behavior: smooth;
+  /* twojian 同款青绿色箭头鼠标 */
+  cursor: url('/images/cursor.svg') 2 1, auto !important;
+}
+
+a,
+button,
+[role='button'],
+summary {
+  cursor: url('/images/cursor.svg') 2 1, pointer !important;
 }
 
 body {
