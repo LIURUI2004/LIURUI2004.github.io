@@ -1,0 +1,170 @@
+<%
+/* ------------------------------------------------------------------
+ * Twojian 风格首页（站点级覆盖，不修改主题源码）
+ * ------------------------------------------------------------------ */
+var allPosts = site.posts.sort('-date').toArray();
+var posts = page.posts ? page.posts.toArray() : allPosts;
+var latest = posts[0] || null;
+var author = config.author || 'lorena';
+var avatar = (theme.profile && theme.profile.avatar) || '/images/avatar.jpg';
+var github = (theme.profile && theme.profile.social && theme.profile.social.GitHub) || 'https://github.com/LIURUI2004';
+var email = (theme.profile && theme.profile.social && theme.profile.social.Email) || 'mailto:liurui20041008@gmail.com';
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+/* 写作足迹：最近 12 周，按文章发布日期聚合 */
+var counts = {};
+allPosts.forEach(function (p) {
+  var key = date(p.date, 'YYYY-MM-DD');
+  counts[key] = (counts[key] || 0) + 1;
+});
+var cells = [];
+var today = new Date();
+/* 若很久没更新，热力图以最后一篇文章为锚点，避免整片空白 */
+if (allPosts.length && allPosts[0].date) {
+  var lastDate = new Date(allPosts[0].date);
+  if (lastDate.getTime() < today.getTime()) today = lastDate;
+}
+var heatLabel = '写作足迹 · 截至 ' + date(today, 'YYYY-MM-DD');
+for (var i = 83; i >= 0; i--) {
+  var d = new Date(today.getTime());
+  d.setDate(today.getDate() - i);
+  var key = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  var count = counts[key] || 0;
+  cells.push({ key: key, count: count, level: count === 0 ? 0 : (count === 1 ? 1 : 2) });
+}
+
+var latestExcerpt = latest
+  ? strip_html(latest.excerpt || latest.content || '').replace(/\s+/g, ' ').slice(0, 68)
+  : '';
+
+var shortcuts = [
+  { name: '所有文章', href: url_for('/archives/') },
+  { name: '分类', href: url_for('/categories/') },
+  { name: '标签', href: url_for('/tags/') },
+  { name: 'GitHub', href: github }
+];
+%>
+
+<div class="tj-page">
+  <!-- ===== Bento 卡片区 ===== -->
+  <section class="tj-bento" aria-label="首页概览">
+
+    <!-- 时钟 -->
+    <div class="tj-card tj-clock">
+      <div class="tj-clock-face">
+        <span class="tj-clock-ghost" aria-hidden="true">88:88</span>
+        <span class="tj-clock-digits" data-tj-clock>00:00</span>
+      </div>
+      <div class="tj-clock-date" data-tj-date></div>
+    </div>
+
+    <!-- 写作足迹 -->
+    <div class="tj-card tj-heat">
+      <div class="tj-card-label"><%= heatLabel %></div>
+      <div class="tj-heat-grid" aria-label="最近 12 周的文章发布热力图">
+        <% cells.forEach(function (c) { %>
+          <span class="tj-heat-cell tj-heat-level-<%= c.level %>" title="<%= c.key %> · <%= c.count %> 篇"></span>
+        <% }) %>
+      </div>
+      <div class="tj-heat-foot"><span>少</span><i class="tj-heat-cell tj-heat-level-0"></i><i class="tj-heat-cell tj-heat-level-1"></i><i class="tj-heat-cell tj-heat-level-2"></i><span>多</span><span class="tj-heat-total">共 <%= allPosts.length %> 篇</span></div>
+    </div>
+
+    <!-- 横幅 -->
+    <div class="tj-card tj-banner">
+      <div class="tj-banner-inner">
+        <span class="tj-banner-kicker">LORENA'S BLOG</span>
+        <strong>把日子，<br />慢慢写下来。</strong>
+        <span class="tj-banner-sub">记录代码、论文和一些小小的生活</span>
+      </div>
+    </div>
+
+    <!-- 头像 / 自我介绍 -->
+    <div class="tj-card tj-hero">
+      <div class="tj-avatar-wrap">
+        <img class="tj-avatar" src="<%- url_for(avatar) %>" alt="<%= author %> 的头像" />
+        <span class="tj-online" aria-hidden="true"></span>
+      </div>
+      <p class="tj-hero-text">Hi，我是 <span><%= author %></span><br />很高兴认识你！</p>
+      <p class="tj-hero-sub">isfj · 懒惰但上进</p>
+    </div>
+
+    <!-- 快捷导航 -->
+    <div class="tj-card tj-nav">
+      <div class="tj-nav-head">
+        <img src="<%- url_for(avatar) %>" alt="" />
+        <div><strong><%= author %></strong><small>less is more</small></div>
+      </div>
+      <div class="tj-section-label">GENERAL</div>
+      <nav class="tj-nav-links">
+        <% shortcuts.forEach(function (s) { %>
+          <a href="<%- s.href %>"><span class="tj-nav-dot"></span><%= s.name %></a>
+        <% }) %>
+      </nav>
+    </div>
+
+    <!-- 最新文章 -->
+    <div class="tj-card tj-latest">
+      <% if (latest) { %>
+        <a class="tj-latest-link" href="<%- url_for(latest.path) %>">
+          <span class="tj-card-label">最新文章</span>
+          <strong><%= latest.title %></strong>
+          <span class="tj-latest-excerpt"><%= latestExcerpt %></span>
+          <span class="tj-latest-date"><%= date(latest.date, 'YYYY-MM-DD') %> →</span>
+        </a>
+      <% } else { %>
+        <span class="tj-card-label">最新文章</span>
+        <strong>还没有文章</strong>
+      <% } %>
+    </div>
+
+    <!-- 社交 -->
+    <div class="tj-card tj-social">
+      <a href="<%- github %>" target="_blank" rel="noopener noreferrer" aria-label="GitHub">GitHub</a>
+      <a href="<%- email %>" aria-label="Email">Email</a>
+      <a href="<%- url_for('/atom.xml') %>" aria-label="RSS">RSS</a>
+    </div>
+  </section>
+
+  <!-- ===== 文章时间轴 ===== -->
+  <section class="tj-timeline" aria-label="文章列表">
+    <div class="tj-timeline-head">
+      <h2>最近文章</h2>
+      <span><%= allPosts.length %> 篇记录</span>
+    </div>
+
+    <% if (posts.length) { %>
+      <div class="tj-timeline-list">
+        <% posts.forEach(function (post) { %>
+          <div class="tj-timeline-row">
+            <div class="tj-timeline-track"><span class="tj-timeline-dot"></span></div>
+            <a class="tj-timeline-link" href="<%- url_for(post.path) %>">
+              <time><%= date(post.date, 'YYYY-MM-DD') %></time>
+              <span class="tj-timeline-title"><%= post.title %></span>
+              <% var cats = post.categories && post.categories.length ? post.categories.toArray() : []; %>
+              <% if (cats.length) { %><span class="tj-timeline-cat"><%= cats[0].name %></span><% } %>
+            </a>
+          </div>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <p class="tj-empty">暂无文章。</p>
+    <% } %>
+  </section>
+
+  <% if (page.total && page.total > 1) { %>
+    <nav class="tj-pager" aria-label="分页">
+      <% if (page.prev) { %>
+        <a href="<%- url_for(page.prev_link) %>">← 上一页</a>
+      <% } else { %>
+        <span class="is-disabled">← 上一页</span>
+      <% } %>
+      <span class="tj-pager-count"><%= page.current %> / <%= page.total %></span>
+      <% if (page.next) { %>
+        <a href="<%- url_for(page.next_link) %>">下一页 →</a>
+      <% } else { %>
+        <span class="is-disabled">下一页 →</span>
+      <% } %>
+    </nav>
+  <% } %>
+</div>

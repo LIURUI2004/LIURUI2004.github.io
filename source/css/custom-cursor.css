@@ -1,0 +1,63 @@
+/* ============================================================
+   Custom cute cartoon cursor
+   - hides the system cursor
+   - an emoji follows the pointer as the "new" cursor
+   - a fading emoji trail spawns behind fast movement
+   ============================================================ */
+
+/* Hide the native cursor everywhere */
+html,
+body,
+a,
+button,
+input,
+textarea,
+select,
+label,
+[class] {
+  cursor: none !important;
+}
+
+/* ---- Main cursor: emoji that follows the pointer ---- */
+.fp-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+  font-size: 26px;
+  line-height: 1;
+  opacity: 0;
+  will-change: transform;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28));
+  animation: fp-cursor-bounce 1.1s ease-in-out infinite;
+  transition: opacity 0.25s ease;
+}
+
+.fp-cursor.is-pressed {
+  font-size: 19px;
+}
+
+@keyframes fp-cursor-bounce {
+  0%, 100% { margin-top: 0; }
+  50% { margin-top: -4px; }
+}
+
+/* ---- Trail: fading emoji spawned while the pointer moves ---- */
+.fp-trail {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 2147483646;
+  pointer-events: none;
+  font-size: 16px;
+  line-height: 1;
+  opacity: 1;
+  animation: fp-trail-fade 0.85s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes fp-trail-fade {
+  0% { opacity: 1; transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(-20deg) scale(0.35); }
+}

@@ -1,0 +1,9 @@
+node_modules/
+public/
+.deploy_git/
+db.json
+*.log
+.DS_Store
+_backup-*/
+.claude/
+themes/hexo-theme-flatpaper-main/

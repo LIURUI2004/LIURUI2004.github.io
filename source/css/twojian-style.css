@@ -1,0 +1,859 @@
+/* ==================================================================
+ * twojian 风格改造层
+ * 参考：https://github.com/twojian/MyPost
+ * 只覆盖视觉，不改变 Hexo 的生成与部署方式。
+ * ================================================================== */
+
+:root {
+  /* Apple / twojian 语义色 */
+  --tj-brand: #35bfab;
+  --tj-brand-strong: #0e9384;
+  --tj-fg: #1d1d1f;
+  --tj-muted: #6e6e73;
+  --tj-subtle: #a1a1a6;
+  --tj-glass: rgba(255, 255, 255, 0.62);
+  --tj-glass-hover: rgba(255, 255, 255, 0.85);
+  --tj-nav-glass: rgba(255, 255, 255, 0.76);
+  --tj-hairline: rgba(255, 255, 255, 0.65);
+  --tj-row-hover: rgba(255, 255, 255, 0.45);
+  --tj-shadow: rgba(20, 60, 55, 0.08);
+  --tj-empty: rgba(60, 60, 67, 0.1);
+  --tj-lcd-bg: #dde1d8;
+  --tj-lcd-fg: #3b4a3d;
+  --tj-lcd-ghost: rgba(60, 72, 60, 0.1);
+
+  /* 覆盖 FlatPaper 的设计令牌 */
+  --bg: #f5f5f7;
+  --paper: #ffffff;
+  --paper-solid: #ffffff;
+  --paper-warm: #f1f7f6;
+  --ink: #1d1d1f;
+  --ink-soft: #4a4a4f;
+  --muted: #6e6e73;
+  --muted-rgb: 110, 110, 115;
+  --line: rgba(60, 60, 67, 0.16);
+  --dash: rgba(60, 60, 67, 0.24);
+  --color-accent: #35bfab;
+  --color-accent-strong: #0e9384;
+  --color-accent-soft: #d9f3ee;
+  --color-accent-muted: #7fd9cb;
+  --paper-shadow-rgb: 35, 191, 171;
+  --shadow: 0 14px 36px rgba(20, 60, 55, 0.1);
+  --small-shadow: 0 8px 22px rgba(20, 60, 55, 0.08);
+  --soft-shadow: 0 4px 14px rgba(20, 60, 55, 0.06);
+}
+
+.dark-mode {
+  --tj-brand: #4ad3c0;
+  --tj-brand-strong: #35bfab;
+  --tj-fg: rgba(255, 255, 255, 0.86);
+  --tj-muted: rgba(255, 255, 255, 0.55);
+  --tj-subtle: rgba(255, 255, 255, 0.35);
+  --tj-glass: rgba(28, 28, 30, 0.55);
+  --tj-glass-hover: rgba(40, 42, 45, 0.78);
+  --tj-nav-glass: rgba(22, 22, 24, 0.76);
+  --tj-hairline: rgba(255, 255, 255, 0.12);
+  --tj-row-hover: rgba(255, 255, 255, 0.07);
+  --tj-shadow: rgba(0, 0, 0, 0.3);
+  --tj-empty: rgba(255, 255, 255, 0.1);
+  --tj-lcd-bg: #232a24;
+  --tj-lcd-fg: #9fd6a6;
+  --tj-lcd-ghost: rgba(159, 214, 166, 0.12);
+
+  --bg: #161616;
+  --paper: #1c1c1e;
+  --paper-solid: #232326;
+  --paper-warm: #202426;
+  --ink: rgba(255, 255, 255, 0.86);
+  --ink-soft: rgba(255, 255, 255, 0.68);
+  --muted: rgba(255, 255, 255, 0.55);
+  --muted-rgb: 255, 255, 255;
+  --line: rgba(255, 255, 255, 0.16);
+  --dash: rgba(255, 255, 255, 0.24);
+  --color-accent: #4ad3c0;
+  --color-accent-strong: #35bfab;
+  --color-accent-soft: #23423e;
+  --color-accent-muted: #7fd9cb;
+  --paper-shadow-rgb: 0, 0, 0;
+  --shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+  --small-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
+  --soft-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: var(--tj-fg);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 60% 45% at 12% 4%, rgba(53, 191, 171, 0.16), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 88% 18%, rgba(125, 211, 252, 0.14), transparent 70%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+.dark-mode body {
+  background-image:
+    radial-gradient(ellipse 60% 45% at 12% 4%, rgba(53, 191, 171, 0.1), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 88% 18%, rgba(90, 130, 190, 0.1), transparent 70%);
+}
+
+::selection {
+  background: rgba(53, 191, 171, 0.28);
+}
+
+/* ---------- 导航栏：iPadOS 毛玻璃胶囊 ---------- */
+.site-header::before,
+.site-header::after {
+  display: none !important;
+}
+
+.site-header {
+  position: sticky;
+  top: 16px;
+  width: min(1100px, calc(100% - 40px));
+  min-height: 58px;
+  margin: 18px auto 0;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--tj-hairline);
+  background: var(--tj-nav-glass);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: 0 8px 30px var(--tj-shadow);
+}
+
+.brand-text {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.site-nav a,
+.site-nav-link {
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.site-nav a:hover,
+.site-nav-link:hover {
+  color: var(--tj-brand) !important;
+  background: var(--tj-row-hover);
+}
+
+.icon-button {
+  border-radius: 999px !important;
+}
+
+/* ---------- 通用卡片：把纸质描边换成毛玻璃 ---------- */
+.side-card,
+.welcome-card,
+.featured-paper,
+.post-card,
+.article-paper,
+.archive-paper,
+.taxonomy-paper,
+.empty-paper {
+  border-radius: 24px !important;
+  box-shadow: 0 10px 30px var(--tj-shadow) !important;
+}
+
+.side-card::after,
+.welcome-card::before,
+.featured-paper::before,
+.post-card::before,
+.article-paper::before,
+.archive-paper::before,
+.taxonomy-paper::before,
+.empty-paper::before {
+  background: var(--tj-glass) !important;
+  border: 1px solid var(--tj-hairline);
+  border-radius: 24px !important;
+  filter: none !important;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+}
+
+.welcome-card::after {
+  display: none;
+}
+
+.post-card:hover {
+  transform: translateY(-4px);
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.post-card h3 a:hover,
+.post-card:hover h3 a {
+  color: var(--tj-brand) !important;
+}
+
+/* ---------- 首页：让 Bento 占满内容区 ---------- */
+body.is-home .paper-shell {
+  display: block;
+  max-width: 1100px;
+  margin: 30px auto 0;
+}
+
+body.is-home .paper-main {
+  display: block;
+}
+
+body.is-home .paper-sidebar,
+body.is-home .welcome-card {
+  display: none !important;
+}
+
+/* ---------- Bento 布局 ---------- */
+.tj-page {
+  animation: tj-page-in 0.45s ease both;
+}
+
+@keyframes tj-page-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.tj-bento {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(132px, auto);
+  gap: 16px;
+}
+
+.tj-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+  border: 1px solid var(--tj-hairline);
+  background: var(--tj-glass);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: 0 8px 28px var(--tj-shadow);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease, background 0.28s ease, border-color 0.28s ease;
+}
+
+.tj-card:hover {
+  transform: translateY(-4px);
+  background: var(--tj-glass-hover);
+  border-color: rgba(53, 191, 171, 0.38);
+  box-shadow: 0 18px 40px var(--tj-shadow);
+}
+
+.tj-card a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.tj-card-label,
+.tj-section-label {
+  display: block;
+  color: var(--tj-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* 时钟卡 */
+.tj-clock {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 18px;
+}
+
+.tj-clock-face {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 14px 8px;
+  border-radius: 16px;
+  background: var(--tj-lcd-bg);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.12), inset 0 -2px 4px rgba(255, 255, 255, 0.55);
+}
+
+.tj-clock-digits,
+.tj-clock-ghost {
+  font-family: "DSEG7 Classic", "DSEG7-Classic", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: clamp(28px, 3.2vw, 42px);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.tj-clock-ghost {
+  position: absolute;
+  color: var(--tj-lcd-ghost);
+  pointer-events: none;
+}
+
+.tj-clock-digits {
+  position: relative;
+  color: var(--tj-lcd-fg);
+}
+
+.tj-clock-date {
+  color: var(--tj-muted);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+/* 写作足迹卡 */
+.tj-heat {
+  grid-column: 2 / span 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  padding: 22px 26px;
+}
+
+.tj-heat-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, 9px);
+  grid-auto-columns: 9px;
+  gap: 4px;
+  width: max-content;
+  max-width: 100%;
+}
+
+.tj-heat-cell {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--tj-empty);
+}
+
+.tj-heat-level-1 { background: rgba(53, 191, 171, 0.45); }
+.tj-heat-level-2 { background: var(--tj-brand); }
+
+.tj-heat-foot {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--tj-muted);
+  font-size: 11px;
+}
+
+.tj-heat-total {
+  margin-left: auto;
+}
+
+/* 横幅卡 */
+.tj-banner {
+  grid-column: 1 / span 2;
+  grid-row: 2;
+  padding: 6px;
+}
+
+.tj-banner-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+  padding: 22px 26px;
+  border-radius: 26px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 85% 15%, rgba(255, 255, 255, 0.3), transparent 42%),
+    linear-gradient(135deg, #0f766e 0%, #2ab89f 54%, #7dd3fc 130%);
+}
+
+.tj-banner-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  opacity: 0.8;
+}
+
+.tj-banner-inner strong {
+  font-family: "Averia Gruesa Libre", "Comic Sans MS", "PingFang SC", sans-serif;
+  font-size: clamp(22px, 2.6vw, 32px);
+  line-height: 1.28;
+  letter-spacing: 0.01em;
+}
+
+.tj-banner-sub {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+/* 头像卡 */
+.tj-hero {
+  grid-column: 4;
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+.tj-avatar-wrap {
+  position: relative;
+  width: 96px;
+  height: 96px;
+}
+
+.tj-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e8f5f1;
+  box-shadow: 0 6px 18px rgba(20, 60, 55, 0.16);
+}
+
+.tj-online {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--paper-solid);
+  border-radius: 50%;
+  background: var(--tj-brand);
+}
+
+.tj-hero-text {
+  margin: 0;
+  color: var(--tj-fg);
+  font-family: "Averia Gruesa Libre", "Comic Sans MS", "PingFang SC", sans-serif;
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.tj-hero-text span {
+  color: var(--tj-brand);
+  font-weight: 700;
+}
+
+.tj-hero-sub {
+  margin: 0;
+  color: var(--tj-muted);
+  font-size: 11px;
+}
+
+/* 快捷导航卡 */
+.tj-nav {
+  grid-column: 3;
+  grid-row: 2 / span 2;
+  padding: 22px;
+}
+
+.tj-nav-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tj-nav-head img {
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--paper-solid);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.tj-nav-head strong {
+  display: block;
+  color: var(--tj-brand);
+  font-size: 14px;
+}
+
+.tj-nav-head small {
+  display: block;
+  color: var(--tj-muted);
+  font-size: 11px;
+}
+
+.tj-nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 10px;
+}
+
+.tj-nav-links a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  color: var(--tj-fg);
+  font-size: 13px;
+  transition: transform 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+
+.tj-nav-links a:hover {
+  color: var(--tj-brand);
+  background: var(--tj-row-hover);
+  transform: translateX(4px);
+}
+
+.tj-nav-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tj-brand);
+}
+
+/* 最新文章卡 */
+.tj-latest {
+  grid-column: 1 / span 2;
+  grid-row: 3;
+}
+
+.tj-latest-link {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  padding: 20px 24px;
+}
+
+.tj-latest-link strong {
+  color: var(--tj-fg);
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.tj-latest-excerpt {
+  color: var(--tj-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.tj-latest-date {
+  margin-top: auto;
+  color: var(--tj-brand);
+  font-size: 11px;
+}
+
+/* 社交卡 */
+.tj-social {
+  grid-column: 4;
+  grid-row: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+}
+
+.tj-social a {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--tj-empty);
+  color: var(--tj-fg);
+  font-size: 12px;
+  font-weight: 600;
+  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.tj-social a:hover {
+  background: var(--tj-brand);
+  color: #fff;
+  transform: scale(0.96);
+}
+
+/* ---------- 文章时间轴 ---------- */
+.tj-timeline {
+  margin-top: 34px;
+  padding: 0 4px;
+}
+
+.tj-timeline-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding: 0 10px;
+}
+
+.tj-timeline-head h2 {
+  margin: 0;
+  color: var(--tj-fg);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.tj-timeline-head span {
+  color: var(--tj-muted);
+  font-size: 12px;
+}
+
+.tj-timeline-list {
+  overflow: hidden;
+  padding: 10px 16px;
+  border: 1px solid var(--tj-hairline);
+  border-radius: 28px;
+  background: var(--tj-glass);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: 0 8px 28px var(--tj-shadow);
+}
+
+.tj-timeline-row {
+  display: flex;
+  align-items: stretch;
+}
+
+.tj-timeline-track {
+  position: relative;
+  flex: 0 0 16px;
+}
+
+.tj-timeline-track::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: var(--line);
+  transform: translateX(-50%);
+}
+
+.tj-timeline-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tj-subtle);
+  transform: translate(-50%, -50%);
+  transition: background 0.18s ease;
+}
+
+.tj-timeline-row:hover .tj-timeline-dot {
+  background: var(--tj-brand);
+}
+
+.tj-timeline-link {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 14px 12px;
+  border-radius: 14px;
+  color: var(--tj-fg);
+  text-decoration: none;
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), background 0.18s ease, color 0.18s ease;
+}
+
+.tj-timeline-link:hover {
+  background: var(--tj-row-hover);
+  color: var(--tj-brand);
+  transform: translateX(8px);
+}
+
+.tj-timeline-link time {
+  flex: 0 0 88px;
+  color: var(--tj-muted);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+}
+
+.tj-timeline-title {
+  flex: 1;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tj-timeline-cat {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(53, 191, 171, 0.12);
+  color: var(--tj-brand);
+  font-size: 11px;
+}
+
+.tj-empty {
+  padding: 24px;
+  color: var(--tj-muted);
+  text-align: center;
+}
+
+/* 分页 */
+.tj-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 24px;
+  font-size: 13px;
+}
+
+.tj-pager a {
+  padding: 8px 16px;
+  border: 1px solid var(--tj-hairline);
+  border-radius: 999px;
+  background: var(--tj-glass);
+  color: var(--tj-brand);
+  text-decoration: none;
+  transition: transform 0.18s ease;
+}
+
+.tj-pager a:hover {
+  transform: scale(0.96);
+}
+
+.tj-pager .is-disabled,
+.tj-pager-count {
+  color: var(--tj-muted);
+}
+
+/* ---------- 滚动入场动画（由 twojian-ui.js 添加类名） ---------- */
+.tj-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1), transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tj-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ---------- 响应式 ---------- */
+@media (max-width: 1079px) {
+  .tj-bento {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: auto;
+  }
+
+  .tj-clock,
+  .tj-heat,
+  .tj-banner,
+  .tj-hero,
+  .tj-nav,
+  .tj-latest,
+  .tj-social {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .tj-heat,
+  .tj-banner,
+  .tj-latest {
+    grid-column: 1 / span 2;
+  }
+
+  .tj-nav {
+    grid-row: span 2;
+  }
+
+  .tj-heat-grid {
+    grid-auto-columns: 8px;
+    grid-template-rows: repeat(7, 8px);
+    gap: 3px;
+  }
+
+  .tj-heat-cell {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+@media (max-width: 640px) {
+  .site-header {
+    width: calc(100% - 24px);
+    margin-top: 10px;
+    padding: 6px 12px;
+  }
+
+  body.is-home .paper-shell {
+    margin-top: 18px;
+  }
+
+  .tj-bento {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .tj-heat,
+  .tj-banner,
+  .tj-latest,
+  .tj-nav {
+    grid-column: auto;
+  }
+
+  .tj-nav {
+    grid-row: auto;
+  }
+
+  .tj-card {
+    border-radius: 26px;
+  }
+
+  .tj-heat-grid {
+    grid-auto-columns: 7px;
+    grid-template-rows: repeat(7, 7px);
+    gap: 3px;
+  }
+
+  .tj-heat-cell {
+    width: 7px;
+    height: 7px;
+  }
+
+  .tj-timeline-list {
+    padding: 8px 10px;
+    border-radius: 22px;
+  }
+
+  .tj-timeline-link {
+    gap: 10px;
+  }
+
+  .tj-timeline-link time {
+    flex-basis: 68px;
+    font-size: 11px;
+  }
+
+  .tj-timeline-cat {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tj-page,
+  .tj-reveal {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* 按 iOS 按压反馈 */
+.tj-social a:active,
+.tj-nav-links a:active,
+.tj-pager a:active {
+  transform: scale(0.96);
+}
