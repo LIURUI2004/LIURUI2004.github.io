@@ -1,0 +1,843 @@
+<!doctype html>
+
+<html lang="zh-CN" data-fancybox-enabled="1">
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f3e9" data-flatpaper-theme-color>
+
+<title>深度学习基础知识速查手册 | lorena的小博客</title>
+<meta name="description" content="从 MLP、归一化到 Transformer、多模态与 SAM2 变化检测 核心示意：MLP 做的是特征加工，不是一个神秘的“智能模块”。 这份笔记怎么用？ 每个知识点按“是什么 → 为什么需要 → 在哪里出现 → 代码长什么样 → 容易误解什么”展开。先理解用途，再记名字。 面向读者：正在学习 PyTorch、多模态项目，以及弱监督 SAM2 遥感变化检测...">
+<meta property="og:type" content="article">
+<meta property="og:title" content="深度学习基础知识速查手册 | lorena的小博客">
+<meta property="og:url" content="https://liurui2004.github.io/2026/11/26/dl-basics-notes/">
+<meta property="og:site_name" content="lorena的小博客">
+<meta property="og:description" content="从 MLP、归一化到 Transformer、多模态与 SAM2 变化检测 核心示意：MLP 做的是特征加工，不是一个神秘的“智能模块”。 这份笔记怎么用？ 每个知识点按“是什么 → 为什么需要 → 在哪里出现 → 代码长什么样 → 容易误解什么”展开。先理解用途，再记名字。 面向读者：正在学习 PyTorch、多模态项目，以及弱监督 SAM2 遥感变化检测...">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dl-basics-notes/image1.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dl-basics-notes/image2.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dl-basics-notes/image1.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dl-basics-notes/image3.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dl-basics-notes/image4.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dl-basics-notes/image5.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dl-basics-notes/image6.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dl-basics-notes/image7.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dl-basics-notes/image8.png">
+<meta property="article:published_time" content="2026-11-26T11:20:00.000Z">
+<meta property="article:modified_time" content="2026-11-26T11:33:53.718Z">
+<meta property="article:author" content="lorena">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="变化检测">
+<meta property="article:tag" content="MLP">
+<meta property="article:tag" content="Transformer">
+<meta property="article:tag" content="SAM2">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liurui2004.github.io/2026/11/26/dl-basics-notes/image1.png">
+<link rel="canonical" href="https://liurui2004.github.io/2026/11/26/dl-basics-notes/">
+
+<link rel="icon" href="/images/favicon.png" type="image/png">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"深度学习基础知识速查手册","name":"深度学习基础知识速查手册 | lorena的小博客","description":"从 MLP、归一化到 Transformer、多模态与 SAM2 变化检测 核心示意：MLP 做的是特征加工，不是一个神秘的“智能模块”。 这份笔记怎么用？ 每个知识点按“是什么 → 为什么需要 → 在哪里出现 → 代码长什么样 → 容易误解什么”展开。先理解用途，再记名字。 面向读者：正在学习 PyTorch、多模态项目，以及弱监督 SAM2 遥感变化检测...","url":"https://liurui2004.github.io/2026/11/26/dl-basics-notes/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/11/26/dl-basics-notes/","datePublished":"2026-11-26T11:20:00.000Z","dateModified":"2026-11-26T11:33:53.718Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"},"keywords":"深度学习, 变化检测, MLP, Transformer, SAM2"}</script>
+
+<script>
+  (function () {
+    var accents = { orange: 1, purple: 1, sakura: 1, blue: 1, pink: 1, green: 1, black: 1 };
+    var match = document.cookie.match(/(?:^|;\s*)flatpaper-accent=([^;]+)/);
+    var accent = 'green';
+    if (match) {
+      try { accent = decodeURIComponent(match[1]); } catch (e) {}
+    }
+    if (!accents[accent]) accent = 'green';
+    document.documentElement.setAttribute('data-accent', accent);
+    try {
+      if (localStorage.getItem('flatpaper-mode') === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+      }
+    } catch (e) {}
+  })();
+</script>
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css">
+<script defer src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+
+
+  
+  <link rel="stylesheet" href="/css/twojian-style.css?v=5">
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body
+  class="is-post tape-disabled tag-style-tape bg-style-default"
+  data-default-accent="green"
+  data-code-theme="simple"
+  data-note-style="sticky"
+  data-note-icons="on"
+  data-button-style="circle"
+  data-strong-accent="on"
+>
+  
+    <div class="page-grain"></div>
+  
+  <svg width="0" height="0" style="position:absolute;z-index:-1;" aria-hidden="true">
+    <defs>
+      <filter id="paper-edge" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+  
+  <header class="site-header">
+  
+  <button class="icon-button js-sidebar-toggle sidebar-toggle" type="button" aria-label="打开侧边栏" aria-controls="paper-sidebar-drawer" aria-expanded="false">
+    
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-menu"></use></svg>
+
+  </button>
+
+  <div class="brand">
+    <div class="brand-mark-wrapper">
+      
+        <a class="brand-mark" href="/" aria-label="FlatPaper 首页">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-layout-grid"></use></svg>
+
+        </a>
+      
+    </div>
+    <a class="brand-text" href="/">lorena的小博客</a>
+  </div>
+
+  <nav class="site-nav" aria-label="主导航">
+    
+      
+        <a class="site-nav-link " href="/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+          <span>首页</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/categories/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+          <span>分类</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/tags/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+          <span>标签</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/archives/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+          <span>归档</span>
+        </a>
+      
+    
+  </nav>
+
+  <div class="header-tools">
+    <button class="icon-button js-search-open" type="button" aria-label="搜索文章">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+    </button>
+    <div class="accent-picker">
+      <button class="icon-button accent-toggle" type="button" aria-label="选择主题色" title="选择主题色" aria-haspopup="true" aria-expanded="false" aria-controls="accent-menu">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-palette flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-palette"></use></svg>
+
+      </button>
+      <div class="accent-menu" id="accent-menu" role="menu" aria-label="主题色">
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="橙色" aria-checked="false" data-accent-option="orange">
+          <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="紫色" aria-checked="false" data-accent-option="purple">
+          <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="樱花粉" aria-checked="false" data-accent-option="sakura">
+          <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="蓝色" aria-checked="false" data-accent-option="blue">
+          <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="粉色" aria-checked="false" data-accent-option="pink">
+          <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="绿色" aria-checked="false" data-accent-option="green">
+          <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="黑色" aria-checked="false" data-accent-option="black">
+          <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+    <button class="theme-toggle" type="button" aria-label="切换颜色模式">
+      <span class="theme-icon theme-icon--sun">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-sun"></use></svg>
+</span>
+      <span class="theme-icon theme-icon--moon">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-moon"></use></svg>
+</span>
+    </button>
+  </div>
+</header>
+
+
+  
+  <main class="paper-shell paper-shell--article">
+    
+
+<aside id="paper-sidebar-drawer" class="paper-sidebar paper-sidebar--right" aria-label="侧边栏">
+  <div class="drawer-toolbar" aria-label="侧边栏工具">
+    <div class="drawer-accent-options" role="group" aria-label="主题色">
+      <button type="button" class="accent-option" aria-label="橙色" aria-pressed="false" data-accent-option="orange">
+        <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="紫色" aria-pressed="false" data-accent-option="purple">
+        <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="樱花粉" aria-pressed="false" data-accent-option="sakura">
+        <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="蓝色" aria-pressed="false" data-accent-option="blue">
+        <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="粉色" aria-pressed="false" data-accent-option="pink">
+        <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="绿色" aria-pressed="false" data-accent-option="green">
+        <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="黑色" aria-pressed="false" data-accent-option="black">
+        <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+      </button>
+    </div>
+    <button class="icon-button drawer-close js-sidebar-close" type="button" aria-label="关闭侧边栏">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+    </button>
+  </div>
+
+  <section class="side-card nav-card">
+    <nav class="site-nav-drawer" aria-label="移动端导航">
+      
+        
+          <a class="" href="/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+            <span>首页</span>
+          </a>
+        
+      
+        
+          <a class="" href="/categories/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+            <span>分类</span>
+          </a>
+        
+      
+        
+          <a class="" href="/tags/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+            <span>标签</span>
+          </a>
+        
+      
+        
+          <a class="" href="/archives/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+            <span>归档</span>
+          </a>
+        
+      
+    </nav>
+  </section>
+
+  <section class="side-card profile-card">
+    
+      <div class="avatar avatar--image avatar--circle">
+        <img src="/images/avatar.jpg" alt="lorena" loading="lazy" referrerpolicy="no-referrer">
+      </div>
+    
+    <h3>lorena</h3>
+    <p class="profile-role">isfj 小女孩 · 懒惰但上进</p>
+    <p>目标成为estj的isfj小女孩，持续学习新知识中....</p>
+    
+    <div class="socials">
+      
+        <a href="https://github.com/LIURUI2004" target="_blank" rel="noopener" aria-label="GitHub" data-tooltip="GitHub">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 496 512" fill="currentColor" class="lucide lucide-github flatpaper-icon flatpaper-icon--fa-brands" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-fa-brands-github"></use></svg>
+
+          
+        </a>
+      
+        <a href="mailto:liurui20041008@gmail.com" target="_blank" rel="noopener" aria-label="Email" data-tooltip="Email">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-mail"></use></svg>
+
+          
+        </a>
+      
+        <a href="https://www.xiaohongshu.com/user/profile/66c9fef3000000001d0231f5" target="_blank" rel="noopener" aria-label="小红书" data-tooltip="小红书主页">
+          
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" class="lucide lucide-custom" aria-hidden="true"><path d="M22.405 9.879c.002.016.01.02.07.019h.725a.797.797 0 0 0 .78-.972.794.794 0 0 0-.884-.618.795.795 0 0 0-.692.794c0 .101-.002.666.001.777zm-11.509 4.808c-.203.001-1.353.004-1.685.003a2.528 2.528 0 0 1-.766-.126.025.025 0 0 0-.03.014L7.7 16.127a.025.025 0 0 0 .01.032c.111.06.336.124.495.124.66.01 1.32.002 1.981 0 .01 0 .02-.006.023-.015l.712-1.545a.025.025 0 0 0-.024-.036zM.477 9.91c-.071 0-.076.002-.076.01a.834.834 0 0 0-.01.08c-.027.397-.038.495-.234 3.06-.012.24-.034.389-.135.607-.026.057-.033.042.003.112.046.092.681 1.523.787 1.74.008.015.011.02.017.02.008 0 .033-.026.047-.044.147-.187.268-.391.371-.606.306-.635.44-1.325.486-1.706.014-.11.021-.22.03-.33l.204-2.616.022-.293c.003-.029 0-.033-.03-.034zm7.203 3.757a1.427 1.427 0 0 1-.135-.607c-.004-.084-.031-.39-.235-3.06a.443.443 0 0 0-.01-.082c-.004-.011-.052-.008-.076-.008h-1.48c-.03.001-.034.005-.03.034l.021.293c.076.982.153 1.964.233 2.946.05.4.186 1.085.487 1.706.103.215.223.419.37.606.015.018.037.051.048.049.02-.003.742-1.642.804-1.765.036-.07.03-.055.003-.112zm3.861-.913h-.872a.126.126 0 0 1-.116-.178l1.178-2.625a.025.025 0 0 0-.023-.035l-1.318-.003a.148.148 0 0 1-.135-.21l.876-1.954a.025.025 0 0 0-.023-.035h-1.56c-.01 0-.02.006-.024.015l-.926 2.068c-.085.169-.314.634-.399.938a.534.534 0 0 0-.02.191.46.46 0 0 0 .23.378.981.981 0 0 0 .46.119h.59c.041 0-.688 1.482-.834 1.972a.53.53 0 0 0-.023.172.465.465 0 0 0 .23.398c.15.092.342.12.475.12l1.66-.001c.01 0 .02-.006.023-.015l.575-1.28a.025.025 0 0 0-.024-.035zm-6.93-4.937H3.1a.032.032 0 0 0-.034.033c0 1.048-.01 2.795-.01 6.829 0 .288-.269.262-.28.262h-.74c-.04.001-.044.004-.04.047.001.037.465 1.064.555 1.263.01.02.03.033.051.033.157.003.767.009.938-.014.153-.02.3-.06.438-.132.3-.156.49-.419.595-.765.052-.172.075-.353.075-.533.002-2.33 0-4.66-.007-6.991a.032.032 0 0 0-.032-.032zm11.784 6.896c0-.014-.01-.021-.024-.022h-1.465c-.048-.001-.049-.002-.05-.049v-4.66c0-.072-.005-.07.07-.07h.863c.08 0 .075.004.075-.074V8.393c0-.082.006-.076-.08-.076h-3.5c-.064 0-.075-.006-.075.073v1.445c0 .083-.006.077.08.077h.854c.075 0 .07-.004.07.07v4.624c0 .095.008.084-.085.084-.37 0-1.11-.002-1.304 0-.048.001-.06.03-.06.03l-.697 1.519s-.014.025-.008.036c.006.01.013.008.058.008 1.748.003 3.495.002 5.243.002.03-.001.034-.006.035-.033v-1.539zm4.177-3.43c0 .013-.007.023-.02.024-.346.006-.692.004-1.037.004-.014-.002-.022-.01-.022-.024-.005-.434-.007-.869-.01-1.303 0-.072-.006-.071.07-.07l.733-.003c.041 0 .081.002.12.015.093.025.16.107.165.204.006.431.002 1.153.001 1.153zm2.67.244a1.953 1.953 0 0 0-.883-.222h-.18c-.04-.001-.04-.003-.042-.04V10.21c0-.132-.007-.263-.025-.394a1.823 1.823 0 0 0-.153-.53 1.533 1.533 0 0 0-.677-.71 2.167 2.167 0 0 0-1-.258c-.153-.003-.567 0-.72 0-.07 0-.068.004-.068-.065V7.76c0-.031-.01-.041-.046-.039H17.93s-.016 0-.023.007c-.006.006-.008.012-.008.023v.546c-.008.036-.057.015-.082.022h-.95c-.022.002-.028.008-.03.032v1.481c0 .09-.004.082.082.082h.913c.082 0 .072.128.072.128V11.19s.003.117-.06.117h-1.482c-.068 0-.06.082-.06.082v1.445s-.01.068.064.068h1.457c.082 0 .076-.006.076.079v3.225c0 .088-.007.081.082.081h1.43c.09 0 .082.007.082-.08v-3.27c0-.029.006-.035.033-.035l2.323-.003c.098 0 .191.02.28.061a.46.46 0 0 1 .274.407c.008.395.003.79.003 1.185 0 .259-.107.367-.33.367h-1.218c-.023.002-.029.008-.028.033.184.437.374.871.57 1.303a.045.045 0 0 0 .04.026c.17.005.34.002.51.003.15-.002.517.004.666-.01a2.03 2.03 0 0 0 .408-.075c.59-.18.975-.698.976-1.313v-1.981c0-.128-.01-.254-.034-.38 0 .078-.029-.641-.724-.998z"/></svg>
+          
+        </a>
+      
+      
+        
+        
+        <a href="/atom.xml" aria-label="RSS feed" data-tooltip="RSS feed">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rss flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-rss"></use></svg>
+
+        </a>
+      
+    </div>
+  </section>
+
+  
+
+  
+    <div class="post-sticky-stack">
+      <section class="side-card toc-card">
+        <header class="toc-card__head">
+          <h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table-of-contents flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-table-of-contents"></use></svg>
+文章目录</h2>
+          <button type="button" class="toc-toggle-all" data-action="toggle-toc" aria-pressed="false" aria-label="展开全部目录" title="展开全部目录">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-chevron-down"></use></svg>
+
+          </button>
+        </header>
+        <div class="toc-content">
+          
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%BD%95%E4%B8%8E%E5%AD%A6%E4%B9%A0%E8%B7%AF%E7%BA%BF"><span class="toc-text">目录与学习路线</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E9%83%A8%E5%88%86%EF%BC%9A%E5%85%88%E5%BC%84%E6%87%82%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E5%A4%84%E7%90%86%E7%9A%84%E6%95%B0%E6%8D%AE"><span class="toc-text">第一部分：先弄懂神经网络处理的数据</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-Tensor%EF%BC%88%E5%BC%A0%E9%87%8F%EF%BC%89"><span class="toc-text">1. Tensor（张量）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-Shape%EF%BC%88%E5%BC%A0%E9%87%8F%E5%BD%A2%E7%8A%B6%EF%BC%89"><span class="toc-text">2. Shape（张量形状）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-Feature-Feature-Map%EF%BC%88%E7%89%B9%E5%BE%81-%E7%89%B9%E5%BE%81%E5%9B%BE%EF%BC%89"><span class="toc-text">3. Feature &#x2F; Feature Map（特征 &#x2F; 特征图）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-Channel%EF%BC%88%E9%80%9A%E9%81%93%EF%BC%89"><span class="toc-text">4. Channel（通道）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-Token-Patch%EF%BC%88%E8%AF%8D%E5%85%83-%E5%9B%BE%E5%83%8F%E5%9D%97%EF%BC%89"><span class="toc-text">5. Token &#x2F; Patch（词元 &#x2F; 图像块）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E9%83%A8%E5%88%86%EF%BC%9AMLP-%E4%B8%93%E9%A2%98%E2%80%94%E2%80%94%E5%AE%83%E5%88%B0%E5%BA%95%E6%9C%89%E4%BB%80%E4%B9%88%E7%94%A8%EF%BC%9F"><span class="toc-text">第二部分：MLP 专题——它到底有什么用？</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-Linear%EF%BC%88%E7%BA%BF%E6%80%A7%E5%B1%82-%E5%85%A8%E8%BF%9E%E6%8E%A5%E5%B1%82%EF%BC%89"><span class="toc-text">6. Linear（线性层 &#x2F; 全连接层）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-MLP%EF%BC%88Multi-Layer-Perceptron%EF%BC%8C%E5%A4%9A%E5%B1%82%E6%84%9F%E7%9F%A5%E6%9C%BA%EF%BC%89"><span class="toc-text">7. MLP（Multi-Layer Perceptron，多层感知机）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-MLP-%E5%9C%A8-SAM2-%E4%B8%8E%E4%BD%A0%E7%9A%84%E5%8F%98%E5%8C%96%E6%A3%80%E6%B5%8B%E4%BB%BB%E5%8A%A1%E4%B8%AD%E6%80%8E%E4%B9%88%E7%90%86%E8%A7%A3%EF%BC%9F"><span class="toc-text">8. MLP 在 SAM2 与你的变化检测任务中怎么理解？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%B8%89%E9%83%A8%E5%88%86%EF%BC%9A%E5%BD%92%E4%B8%80%E5%8C%96%E3%80%81%E6%AE%8B%E5%B7%AE%E4%B8%8E%E6%BF%80%E6%B4%BB%E5%87%BD%E6%95%B0"><span class="toc-text">第三部分：归一化、残差与激活函数</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#9-Normalization%EF%BC%88%E5%BD%92%E4%B8%80%E5%8C%96%EF%BC%89"><span class="toc-text">9. Normalization（归一化）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#10-BatchNorm%EF%BC%88BN%EF%BC%8C%E6%89%B9%E5%BD%92%E4%B8%80%E5%8C%96%EF%BC%89"><span class="toc-text">10. BatchNorm（BN，批归一化）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#11-LayerNorm%EF%BC%88LN%EF%BC%8C%E5%B1%82%E5%BD%92%E4%B8%80%E5%8C%96%EF%BC%89"><span class="toc-text">11. LayerNorm（LN，层归一化）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#12-BN-%E5%92%8C-LN-%E6%9C%80%E5%AE%B9%E6%98%93%E6%B7%B7%E6%B7%86%E7%9A%84%E5%9C%B0%E6%96%B9"><span class="toc-text">12. BN 和 LN 最容易混淆的地方</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#13-GroupNorm-InstanceNorm-RMSNorm"><span class="toc-text">13. GroupNorm &#x2F; InstanceNorm &#x2F; RMSNorm</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#14-Activation%EF%BC%88%E6%BF%80%E6%B4%BB%E5%87%BD%E6%95%B0%EF%BC%89"><span class="toc-text">14. Activation（激活函数）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#15-Residual-Connection%EF%BC%88%E6%AE%8B%E5%B7%AE%E8%BF%9E%E6%8E%A5-%E8%B7%B3%E8%B7%83%E8%BF%9E%E6%8E%A5%EF%BC%89"><span class="toc-text">15. Residual Connection（残差连接 &#x2F; 跳跃连接）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#16-Transformer-Block-%E4%B8%AD%E8%BF%99%E4%BA%9B%E6%A8%A1%E5%9D%97%E5%A6%82%E4%BD%95%E9%85%8D%E5%90%88%EF%BC%9F"><span class="toc-text">16. Transformer Block 中这些模块如何配合？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E5%9B%9B%E9%83%A8%E5%88%86%EF%BC%9ATransformer-%E4%B8%8E%E5%A4%9A%E6%A8%A1%E6%80%81%E9%AB%98%E9%A2%91%E6%A8%A1%E5%9D%97"><span class="toc-text">第四部分：Transformer 与多模态高频模块</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#17-Attention%EF%BC%88%E6%B3%A8%E6%84%8F%E5%8A%9B%E6%9C%BA%E5%88%B6%EF%BC%89"><span class="toc-text">17. Attention（注意力机制）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#18-Q%E3%80%81K%E3%80%81V"><span class="toc-text">18. Q、K、V</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#19-Self-Attention-%E4%B8%8E-Cross-Attention"><span class="toc-text">19. Self-Attention 与 Cross-Attention</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#20-Multi-Head-Attention%EF%BC%88%E5%A4%9A%E5%A4%B4%E6%B3%A8%E6%84%8F%E5%8A%9B%EF%BC%89"><span class="toc-text">20. Multi-Head Attention（多头注意力）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#21-Positional-Encoding-RoPE%EF%BC%88%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81%EF%BC%89"><span class="toc-text">21. Positional Encoding &#x2F; RoPE（位置编码）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#22-Encoder-Decoder%EF%BC%88%E7%BC%96%E7%A0%81%E5%99%A8-%E8%A7%A3%E7%A0%81%E5%99%A8%EF%BC%89"><span class="toc-text">22. Encoder &#x2F; Decoder（编码器 &#x2F; 解码器）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#23-Projection%EF%BC%88%E6%8A%95%E5%BD%B1%E5%B1%82%EF%BC%89"><span class="toc-text">23. Projection（投影层）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%BA%94%E9%83%A8%E5%88%86%EF%BC%9A%E8%AE%AD%E7%BB%83%E6%A8%A1%E5%9E%8B%E6%97%B6%E5%B8%B8%E8%A7%81%E7%9A%84%E8%AF%8D"><span class="toc-text">第五部分：训练模型时常见的词</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#24-Forward%EF%BC%88%E5%89%8D%E5%90%91%E4%BC%A0%E6%92%AD%EF%BC%89"><span class="toc-text">24. Forward（前向传播）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#25-Loss%EF%BC%88%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0%EF%BC%89"><span class="toc-text">25. Loss（损失函数）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#26-Backpropagation%EF%BC%88%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD%EF%BC%89"><span class="toc-text">26. Backpropagation（反向传播）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#27-Gradient%EF%BC%88%E6%A2%AF%E5%BA%A6%EF%BC%89"><span class="toc-text">27. Gradient（梯度）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#28-Optimizer%EF%BC%88%E4%BC%98%E5%8C%96%E5%99%A8%EF%BC%89"><span class="toc-text">28. Optimizer（优化器）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#29-Learning-Rate%EF%BC%88%E5%AD%A6%E4%B9%A0%E7%8E%87%EF%BC%89"><span class="toc-text">29. Learning Rate（学习率）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#30-Dropout%EF%BC%88%E9%9A%8F%E6%9C%BA%E5%A4%B1%E6%B4%BB%EF%BC%89"><span class="toc-text">30. Dropout（随机失活）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#31-Freeze-Fine-tuning%EF%BC%88%E5%86%BB%E7%BB%93-%E5%BE%AE%E8%B0%83%EF%BC%89"><span class="toc-text">31. Freeze &#x2F; Fine-tuning（冻结 &#x2F; 微调）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#32-LoRA"><span class="toc-text">32. LoRA</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#33-%E4%B8%89%E7%A7%8D%E5%8F%98%E5%8C%96%E6%A3%80%E6%B5%8B%E9%87%8C%E7%BB%8F%E5%B8%B8%E8%A7%81%E5%88%B0%E7%9A%84-Loss"><span class="toc-text">33. 三种变化检测里经常见到的 Loss</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E5%85%AD%E9%83%A8%E5%88%86%EF%BC%9A%E6%8A%8A%E5%9F%BA%E7%A1%80%E6%A8%A1%E5%9D%97%E6%94%BE%E5%9B%9E-SAM2-%E5%8F%98%E5%8C%96%E6%A3%80%E6%B5%8B"><span class="toc-text">第六部分：把基础模块放回 SAM2 变化检测</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#34-%E5%8F%8C%E6%97%B6%E7%9B%B8%E5%8F%98%E5%8C%96%E6%A3%80%E6%B5%8B%E7%A9%B6%E7%AB%9F%E5%A4%9A%E4%BA%86%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="toc-text">34. 双时相变化检测究竟多了什么？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#35-SAM2-%E9%87%8C%E5%B8%B8%E8%A7%81%E6%A8%A1%E5%9D%97%E7%9A%84%E5%8A%9F%E8%83%BD"><span class="toc-text">35. SAM2 里常见模块的功能</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#36-SAM2-%E6%9C%AC%E8%BA%AB%E8%83%BD%E4%B8%8D%E8%83%BD%E7%9B%B4%E6%8E%A5%E5%81%9A%E5%8F%98%E5%8C%96%E6%A3%80%E6%B5%8B%EF%BC%9F"><span class="toc-text">36. SAM2 本身能不能直接做变化检测？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#37-%E5%AF%B9%E4%BD%A0%E7%9A%84%E5%BC%B1%E7%9B%91%E7%9D%A3%E6%96%B9%E6%B3%95%EF%BC%8CMLP-%E6%9C%80%E5%80%BC%E5%BE%97%E5%85%B3%E6%B3%A8%E7%9A%84%E4%B8%89%E4%B8%AA%E9%97%AE%E9%A2%98"><span class="toc-text">37. 对你的弱监督方法，MLP 最值得关注的三个问题</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%B8%83%E9%83%A8%E5%88%86%EF%BC%9A%E4%BB%A3%E7%A0%81%E9%80%9F%E6%9F%A5%E4%B8%8E%E6%8E%92%E9%94%99%E6%B8%85%E5%8D%95"><span class="toc-text">第七部分：代码速查与排错清单</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%B0%83%E8%AF%95%E6%97%B6%E5%85%88%E9%97%AE%E8%87%AA%E5%B7%B1%E7%9A%84-6-%E4%B8%AA%E9%97%AE%E9%A2%98"><span class="toc-text">调试时先问自己的 6 个问题</span></a></li></ol></li></ol>
+          
+        </div>
+      </section>
+      
+
+
+    </div>
+  
+
+  
+
+</aside>
+
+    <section class="paper-main">
+      
+
+<div class="article-tape-wrap">
+<span class="tape tape--top-right" aria-hidden="true"></span>
+<article class="article-paper">
+  
+  <header class="article-header">
+    
+      <a class="label-pill" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+        学习笔记
+      </a>
+    
+    <h1>深度学习基础知识速查手册</h1>
+    <div class="meta-line meta-line--article">
+      <span class="meta-date">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-calendar"></use></svg>
+2026-11-26</span>
+      
+        <span class="meta-tags">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+          <a class="meta-tag-link" href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/">#深度学习</a><a class="meta-tag-link" href="/tags/%E5%8F%98%E5%8C%96%E6%A3%80%E6%B5%8B/">#变化检测</a><a class="meta-tag-link" href="/tags/MLP/">#MLP</a><a class="meta-tag-link" href="/tags/Transformer/">#Transformer</a><a class="meta-tag-link" href="/tags/SAM2/">#SAM2</a>
+        </span>
+      
+    </div>
+  </header>
+
+  
+
+
+  <div class="article-content">
+    <p><em>从 MLP、归一化到 Transformer、多模态与 SAM2 变化检测</em></p>
+<p><img src="/2026/11/26/dl-basics-notes/image1.png" alt="示意图 1"></p>
+<p><strong>核心示意：</strong>MLP 做的是特征加工，不是一个神秘的“智能模块”。</p>
+<blockquote>
+<p><strong>这份笔记怎么用？</strong> 每个知识点按“是什么 → 为什么需要 → 在哪里出现 → 代码长什么样 → 容易误解什么”展开。先理解用途，再记名字。</p>
+</blockquote>
+<p><strong>面向读者：</strong>正在学习 PyTorch、多模态项目，以及弱监督 SAM2 遥感变化检测的初学者。</p>
+<h2 id="目录与学习路线"><a href="#目录与学习路线" class="headerlink" title="目录与学习路线"></a>目录与学习路线</h2><ul>
+<li>第一部分：先弄懂神经网络处理的数据</li>
+<li>第二部分：MLP 专题——它到底有什么用？</li>
+<li>第三部分：归一化、残差与激活函数</li>
+<li>第四部分：Transformer 与多模态高频模块</li>
+<li>第五部分：训练模型时常见的词</li>
+<li>第六部分：把这些模块放回 SAM2 变化检测</li>
+<li>第七部分：代码速查与排错清单</li>
+</ul>
+<blockquote>
+<p><strong>最推荐的阅读顺序</strong> 先看 Tensor &#x2F; Shape，再重点读 MLP 专题，然后看 Attention、LayerNorm、Residual。最后对照自己的 SAM2 变化检测代码，追踪每个模块输入和输出的 shape。</p>
+</blockquote>
+<h2 id="第一部分：先弄懂神经网络处理的数据"><a href="#第一部分：先弄懂神经网络处理的数据" class="headerlink" title="第一部分：先弄懂神经网络处理的数据"></a>第一部分：先弄懂神经网络处理的数据</h2><h3 id="1-Tensor（张量）"><a href="#1-Tensor（张量）" class="headerlink" title="1. Tensor（张量）"></a>1. Tensor（张量）</h3><p><strong>一句话记忆：</strong>Tensor 是神经网络中的数据容器，可以理解为带有多个维度的数组。PyTorch 中，图片、特征、标签、模型参数基本都以 Tensor 的形式出现。</p>
+<ul>
+<li>标量：一个数，例如 loss &#x3D; 0.35，通常没有维度。</li>
+<li>向量：一串数，例如一个 256 维特征，shape &#x3D; [256]。</li>
+<li>矩阵：二维表，例如 64×64 的表格，shape &#x3D; [64, 64]。</li>
+<li>高维张量：图像批次常见 [B, C, H, W]。</li>
+</ul>
+<blockquote>
+<p><strong>遥感图像例子</strong> [8, 3, 256, 256] 表示一次送入 8 张 RGB 图像；3 是颜色通道，256×256 是图像高和宽。</p>
+</blockquote>
+<h3 id="2-Shape（张量形状）"><a href="#2-Shape（张量形状）" class="headerlink" title="2. Shape（张量形状）"></a>2. Shape（张量形状）</h3><p><strong>一句话记忆：</strong>shape 描述每个维度有多少个元素。它是阅读和调试深度学习代码最重要的信息之一。网络报维度错误时，第一步通常是打印参与运算的张量形状。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x = torch.randn(<span class="number">8</span>, <span class="number">3</span>, <span class="number">256</span>, <span class="number">256</span>)</span><br><span class="line"><span class="built_in">print</span>(x.shape)  <span class="comment"># torch.Size([8, 3, 256, 256])</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="3-Feature-Feature-Map（特征-特征图）"><a href="#3-Feature-Feature-Map（特征-特征图）" class="headerlink" title="3. Feature &#x2F; Feature Map（特征 &#x2F; 特征图）"></a>3. Feature &#x2F; Feature Map（特征 &#x2F; 特征图）</h3><p>特征是模型从输入中提取出的数字表示。比如一张遥感图像里，浅层特征可能响应边缘、纹理和局部颜色；更深层的特征可能包含建筑、道路等更抽象的信息。Feature Map（特征图）强调这些特征仍按空间位置排列。</p>
+<h3 id="4-Channel（通道）"><a href="#4-Channel（通道）" class="headerlink" title="4. Channel（通道）"></a>4. Channel（通道）</h3><p>通道可以粗略理解为“每个空间位置上有多少个特征数值”。RGB 图片有 3 个颜色通道；神经网络特征图可能有 64、256、1024 个通道。通道数不是图片的 RGB 颜色数，而是模型学出来的特征维度。</p>
+<h3 id="5-Token-Patch（词元-图像块）"><a href="#5-Token-Patch（词元-图像块）" class="headerlink" title="5. Token &#x2F; Patch（词元 &#x2F; 图像块）"></a>5. Token &#x2F; Patch（词元 &#x2F; 图像块）</h3><p>Transformer 常把输入拆成一串 token。文本 token 通常来自词或子词；视觉模型可以把图像切成 patch，再把每个 patch 编码成向量。于是二维图像可以表示成 N 个视觉 token，每个 token 有 D 维特征，即 [B, N, D]。</p>
+<p><img src="/2026/11/26/dl-basics-notes/image2.png" alt="示意图 2"></p>
+<p class="tj-figcaption">图 1  CNN 特征图、Token 序列与 MLP 输入形状之间的关系。</p>
+
+<h2 id="第二部分：MLP-专题——它到底有什么用？"><a href="#第二部分：MLP-专题——它到底有什么用？" class="headerlink" title="第二部分：MLP 专题——它到底有什么用？"></a>第二部分：MLP 专题——它到底有什么用？</h2><h3 id="6-Linear（线性层-全连接层）"><a href="#6-Linear（线性层-全连接层）" class="headerlink" title="6. Linear（线性层 &#x2F; 全连接层）"></a>6. Linear（线性层 &#x2F; 全连接层）</h3><p><strong>一句话记忆：</strong>Linear 对输入特征做可学习的加权组合，并可以改变特征维度。它不是简单地“复制或裁剪数字”，而是学习一套权重，让输入的不同维度相互组合。</p>
+<p><strong>数学形式：</strong>y &#x3D; Wx + b。W 是训练得到的权重矩阵，b 是偏置。训练过程会调整 W 和 b，让输出更有利于完成任务。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">layer = nn.Linear(in_features=<span class="number">256</span>, out_features=<span class="number">128</span>)</span><br><span class="line">y = layer(x)  <span class="comment"># 最后一维从 256 变成 128</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>什么时候会见到 Linear？</strong> 特征维度转换、分类头、图文向量投影、注意力中的 Q&#x2F;K&#x2F;V 投影，以及 MLP 内部。</p>
+</blockquote>
+<h3 id="7-MLP（Multi-Layer-Perceptron，多层感知机）"><a href="#7-MLP（Multi-Layer-Perceptron，多层感知机）" class="headerlink" title="7. MLP（Multi-Layer Perceptron，多层感知机）"></a>7. MLP（Multi-Layer Perceptron，多层感知机）</h3><blockquote>
+<p><strong>先记住最重要的一句话</strong> MLP 的目的：学习“一个特征向量内部，不同特征维度应该怎样组合”，把原始特征加工成更适合当前任务的表示。它是一个通用的特征加工器，不是专门负责注意力、分割或变化检测的模块。</p>
+</blockquote>
+<p>把一个 token 或一个像素位置的特征想成一张小清单：第 1 维可能对边缘响应强，第 2 维可能对纹理响应强，第 3 维可能对形状响应强……这些数字单独看并不一定够用。模型需要学习它们如何组合，例如哪些维度一起出现时更有用。MLP 就负责学习这种组合关系。</p>
+<p><img src="/2026/11/26/dl-basics-notes/image1.png" alt="示意图 3"></p>
+<p class="tj-figcaption">图 2  两层 MLP：先把特征映射到隐藏维度，经非线性加工，再映射到目标维度。</p>
+
+<h4 id="7-1-MLP-每一步到底在做什么？"><a href="#7-1-MLP-每一步到底在做什么？" class="headerlink" title="7.1 MLP 每一步到底在做什么？"></a>7.1 MLP 每一步到底在做什么？</h4><ul>
+<li>输入 x：一组已有特征，例如长度为 4 的向量。它已经是前面 Encoder 提取出来的表示。</li>
+<li>第一层 Linear：用 W₁ 和 b₁ 对输入做加权组合，并把维度从 4 变成 8。扩展维度是为了给模型更大的中间表示空间。</li>
+<li>GELU &#x2F; ReLU：引入非线性。它让整个网络不再只是简单的一次线性映射，能够表达更复杂的特征关系。</li>
+<li>第二层 Linear：把隐藏表示再映射到需要的维度，例如从 8 维映射回 4 维，方便后续模块继续处理，也常便于和残差输入相加。</li>
+</ul>
+<h4 id="7-2-为什么不只用一层-Linear？"><a href="#7-2-为什么不只用一层-Linear？" class="headerlink" title="7.2 为什么不只用一层 Linear？"></a>7.2 为什么不只用一层 Linear？</h4><p>多个 Linear 如果中间没有非线性激活，数学上仍可合并成一个 Linear。也就是说，单纯堆叠线性层不会带来更强的非线性表达能力。MLP 中间的 GELU &#x2F; ReLU 是关键：它改变中间响应，使模型可以学习更复杂的组合关系。</p>
+<h4 id="7-3-为什么经常先扩展再压缩维度？"><a href="#7-3-为什么经常先扩展再压缩维度？" class="headerlink" title="7.3 为什么经常先扩展再压缩维度？"></a>7.3 为什么经常先扩展再压缩维度？</h4><p>Transformer 的 FFN 常见维度变化是 D → 4D → D（具体比例由模型设计决定）。先扩展相当于给特征组合提供更宽的中间空间，再通过激活和第二层映射回 D。这样输出维度与输入一致，便于接残差连接。4 倍不是自然定律，而是常见设计选择。</p>
+<h4 id="7-4-MLP-具体“用在哪里”？"><a href="#7-4-MLP-具体“用在哪里”？" class="headerlink" title="7.4 MLP 具体“用在哪里”？"></a>7.4 MLP 具体“用在哪里”？</h4><p><img src="/2026/11/26/dl-basics-notes/image3.png" alt="示意图 4"></p>
+<p class="tj-figcaption">图 3  MLP 常见的三种放置位置。</p>
+
+<h4 id="位置-A：Transformer-Block-里的-FFN"><a href="#位置-A：Transformer-Block-里的-FFN" class="headerlink" title="位置 A：Transformer Block 里的 FFN"></a>位置 A：Transformer Block 里的 FFN</h4><p>Attention 之后通常会接一个 MLP &#x2F; FFN。Attention 先让不同 token 交换信息；MLP 再对每个 token 自己的特征通道进行加工。它们分工不同。</p>
+<h4 id="位置-B：多模态的-Projection-Adapter"><a href="#位置-B：多模态的-Projection-Adapter" class="headerlink" title="位置 B：多模态的 Projection &#x2F; Adapter"></a>位置 B：多模态的 Projection &#x2F; Adapter</h4><p>图像编码器和文本编码器的输出可能维度不同、数值分布也不同。可以用 Linear 或 MLP 把视觉向量、文本向量映射到共同维度或适配空间，便于后续做相似度计算、对齐或融合。注意：投影不一定必须是 MLP，有时一层 Linear 就够了。</p>
+<h4 id="位置-C：预测头-质量评估头"><a href="#位置-C：预测头-质量评估头" class="headerlink" title="位置 C：预测头 &#x2F; 质量评估头"></a>位置 C：预测头 &#x2F; 质量评估头</h4><p>融合后的特征可以送入 MLP，输出分类 logits、置信度或质量分数。此时 MLP 负责把特征变成任务所需的数值；输出含义由它连接的监督目标决定。</p>
+<h4 id="7-5-MLP-与-Attention-的区别"><a href="#7-5-MLP-与-Attention-的区别" class="headerlink" title="7.5 MLP 与 Attention 的区别"></a>7.5 MLP 与 Attention 的区别</h4><p><img src="/2026/11/26/dl-basics-notes/image4.png" alt="示意图 5"></p>
+<p class="tj-figcaption">图 4  Attention 跨 token 交互；MLP 在每个 token 内部加工通道。</p>
+
+<p>对输入 X [B, N, D] 来说，N 是 token 数，D 是每个 token 的特征维度。标准 Transformer FFN 通常对每个 token 独立应用同一组 MLP 权重：不改变 N，主要变换 D。Attention 则会计算 token 之间的关系，让一个位置汇总其他位置的信息。</p>
+<h4 id="7-6-用-PyTorch-代码识别-MLP"><a href="#7-6-用-PyTorch-代码识别-MLP" class="headerlink" title="7.6 用 PyTorch 代码识别 MLP"></a>7.6 用 PyTorch 代码识别 MLP</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">self</span>.mlp = nn.Sequential(</span><br><span class="line">    nn.Linear(<span class="number">256</span>, <span class="number">1024</span>),  <span class="comment"># 256 -&gt; 1024：扩展特征维度</span></span><br><span class="line">    nn.GELU(),             <span class="comment"># 非线性激活</span></span><br><span class="line">    nn.Linear(<span class="number">1024</span>, <span class="number">256</span>)   <span class="comment"># 1024 -&gt; 256：映射回原维度</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">y = <span class="variable language_">self</span>.mlp(x)  <span class="comment"># 若 x 为 [B, N, 256]，y 通常为 [B, N, 256]</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>看到这段代码时应该怎样理解？</strong> 不是模型把 256 个数字“变成更聪明的 256 个数字”这么玄。它通过可学习权重重新组合 256 个通道，并借助 GELU 引入非线性，让输出特征更适合后续计算。</p>
+</blockquote>
+<h4 id="7-7-MLP-不是什么？"><a href="#7-7-MLP-不是什么？" class="headerlink" title="7.7 MLP 不是什么？"></a>7.7 MLP 不是什么？</h4><ul>
+<li>MLP 不等于 Attention：普通 MLP 不会自动让不同 token 互相查看。</li>
+<li>MLP 不等于分类器：只有当它的输出被设计成类别分数并用分类损失训练时，才承担分类头角色。</li>
+<li>MLP 不保证语义可解释：不能直接说某个隐藏神经元一定代表“建筑边缘”，除非做了专门分析。</li>
+<li>MLP 不一定改变空间分辨率：对 [B,N,D] 的 token MLP 通常不改变 N；对图像特征图怎么处理取决于实现。</li>
+</ul>
+<h3 id="8-MLP-在-SAM2-与你的变化检测任务中怎么理解？"><a href="#8-MLP-在-SAM2-与你的变化检测任务中怎么理解？" class="headerlink" title="8. MLP 在 SAM2 与你的变化检测任务中怎么理解？"></a>8. MLP 在 SAM2 与你的变化检测任务中怎么理解？</h3><p>要把“基础模型内部原本就有的 MLP”和“你自己设计的变化检测头里的 MLP”区分开。它们可能都叫 MLP，但服务的任务不同。</p>
+<h4 id="8-1-SAM2-内部确实会用-MLP"><a href="#8-1-SAM2-内部确实会用-MLP" class="headerlink" title="8.1 SAM2 内部确实会用 MLP"></a>8.1 SAM2 内部确实会用 MLP</h4><p>以 Meta 官方 SAM2 实现为例，Mask Decoder 中包含用于预测掩膜质量（IoU &#x2F; quality score）的 MLP，也包含用于生成掩膜相关动态权重的 hypernetwork MLP；TwoWayTransformer 的 block 里也有 MLP。也就是说，MLP 是 SAM2 结构内部用于特征加工和预测的常用部件，不是 SAM2 的全部。</p>
+<h4 id="8-2-在弱监督变化检测里，MLP-可能放在哪里？"><a href="#8-2-在弱监督变化检测里，MLP-可能放在哪里？" class="headerlink" title="8.2 在弱监督变化检测里，MLP 可能放在哪里？"></a>8.2 在弱监督变化检测里，MLP 可能放在哪里？</h4><ul>
+<li>双时相特征融合之后：把 [F₁, F₂, |F₁−F₂|] 等融合特征进一步加工。</li>
+<li>变化预测头中：把像素 &#x2F; patch 特征转换成变化 logits。对于空间密集预测，通常也会结合卷积、上采样等操作。</li>
+<li>特征适配器中：把冻结 SAM2 Encoder 的输出通道映射到轻量变化检测器需要的维度。</li>
+<li>具体例子：如果把 T1 特征 F1、T2 特征 F2 和差异特征 |F1-F2| 拼接后送入 MLP，MLP 学的是如何重新组合这三类信息，让下游预测头更容易判断变化。</li>
+<li>反过来，如果 MLP 只接收 T2 的单时相特征，它本身没有 T1 信息，不能单独完成双时相变化比较。</li>
+</ul>
+<blockquote>
+<p><strong>对你的论文最重要的判断原则</strong> 不要为了“用了 MLP”就把它当成创新点。MLP 是基础组件。真正需要解释的是：为什么把它放在这个位置、它针对现有方法的哪个缺陷、与 Conv &#x2F; Linear &#x2F; Attention 等替代方案相比有什么收益，以及消融实验是否支持这个设计。</p>
+</blockquote>
+<h2 id="第三部分：归一化、残差与激活函数"><a href="#第三部分：归一化、残差与激活函数" class="headerlink" title="第三部分：归一化、残差与激活函数"></a>第三部分：归一化、残差与激活函数</h2><h3 id="9-Normalization（归一化）"><a href="#9-Normalization（归一化）" class="headerlink" title="9. Normalization（归一化）"></a>9. Normalization（归一化）</h3><p><strong>一句话记忆：</strong>归一化按指定维度计算统计量，调整特征的数值尺度，让不同样本或不同通道的数值不要因为尺度差异而让训练变得不稳定。常见操作是减均值、除以标准差，再通过可学习参数进行缩放和平移。</p>
+<h3 id="10-BatchNorm（BN，批归一化）"><a href="#10-BatchNorm（BN，批归一化）" class="headerlink" title="10. BatchNorm（BN，批归一化）"></a>10. BatchNorm（BN，批归一化）</h3><p>BN 在视觉 CNN 中很常见。以 BatchNorm2d 为例，对每个通道分别统计 batch 维和空间维（H、W）上的均值与方差。训练阶段使用当前 batch 的统计量，同时更新运行统计量；推理时通常使用运行统计量。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nn.BatchNorm2d(<span class="number">64</span>)  <span class="comment"># 常用于输入形状 [B, 64, H, W]</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="11-LayerNorm（LN，层归一化）"><a href="#11-LayerNorm（LN，层归一化）" class="headerlink" title="11. LayerNorm（LN，层归一化）"></a>11. LayerNorm（LN，层归一化）</h3><p>LN 通常对单个样本的指定特征维度计算均值和方差，不依赖同一个 batch 里的其他样本。Transformer 中常见输入形状 [B, N, D]，LayerNorm(D) 通常对每个 token 的最后一维 D 做归一化。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nn.LayerNorm(<span class="number">256</span>)  <span class="comment"># 常见输入 [B, N, 256]，归一化最后一维</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="12-BN-和-LN-最容易混淆的地方"><a href="#12-BN-和-LN-最容易混淆的地方" class="headerlink" title="12. BN 和 LN 最容易混淆的地方"></a>12. BN 和 LN 最容易混淆的地方</h3><p><img src="/2026/11/26/dl-basics-notes/image5.png" alt="示意图 6"></p>
+<p class="tj-figcaption">图 5  BN 与 LN 的统计维度示意。具体维度由输入形状和模块参数决定。</p>
+
+<ul>
+<li>BN：统计量通常跨 batch 和空间位置，对每个通道分别计算；推理行为会用到运行统计量。</li>
+<li>LN：对每个样本的指定特征维度计算；不需要依赖 batch 中其他样本。</li>
+<li>不要死记 BN 只用于图像、LN 只用于文本。要看张量形状、归一化轴和网络设计。</li>
+</ul>
+<h3 id="13-GroupNorm-InstanceNorm-RMSNorm"><a href="#13-GroupNorm-InstanceNorm-RMSNorm" class="headerlink" title="13. GroupNorm &#x2F; InstanceNorm &#x2F; RMSNorm"></a>13. GroupNorm &#x2F; InstanceNorm &#x2F; RMSNorm</h3><ul>
+<li>GroupNorm：把通道分成若干组，每组内部归一化；不依赖 batch 统计，小 batch 视觉任务中可能更合适。</li>
+<li>InstanceNorm：通常对每个样本、每个通道分别按空间维归一化，在图像风格任务中常见。</li>
+<li>RMSNorm：按均方根尺度进行缩放，通常不做 LayerNorm 那样的减均值操作，在 LLM 中较常见。</li>
+</ul>
+<h3 id="14-Activation（激活函数）"><a href="#14-Activation（激活函数）" class="headerlink" title="14. Activation（激活函数）"></a>14. Activation（激活函数）</h3><p>激活函数为网络加入非线性表达能力。没有非线性时，多个线性层叠起来仍然只是线性变换。</p>
+<ul>
+<li>ReLU：负数变为 0，正数保持不变。</li>
+<li>GELU：平滑地调节输入值，Transformer &#x2F; MLP 中常见。</li>
+<li>Sigmoid：把单个数压缩到 0～1，常用于二分类概率或门控系数。</li>
+<li>Softmax：把一组分数转换成总和为 1 的类别概率，常用于多分类。</li>
+</ul>
+<h3 id="15-Residual-Connection（残差连接-跳跃连接）"><a href="#15-Residual-Connection（残差连接-跳跃连接）" class="headerlink" title="15. Residual Connection（残差连接 &#x2F; 跳跃连接）"></a>15. Residual Connection（残差连接 &#x2F; 跳跃连接）</h3><p><strong>一句话记忆：</strong>让输入绕过某个模块，再与模块输出相加。这样网络可以在保留原始信息的基础上学习“需要增加或修正的部分”，也有利于梯度传播。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">y = x + F(x)  <span class="comment"># 要求 x 和 F(x) 的形状能够相加</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="16-Transformer-Block-中这些模块如何配合？"><a href="#16-Transformer-Block-中这些模块如何配合？" class="headerlink" title="16. Transformer Block 中这些模块如何配合？"></a>16. Transformer Block 中这些模块如何配合？</h3><p><img src="/2026/11/26/dl-basics-notes/image6.png" alt="示意图 7"></p>
+<p class="tj-figcaption">图 6  一个常见 Pre-Norm Transformer Block 的简化结构。</p>
+
+<p>先归一化，再通过 Attention 让 token 之间交流，然后残差相加；接着再归一化、通过 MLP 加工每个 token 的通道，最后再做一次残差相加。不同架构可以使用 Pre-Norm 或 Post-Norm，实际顺序以论文和代码为准。</p>
+<h2 id="第四部分：Transformer-与多模态高频模块"><a href="#第四部分：Transformer-与多模态高频模块" class="headerlink" title="第四部分：Transformer 与多模态高频模块"></a>第四部分：Transformer 与多模态高频模块</h2><h3 id="17-Attention（注意力机制）"><a href="#17-Attention（注意力机制）" class="headerlink" title="17. Attention（注意力机制）"></a>17. Attention（注意力机制）</h3><p>Attention 让一个 token 根据相关程度，从其他 token 或另一种模态中汇总信息。它的关键不是“注意力”这个名字，而是计算权重并用权重对信息进行加权组合。</p>
+<h3 id="18-Q、K、V"><a href="#18-Q、K、V" class="headerlink" title="18. Q、K、V"></a>18. Q、K、V</h3><p>Q（Query）可以理解为“我想找什么”；K（Key）是“我可以用什么特征来匹配”；V（Value）是“匹配后真正取走的信息”。Q 与 K 得到匹配分数，Softmax 转成权重，再用权重汇总 V。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Attention(Q, K, V) = Softmax(QKᵀ / sqrt(d_k)) V</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2026/11/26/dl-basics-notes/image7.png" alt="示意图 8"></p>
+<p class="tj-figcaption">图 7  Self-Attention 的 Q/K/V 数据流。</p>
+
+<h3 id="19-Self-Attention-与-Cross-Attention"><a href="#19-Self-Attention-与-Cross-Attention" class="headerlink" title="19. Self-Attention 与 Cross-Attention"></a>19. Self-Attention 与 Cross-Attention</h3><ul>
+<li>Self-Attention：Q、K、V 来自同一组输入，建模同一模态或序列内部的关系。</li>
+<li>Cross-Attention：Q 来自一组特征，K&#x2F;V 来自另一组特征。例如文本 token 作为 Q，图像 patch 特征作为 K&#x2F;V，实现文本查询图像信息。</li>
+</ul>
+<h3 id="20-Multi-Head-Attention（多头注意力）"><a href="#20-Multi-Head-Attention（多头注意力）" class="headerlink" title="20. Multi-Head Attention（多头注意力）"></a>20. Multi-Head Attention（多头注意力）</h3><p>把注意力计算拆成多个头，让不同头在不同子空间中学习关系，再把各头结果合并。多个头不保证一定学到人类可解释的不同语义，但提供了并行表达关系的能力。</p>
+<h3 id="21-Positional-Encoding-RoPE（位置编码）"><a href="#21-Positional-Encoding-RoPE（位置编码）" class="headerlink" title="21. Positional Encoding &#x2F; RoPE（位置编码）"></a>21. Positional Encoding &#x2F; RoPE（位置编码）</h3><p>Attention 单独看集合关系时，不天然知道 token 的位置顺序。位置编码把位置信息加入特征或注意力计算。RoPE（旋转位置编码）通过对 Q&#x2F;K 做旋转变换，将位置信息融入注意力计算。视觉模型还需要考虑二维空间位置信息。</p>
+<h3 id="22-Encoder-Decoder（编码器-解码器）"><a href="#22-Encoder-Decoder（编码器-解码器）" class="headerlink" title="22. Encoder &#x2F; Decoder（编码器 &#x2F; 解码器）"></a>22. Encoder &#x2F; Decoder（编码器 &#x2F; 解码器）</h3><p>Encoder 把原始输入变成特征表示；Decoder 根据特征生成任务输出，例如掩膜、类别或文本。不要把所有叫 Encoder 的模型都理解成完全相同的结构，它只是“编码输入”的功能角色。</p>
+<h3 id="23-Projection（投影层）"><a href="#23-Projection（投影层）" class="headerlink" title="23. Projection（投影层）"></a>23. Projection（投影层）</h3><p>Projection 把特征映射到指定维度或表示空间，常用 Linear 实现。多模态对齐时，常把视觉向量和文本向量投影到相同维度；但维度相同不等于语义已经自动对齐，还需要相应训练目标。</p>
+<h2 id="第五部分：训练模型时常见的词"><a href="#第五部分：训练模型时常见的词" class="headerlink" title="第五部分：训练模型时常见的词"></a>第五部分：训练模型时常见的词</h2><h3 id="24-Forward（前向传播）"><a href="#24-Forward（前向传播）" class="headerlink" title="24. Forward（前向传播）"></a>24. Forward（前向传播）</h3><p>输入经过模型计算，得到预测结果。PyTorch 中通常由 model(x) 调用 forward()。</p>
+<h3 id="25-Loss（损失函数）"><a href="#25-Loss（损失函数）" class="headerlink" title="25. Loss（损失函数）"></a>25. Loss（损失函数）</h3><p>衡量预测与监督信号的差距。训练目标通常是降低 Loss。</p>
+<h3 id="26-Backpropagation（反向传播）"><a href="#26-Backpropagation（反向传播）" class="headerlink" title="26. Backpropagation（反向传播）"></a>26. Backpropagation（反向传播）</h3><p>从 Loss 出发，利用链式法则计算每个可训练参数的梯度。</p>
+<h3 id="27-Gradient（梯度）"><a href="#27-Gradient（梯度）" class="headerlink" title="27. Gradient（梯度）"></a>27. Gradient（梯度）</h3><p>表示参数变化对 Loss 的影响方向和幅度。梯度不是参数本身。</p>
+<h3 id="28-Optimizer（优化器）"><a href="#28-Optimizer（优化器）" class="headerlink" title="28. Optimizer（优化器）"></a>28. Optimizer（优化器）</h3><p>根据梯度更新参数。常见 SGD、Adam、AdamW。</p>
+<h3 id="29-Learning-Rate（学习率）"><a href="#29-Learning-Rate（学习率）" class="headerlink" title="29. Learning Rate（学习率）"></a>29. Learning Rate（学习率）</h3><p>控制每次参数更新的步长。太大可能震荡或发散，太小可能收敛慢。</p>
+<h3 id="30-Dropout（随机失活）"><a href="#30-Dropout（随机失活）" class="headerlink" title="30. Dropout（随机失活）"></a>30. Dropout（随机失活）</h3><p>训练时随机将部分输出置零，降低模型对少数通道的依赖，有助于缓解过拟合。</p>
+<h3 id="31-Freeze-Fine-tuning（冻结-微调）"><a href="#31-Freeze-Fine-tuning（冻结-微调）" class="headerlink" title="31. Freeze &#x2F; Fine-tuning（冻结 &#x2F; 微调）"></a>31. Freeze &#x2F; Fine-tuning（冻结 &#x2F; 微调）</h3><p>Freeze 表示某些参数不更新；Fine-tuning 表示用目标任务数据继续训练预训练模型。</p>
+<h3 id="32-LoRA"><a href="#32-LoRA" class="headerlink" title="32. LoRA"></a>32. LoRA</h3><p>一种参数高效微调方法：冻结大部分原模型参数，只训练额外的低秩适配参数，降低训练成本。</p>
+<h3 id="33-三种变化检测里经常见到的-Loss"><a href="#33-三种变化检测里经常见到的-Loss" class="headerlink" title="33. 三种变化检测里经常见到的 Loss"></a>33. 三种变化检测里经常见到的 Loss</h3><ul>
+<li>BCE（Binary Cross Entropy）：常用于二分类像素预测，例如每个像素是否变化。</li>
+<li>Cross Entropy：常用于多类别分类。</li>
+<li>Dice Loss：关注预测区域与真实区域的重叠程度，常用于分割。</li>
+<li>弱监督训练时，Loss 对应的监督可能是图像级标签或伪标签，不一定是真实像素级标注。</li>
+</ul>
+<h2 id="第六部分：把基础模块放回-SAM2-变化检测"><a href="#第六部分：把基础模块放回-SAM2-变化检测" class="headerlink" title="第六部分：把基础模块放回 SAM2 变化检测"></a>第六部分：把基础模块放回 SAM2 变化检测</h2><h3 id="34-双时相变化检测究竟多了什么？"><a href="#34-双时相变化检测究竟多了什么？" class="headerlink" title="34. 双时相变化检测究竟多了什么？"></a>34. 双时相变化检测究竟多了什么？</h3><p>单幅图像分割只需要回答“这张图里目标在哪里”；变化检测要比较两个时间点，回答“哪些位置发生了变化”。因此模型需要从 T1、T2 提取特征，再设计时相比较或融合机制。</p>
+<p><img src="/2026/11/26/dl-basics-notes/image8.png" alt="示意图 9"></p>
+<p class="tj-figcaption">图 8  面向弱监督 SAM2 变化检测的概念流程。</p>
+
+<h3 id="35-SAM2-里常见模块的功能"><a href="#35-SAM2-里常见模块的功能" class="headerlink" title="35. SAM2 里常见模块的功能"></a>35. SAM2 里常见模块的功能</h3><ul>
+<li>Image Encoder：从图像提取视觉特征。</li>
+<li>Prompt Encoder：把点、框、掩膜等提示信息编码为提示特征。</li>
+<li>Mask Decoder：结合图像特征和提示特征生成分割掩膜。</li>
+<li>Transformer &#x2F; MLP：在解码器内部处理 token 特征或预测掩膜质量等信息。</li>
+</ul>
+<h3 id="36-SAM2-本身能不能直接做变化检测？"><a href="#36-SAM2-本身能不能直接做变化检测？" class="headerlink" title="36. SAM2 本身能不能直接做变化检测？"></a>36. SAM2 本身能不能直接做变化检测？</h3><p>不能简单等同。SAM2 是提示式图像 &#x2F; 视频分割模型；它的原生目标不是比较两个独立时相并输出变化图。变化检测方法通常还要增加双时相特征提取、差异建模、融合和变化预测过程。</p>
+<h3 id="37-对你的弱监督方法，MLP-最值得关注的三个问题"><a href="#37-对你的弱监督方法，MLP-最值得关注的三个问题" class="headerlink" title="37. 对你的弱监督方法，MLP 最值得关注的三个问题"></a>37. 对你的弱监督方法，MLP 最值得关注的三个问题</h3><ul>
+<li>MLP 的输入是什么？例如 F₁、F₂、|F₁−F₂|，还是某一层 SAM2 特征？</li>
+<li>MLP 的输出是什么？是新的融合特征、像素变化 logits、伪标签置信度，还是 mask quality score？</li>
+<li>MLP 的 Loss 从哪里来？是图像级标签、伪标签，还是其他监督？这决定了它到底在学习什么。</li>
+</ul>
+<blockquote>
+<p><strong>读论文时不要只看模块名字</strong> 把模块前后的张量 shape、计算公式、监督来源一起看。一个模块的功能，是由“输入—运算—输出—训练目标”共同决定的。</p>
+</blockquote>
+<h2 id="第七部分：代码速查与排错清单"><a href="#第七部分：代码速查与排错清单" class="headerlink" title="第七部分：代码速查与排错清单"></a>第七部分：代码速查与排错清单</h2><table>
+<thead>
+<tr>
+<th>代码 &#x2F; 名词</th>
+<th>快速理解</th>
+<th>常见用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>nn.Linear(a,b)</td>
+<td>最后一维 a → b 的可学习线性映射</td>
+<td>MLP、投影、分类头</td>
+</tr>
+<tr>
+<td>nn.Conv2d</td>
+<td>局部空间卷积</td>
+<td>CNN、变化检测头</td>
+</tr>
+<tr>
+<td>nn.BatchNorm2d</td>
+<td>对每通道按 batch&#x2F;空间统计</td>
+<td>CNN 特征图</td>
+</tr>
+<tr>
+<td>nn.LayerNorm</td>
+<td>对指定特征维归一化</td>
+<td>Transformer token</td>
+</tr>
+<tr>
+<td>nn.GELU &#x2F; nn.ReLU</td>
+<td>非线性激活</td>
+<td>MLP &#x2F; FFN</td>
+</tr>
+<tr>
+<td>nn.Embedding</td>
+<td>离散 ID 查可学习向量</td>
+<td>文本 token、类别 ID</td>
+</tr>
+<tr>
+<td>torch.cat</td>
+<td>沿已有维度拼接张量</td>
+<td>拼接 T1&#x2F;T2 特征</td>
+</tr>
+<tr>
+<td>torch.stack</td>
+<td>新增维度后堆叠张量</td>
+<td>组织多路特征</td>
+</tr>
+<tr>
+<td>permute &#x2F; transpose</td>
+<td>调整维度顺序</td>
+<td>[B,C,H,W] ↔ [B,H,W,C]</td>
+</tr>
+<tr>
+<td>reshape &#x2F; view</td>
+<td>改变张量形状（元素总数不变）</td>
+<td>展平空间维</td>
+</tr>
+<tr>
+<td>loss.backward()</td>
+<td>计算梯度</td>
+<td>反向传播</td>
+</tr>
+<tr>
+<td>optimizer.step()</td>
+<td>更新参数</td>
+<td>训练循环</td>
+</tr>
+<tr>
+<td>requires_grad&#x3D;False</td>
+<td>冻结参数</td>
+<td>冻结预训练 Encoder</td>
+</tr>
+</tbody></table>
+<h3 id="调试时先问自己的-6-个问题"><a href="#调试时先问自己的-6-个问题" class="headerlink" title="调试时先问自己的 6 个问题"></a>调试时先问自己的 6 个问题</h3><ul>
+<li>这个张量的 shape 是什么？B、C、H、W、N、D 各代表什么？</li>
+<li>这个模块改变的是维度、空间分辨率，还是特征内容？</li>
+<li>如果有两个时相，当前模块是否真的接收了 T1 和 T2 的信息？</li>
+<li>这个 MLP 是逐 token 操作，还是先把图像特征展平后操作？</li>
+<li>这个输出代表特征、概率、logits、掩膜，还是质量分数？</li>
+<li>这个模块的参数是否参与训练？requires_grad、optimizer 参数组和梯度是否符合预期？</li>
+</ul>
+
+  </div>
+
+  <footer class="article-reactions">
+    <div class="reaction-group">
+      <button type="button" class="reaction reaction--comment" aria-label="跳转到评论区" data-action="scroll-to-comments">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-message-circle"></use></svg>
+
+      </button>
+      <span class="reaction-label">评论</span>
+      
+    </div>
+    <div class="reaction-group reaction-group--right">
+      
+      <button type="button" class="reaction reaction--share" aria-label="分享" data-action="share">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2 flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-share-2"></use></svg>
+
+      </button>
+      <span class="reaction-label">分享</span>
+    </div>
+  </footer>
+
+  
+
+
+  <nav class="article-actions">
+    
+      <span class="article-action article-action--prev is-disabled" aria-disabled="true">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-left"></use></svg>
+
+        <span class="action-label">上一篇</span>
+        <span class="action-title">没有更早的文章了</span>
+      </span>
+    
+    
+      <a class="article-action article-action--next" href="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/">
+        <span class="action-label">下一篇</span>
+        <span class="action-title">小知识点</span>
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-right"></use></svg>
+
+      </a>
+    
+  </nav>
+</article>
+</div>
+
+<button type="button" class="back-to-top" data-action="scroll-to-top" aria-label="返回顶部" hidden>
+  
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-up"></use></svg>
+
+</button>
+
+
+  <section class="related-paper">
+    <header class="related-paper__head">
+      <h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-link"></use></svg>
+相关文章</h2>
+      <a class="related-paper__more" href="/archives/">
+        <span>查看更多</span>
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-right"></use></svg>
+
+      </a>
+    </header>
+    <div class="related-paper__grid">
+      
+        <a class="related-card" href="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-0 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260826193956246.png" alt="小知识点" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">小知识点</strong>
+            <em class="related-card__date">2026-09-05</em>
+          </span>
+        </a>
+      
+        <a class="related-card" href="/2026/08/09/%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-1 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/./%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87.assets/image-20260813213508169.png" alt="遥感论文" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">遥感论文</strong>
+            <em class="related-card__date">2026-08-09</em>
+          </span>
+        </a>
+      
+        <a class="related-card" href="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9_backup/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-2 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260826193956246.png" alt="小知识点（备份）" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">小知识点（备份）</strong>
+            <em class="related-card__date">2026-09-05</em>
+          </span>
+        </a>
+      
+    </div>
+  </section>
+
+
+      
+
+
+    </section>
+    
+  </main>
+
+  <div class="sidebar-backdrop js-sidebar-close" aria-hidden="true"></div>
+
+  
+<footer class="site-footer">
+  <span class="site-footer__left">© 2026 By lorena</span>
+  
+    <span class="site-footer__right">
+      
+        <span class="site-footer__row"><span class="site-footer__powered-prefix">Powered by Theme</span> <a href="https://github.com/Homulilly/hexo-theme-flatpaper" target="_blank" rel="noopener">FlatPaper</a></span>
+      
+    </span>
+  
+</footer>
+
+  
+<div class="search-panel" aria-hidden="true" data-index-url="/flatpaper-search.json">
+  <div class="search-backdrop js-search-close"></div>
+  <section class="search-dialog" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <span class="tape tape--top-left" aria-hidden="true"></span>
+    <header class="search-head">
+      <h2><span class="green-dot"></span>搜索文章</h2>
+      <button class="icon-button js-search-close" type="button" aria-label="关闭搜索">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+      </button>
+    </header>
+    <label class="search-field">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+      <input id="flatpaper-search" class="search-input" type="search" placeholder="输入关键词，按 Esc 关闭" autocomplete="off">
+    </label>
+    <div class="search-results" data-empty="输入关键词后显示匹配的文章">
+      <p class="search-empty">输入关键词后显示匹配的文章</p>
+    </div>
+  </section>
+</div>
+
+  <script>
+  window.FLATPAPER_I18N = {"language":"zh-CN","common.posts":"文章","common.categories":"分类","common.tags":"标签","common.comments":"评论","common.share":"分享","common.page":"页面","common.archive":"归档","common.post_list":"文章列表","common.search_posts":"搜索文章","common.random_posts":"随机文章","common.reward":"赞赏","common.view_all":"查看全部","pagination.prev":"上一页","pagination.next":"下一页","pagination.post_pager":"文章分页","pagination.archive_pager":"归档分页","index.featured":"精选文章","index.pinned":"置顶","index.read_more":"阅读全文","index.previous_slide":"上一张","index.next_slide":"下一张","index.carousel_pagination":"轮播页码","index.carousel_slide":"第 %d 张","index.latest_posts":"最新文章","index.empty_posts":"还没有文章。创建第一篇文章后，这里会显示最新内容。","archive.title":"归档","archive.post_list":"文章列表","taxonomy.category_count":"%d 篇","taxonomy.empty_categories":"暂时还没有分类。","taxonomy.empty_tags":"暂时还没有标签。","links.label":"友链","links.title":"友情链接","links.empty_data":"暂未加载到友链数据。请确认 source/_data/links.yml 存在并已 hexo clean。","links.rss_label":"%s 的 RSS","friends_feed.label":"朋友圈","friends_feed.title":"友链朋友圈","friends_feed.loading":"正在加载友链动态…","friends_feed.missing_url":"暂未配置 all.json 地址。","friends_feed.load_failed":"友链动态加载失败，请稍后再试。","friends_feed.empty":"暂时没有抓取到友链文章。","friends_feed.load_more":"加载更多","friends_feed.updated_at":"更新于 %s","friends_feed.friend_count":"%d 位友邻","friends_feed.active_count":"%d 位活跃","friends_feed.article_count":"%d 篇文章","friends_feed.unknown_author":"未知站点","friends_feed.date_unknown":"时间未知","guestbook.label":"留言板","guestbook.title":"留言板","guestbook.loading":"正在铺开留言墙…","guestbook.missing_config":"留言墙需要评论系统：请在主题配置中设置 comments: twikoo（并填写 envId）或 comments: artalk（并填写 server）。","guestbook.load_failed":"留言加载失败，请稍后再试。","guestbook.empty":"墙上还空着，来贴第一张留言吧！","guestbook.load_more":"展开更多留言","guestbook.total_count":"共 %d 条留言","guestbook.latest_note":"墙上展示最新 %d 条","guestbook.jump_to_comment":"查看留言","guestbook.sort_time":"查看最新","guestbook.sort_random":"随机排序","guestbook.anonymous":"匿名访客","guestbook.write_hint":"在下方留言，刷新后就会贴到墙上","post.scroll_to_comments":"跳转到评论区","post.previous":"上一篇","post.next":"下一篇","post.no_previous":"没有更早的文章了","post.no_next":"已经是最新的一篇","post.back_to_top":"返回顶部","post.related_posts":"相关文章","post.view_more":"查看更多","not_found.label":"页面走丢了","not_found.title":"找不到这个页面","not_found.text":"这个地址可能已经移动、删除，或者从未存在。","not_found.home":"返回首页","not_found.search":"搜索文章","search.placeholder":"输入关键词，按 Esc 关闭","search.empty":"输入关键词后显示匹配的文章","search.loading":"正在加载搜索索引…","search.load_failed":"搜索索引加载失败，请重新打开搜索重试","search.no_result":"没有找到与 \"%s\" 相关的文章","search.close":"关闭搜索","code.copy":"复制代码","code.collapse":"折叠代码","code.expand":"展开代码","heading.anchor":"链接到此节: %s","head.tag":"标签：%s","head.category":"分类：%s","head.archive":"归档","head.archive_with_date":"归档：%s","head.page_number":"第 %d 页","navigation.primary":"主导航","navigation.mobile":"移动端导航","navigation.brand_home":"FlatPaper 首页","navigation.brand_menu":"打开站点导航","navigation.open_sidebar":"打开侧边栏","navigation.close_sidebar":"关闭侧边栏","navigation.sidebar":"侧边栏","navigation.sidebar_tools":"侧边栏工具","navigation.site_links":"站点链接","navigation.site_info":"站点信息","colors.choose_theme_color":"选择主题色","colors.theme_color":"主题色","colors.toggle_color_mode":"切换颜色模式","colors.green":"绿色","colors.purple":"紫色","colors.pink":"粉色","colors.sakura":"樱花粉","colors.blue":"蓝色","colors.orange":"橙色","colors.black":"黑色","profile.default_bio":"热爱生活，热爱代码，喜欢分享技术与生活中的点滴。","profile.email_copied":"邮箱已复制","welcome.cta":"开始阅读","welcome.title":"欢迎来到 FlatPaper","welcome.text":"一个专注于内容与阅读体验的博客主题。","home_hero.label":"首页开屏","home_hero.enter":"开始阅读","home_hero.note":"今日","home_hero.default_subtitle":"日常记录","home_hero.nav_links":"开屏导航","home_hero.profile_links":"个人链接","home_hero.tools":"开屏工具","home_hero.shuffle_stickers":"打乱贴纸位置","home_hero.link":"链接","home_hero.sticker_image":"贴纸图片","home_hero.visit_confirm":"要访问 %s 吗？","home_hero.visit":"访问","home_hero.cancel":"取消","toc.title":"文章目录","toc.empty":"目录会根据文章标题自动生成。","toc.expand_all":"展开全部目录","toc.collapse_all":"收起全部目录","sidebar.hot_tags":"热门标签","sidebar.latest_posts":"最新文章"};
+  </script>
+  
+<script src="/js/main.js"></script>
+
+  
+  <script src="/js/twojian-ui.js" defer></script>
+  
+</body>
+</html>
