@@ -1,6 +1,13 @@
 ---
 title: 复现 GitHub 项目
 date: 2026-08-11 20:45:38
+categories:
+  - 工程实践
+tags:
+  - GitHub
+  - 环境配置
+  - 论文复现
+  - ChangeFormer
 ---
 
 # 复现github项目：

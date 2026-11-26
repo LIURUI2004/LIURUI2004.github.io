@@ -1,6 +1,12 @@
 ---
 title: 小知识点（备份）
 date: 2026-09-05 15:56:29
+categories:
+  - 学习笔记
+tags:
+  - ViT
+  - CLIP
+  - 多模态
 ---
 
 # VIT

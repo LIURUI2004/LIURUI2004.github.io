@@ -866,3 +866,223 @@ body.is-home .welcome-card {
 .tj-pager a:active {
   transform: scale(0.96);
 }
+
+/* ==================================================================
+ * 分类 / 标签 / 归档页 —— 参照 twojian 的分类卡片与时间轴
+ * 分类图标按分类名（URL 中的百分编码）匹配，等价于 MyPost 里
+ * category-meta.ts 的「按关键词解析图标 + 强调色」规则表。
+ * ================================================================== */
+
+/* ---- 分类总览：玻璃卡片网格 ---- */
+.taxonomy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.taxonomy-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 1px solid var(--tj-hairline);
+  border-radius: 22px;
+  background: var(--tj-glass);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: 0 8px 24px var(--tj-shadow);
+  text-decoration: none;
+  transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.26s ease, border-color 0.26s ease;
+}
+
+.taxonomy-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(53, 191, 171, 0.38);
+  box-shadow: 0 16px 36px var(--tj-shadow);
+}
+
+.taxonomy-card .dot {
+  display: none;
+}
+
+/* 图标方块：默认文件夹 */
+.taxonomy-card::before {
+  content: "📁";
+  display: flex;
+  flex: 0 0 42px;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: rgba(53, 191, 171, 0.12);
+  font-size: 19px;
+  line-height: 1;
+  transition: transform 0.22s ease;
+}
+
+.taxonomy-card:hover::before {
+  transform: scale(1.08);
+}
+
+/* 按分类名匹配图标与底色 */
+.taxonomy-card[href*="%E7%A7%91%E7%A0%94%E7%AC%94%E8%AE%B0"]::before {
+  content: "🔬";
+  background: rgba(30, 102, 245, 0.12);
+}
+.taxonomy-card[href*="%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0"]::before {
+  content: "📚";
+  background: rgba(234, 118, 203, 0.14);
+}
+.taxonomy-card[href*="%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5"]::before {
+  content: "🛠";
+  background: rgba(223, 142, 29, 0.14);
+}
+.taxonomy-card[href*="%E9%9A%8F%E7%AC%94"]::before {
+  content: "✍️";
+  background: rgba(53, 191, 171, 0.12);
+}
+
+.taxonomy-card strong {
+  flex: 1;
+  min-width: 0;
+  color: var(--tj-fg);
+  font-size: 15px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taxonomy-card em {
+  flex: 0 0 auto;
+  color: var(--tj-muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.taxonomy-card::after {
+  content: "›";
+  flex: 0 0 auto;
+  color: var(--tj-subtle);
+  font-size: 20px;
+  line-height: 1;
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.taxonomy-card:hover::after {
+  color: var(--tj-brand);
+  transform: translateX(3px);
+}
+
+/* ---- 标签云：玻璃胶囊 ---- */
+.tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tag-cloud .tag-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 17px;
+  border: 1px solid var(--tj-hairline);
+  border-radius: 999px;
+  background: var(--tj-glass);
+  box-shadow: 0 4px 14px var(--tj-shadow);
+  color: var(--tj-fg);
+  font-size: 13px !important;
+  font-weight: 500;
+  text-decoration: none;
+  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.tag-cloud .tag-chip:hover {
+  transform: translateY(-2px);
+  border-color: var(--tj-brand);
+  background: var(--tj-brand);
+  color: #fff;
+}
+
+/* ---- 分类 / 标签 / 归档详情：文章时间轴 ---- */
+.archive-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.archive-list .archive-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 12px 14px 30px;
+  border-radius: 14px;
+  text-decoration: none;
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), background 0.18s ease;
+}
+
+.archive-list .archive-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 11px;
+  width: 2px;
+  background: var(--line);
+}
+
+.archive-list .archive-item::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 7px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tj-subtle);
+  transform: translateY(-50%);
+  transition: background 0.18s ease;
+}
+
+.archive-list .archive-item:hover {
+  transform: translateX(8px);
+  background: var(--tj-row-hover);
+}
+
+.archive-list .archive-item:hover::after {
+  background: var(--tj-brand);
+}
+
+.archive-list .archive-item span {
+  flex: 0 0 90px;
+  color: var(--tj-muted);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+}
+
+.archive-list .archive-item strong {
+  flex: 1;
+  min-width: 0;
+  color: var(--tj-fg);
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.archive-list .archive-item:hover strong {
+  color: var(--tj-brand);
+}
+
+@media (max-width: 640px) {
+  .taxonomy-grid {
+    grid-template-columns: 1fr;
+  }
+  .archive-list .archive-item span {
+    flex-basis: 72px;
+    font-size: 11px;
+  }
+}
