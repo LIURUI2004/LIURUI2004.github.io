@@ -1,0 +1,1276 @@
+<!doctype html>
+
+<html lang="zh-CN" data-fancybox-enabled="1">
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f3e9" data-flatpaper-theme-color>
+
+<title>DINO 代码详解｜无标签自蒸馏如何落到 100 行 PyTorch | lorena的小博客</title>
+<meta name="description" content="一句话导读：DINO 不需要任何人工标签，只要求「同一张图的两个不同视图，网络给出一致的输出分布」。本文把这套机制从论文公式拆到 course-DINO.py 的每一行，并修掉终稿里三个会让训练完全失效的问题。 适用读者：了解 ViT 与基本 PyTorch 训练流程，想搞懂自监督「学生—教师」范式代码落地的人。阅读时长：约 20 分钟。关键词：self-d...">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DINO 代码详解｜无标签自蒸馏如何落到 100 行 PyTorch | lorena的小博客">
+<meta property="og:url" content="https://liurui2004.github.io/2026/11/26/dino-code-walkthrough/">
+<meta property="og:site_name" content="lorena的小博客">
+<meta property="og:description" content="一句话导读：DINO 不需要任何人工标签，只要求「同一张图的两个不同视图，网络给出一致的输出分布」。本文把这套机制从论文公式拆到 course-DINO.py 的每一行，并修掉终稿里三个会让训练完全失效的问题。 适用读者：了解 ViT 与基本 PyTorch 训练流程，想搞懂自监督「学生—教师」范式代码落地的人。阅读时长：约 20 分钟。关键词：self-d...">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dino-code-walkthrough/dino-p10-fig01-flow.jpg">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dino-code-walkthrough/dino-p10-fig02-whiteboard.jpg">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dino-code-walkthrough/dino-p10-fig03-screen.jpg">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dino-code-walkthrough/dino-p10-fig04-imports-vit.jpg">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dino-code-walkthrough/dino-p10-fig05-transforms.jpg">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dino-code-walkthrough/dino-p10-fig06-init-center.jpg">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dino-code-walkthrough/dino-p10-fig07-hyperparams.jpg">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dino-code-walkthrough/dino-p10-fig08-loss-v1.jpg">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dino-code-walkthrough/dino-p10-fig09-loss-final.jpg">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dino-code-walkthrough/dino-p10-fig10-training-loop.jpg">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/dino-code-walkthrough/dino-p10-fig11-final-code.jpg">
+<meta property="article:published_time" content="2026-11-26T11:55:56.000Z">
+<meta property="article:modified_time" content="2026-11-26T11:55:56.742Z">
+<meta property="article:author" content="lorena">
+<meta property="article:tag" content="ViT">
+<meta property="article:tag" content="多模态">
+<meta property="article:tag" content="DINO">
+<meta property="article:tag" content="自监督学习">
+<meta property="article:tag" content="PyTorch">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liurui2004.github.io/2026/11/26/dino-code-walkthrough/dino-p10-fig01-flow.jpg">
+<link rel="canonical" href="https://liurui2004.github.io/2026/11/26/dino-code-walkthrough/">
+
+<link rel="icon" href="/images/favicon.png" type="image/png">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"DINO 代码详解｜无标签自蒸馏如何落到 100 行 PyTorch","name":"DINO 代码详解｜无标签自蒸馏如何落到 100 行 PyTorch | lorena的小博客","description":"一句话导读：DINO 不需要任何人工标签，只要求「同一张图的两个不同视图，网络给出一致的输出分布」。本文把这套机制从论文公式拆到 course-DINO.py 的每一行，并修掉终稿里三个会让训练完全失效的问题。 适用读者：了解 ViT 与基本 PyTorch 训练流程，想搞懂自监督「学生—教师」范式代码落地的人。阅读时长：约 20 分钟。关键词：self-d...","url":"https://liurui2004.github.io/2026/11/26/dino-code-walkthrough/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/11/26/dino-code-walkthrough/","datePublished":"2026-11-26T11:55:56.000Z","dateModified":"2026-11-26T11:55:56.742Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"},"keywords":"ViT, 多模态, DINO, 自监督学习, PyTorch"}</script>
+
+<script>
+  (function () {
+    var accents = { orange: 1, purple: 1, sakura: 1, blue: 1, pink: 1, green: 1, black: 1 };
+    var match = document.cookie.match(/(?:^|;\s*)flatpaper-accent=([^;]+)/);
+    var accent = 'green';
+    if (match) {
+      try { accent = decodeURIComponent(match[1]); } catch (e) {}
+    }
+    if (!accents[accent]) accent = 'green';
+    document.documentElement.setAttribute('data-accent', accent);
+    try {
+      if (localStorage.getItem('flatpaper-mode') === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+      }
+    } catch (e) {}
+  })();
+</script>
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css">
+<script defer src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+
+
+  
+  <link rel="stylesheet" href="/css/twojian-style.css?v=5">
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body
+  class="is-post tape-disabled tag-style-tape bg-style-default"
+  data-default-accent="green"
+  data-code-theme="simple"
+  data-note-style="sticky"
+  data-note-icons="on"
+  data-button-style="circle"
+  data-strong-accent="on"
+>
+  
+    <div class="page-grain"></div>
+  
+  <svg width="0" height="0" style="position:absolute;z-index:-1;" aria-hidden="true">
+    <defs>
+      <filter id="paper-edge" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+  
+  <header class="site-header">
+  
+  <button class="icon-button js-sidebar-toggle sidebar-toggle" type="button" aria-label="打开侧边栏" aria-controls="paper-sidebar-drawer" aria-expanded="false">
+    
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-menu"></use></svg>
+
+  </button>
+
+  <div class="brand">
+    <div class="brand-mark-wrapper">
+      
+        <a class="brand-mark" href="/" aria-label="FlatPaper 首页">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-layout-grid"></use></svg>
+
+        </a>
+      
+    </div>
+    <a class="brand-text" href="/">lorena的小博客</a>
+  </div>
+
+  <nav class="site-nav" aria-label="主导航">
+    
+      
+        <a class="site-nav-link " href="/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+          <span>首页</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/categories/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+          <span>分类</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/tags/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+          <span>标签</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/archives/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+          <span>归档</span>
+        </a>
+      
+    
+  </nav>
+
+  <div class="header-tools">
+    <button class="icon-button js-search-open" type="button" aria-label="搜索文章">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+    </button>
+    <div class="accent-picker">
+      <button class="icon-button accent-toggle" type="button" aria-label="选择主题色" title="选择主题色" aria-haspopup="true" aria-expanded="false" aria-controls="accent-menu">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-palette flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-palette"></use></svg>
+
+      </button>
+      <div class="accent-menu" id="accent-menu" role="menu" aria-label="主题色">
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="橙色" aria-checked="false" data-accent-option="orange">
+          <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="紫色" aria-checked="false" data-accent-option="purple">
+          <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="樱花粉" aria-checked="false" data-accent-option="sakura">
+          <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="蓝色" aria-checked="false" data-accent-option="blue">
+          <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="粉色" aria-checked="false" data-accent-option="pink">
+          <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="绿色" aria-checked="false" data-accent-option="green">
+          <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="黑色" aria-checked="false" data-accent-option="black">
+          <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+    <button class="theme-toggle" type="button" aria-label="切换颜色模式">
+      <span class="theme-icon theme-icon--sun">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-sun"></use></svg>
+</span>
+      <span class="theme-icon theme-icon--moon">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-moon"></use></svg>
+</span>
+    </button>
+  </div>
+</header>
+
+
+  
+  <main class="paper-shell paper-shell--article">
+    
+
+<aside id="paper-sidebar-drawer" class="paper-sidebar paper-sidebar--right" aria-label="侧边栏">
+  <div class="drawer-toolbar" aria-label="侧边栏工具">
+    <div class="drawer-accent-options" role="group" aria-label="主题色">
+      <button type="button" class="accent-option" aria-label="橙色" aria-pressed="false" data-accent-option="orange">
+        <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="紫色" aria-pressed="false" data-accent-option="purple">
+        <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="樱花粉" aria-pressed="false" data-accent-option="sakura">
+        <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="蓝色" aria-pressed="false" data-accent-option="blue">
+        <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="粉色" aria-pressed="false" data-accent-option="pink">
+        <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="绿色" aria-pressed="false" data-accent-option="green">
+        <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="黑色" aria-pressed="false" data-accent-option="black">
+        <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+      </button>
+    </div>
+    <button class="icon-button drawer-close js-sidebar-close" type="button" aria-label="关闭侧边栏">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+    </button>
+  </div>
+
+  <section class="side-card nav-card">
+    <nav class="site-nav-drawer" aria-label="移动端导航">
+      
+        
+          <a class="" href="/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+            <span>首页</span>
+          </a>
+        
+      
+        
+          <a class="" href="/categories/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+            <span>分类</span>
+          </a>
+        
+      
+        
+          <a class="" href="/tags/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+            <span>标签</span>
+          </a>
+        
+      
+        
+          <a class="" href="/archives/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+            <span>归档</span>
+          </a>
+        
+      
+    </nav>
+  </section>
+
+  <section class="side-card profile-card">
+    
+      <div class="avatar avatar--image avatar--circle">
+        <img src="/images/avatar.jpg" alt="lorena" loading="lazy" referrerpolicy="no-referrer">
+      </div>
+    
+    <h3>lorena</h3>
+    <p class="profile-role">isfj 小女孩 · 懒惰但上进</p>
+    <p>目标成为estj的isfj小女孩，持续学习新知识中....</p>
+    
+    <div class="socials">
+      
+        <a href="https://github.com/LIURUI2004" target="_blank" rel="noopener" aria-label="GitHub" data-tooltip="GitHub">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 496 512" fill="currentColor" class="lucide lucide-github flatpaper-icon flatpaper-icon--fa-brands" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-fa-brands-github"></use></svg>
+
+          
+        </a>
+      
+        <a href="mailto:liurui20041008@gmail.com" target="_blank" rel="noopener" aria-label="Email" data-tooltip="Email">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-mail"></use></svg>
+
+          
+        </a>
+      
+        <a href="https://www.xiaohongshu.com/user/profile/66c9fef3000000001d0231f5" target="_blank" rel="noopener" aria-label="小红书" data-tooltip="小红书主页">
+          
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" class="lucide lucide-custom" aria-hidden="true"><path d="M22.405 9.879c.002.016.01.02.07.019h.725a.797.797 0 0 0 .78-.972.794.794 0 0 0-.884-.618.795.795 0 0 0-.692.794c0 .101-.002.666.001.777zm-11.509 4.808c-.203.001-1.353.004-1.685.003a2.528 2.528 0 0 1-.766-.126.025.025 0 0 0-.03.014L7.7 16.127a.025.025 0 0 0 .01.032c.111.06.336.124.495.124.66.01 1.32.002 1.981 0 .01 0 .02-.006.023-.015l.712-1.545a.025.025 0 0 0-.024-.036zM.477 9.91c-.071 0-.076.002-.076.01a.834.834 0 0 0-.01.08c-.027.397-.038.495-.234 3.06-.012.24-.034.389-.135.607-.026.057-.033.042.003.112.046.092.681 1.523.787 1.74.008.015.011.02.017.02.008 0 .033-.026.047-.044.147-.187.268-.391.371-.606.306-.635.44-1.325.486-1.706.014-.11.021-.22.03-.33l.204-2.616.022-.293c.003-.029 0-.033-.03-.034zm7.203 3.757a1.427 1.427 0 0 1-.135-.607c-.004-.084-.031-.39-.235-3.06a.443.443 0 0 0-.01-.082c-.004-.011-.052-.008-.076-.008h-1.48c-.03.001-.034.005-.03.034l.021.293c.076.982.153 1.964.233 2.946.05.4.186 1.085.487 1.706.103.215.223.419.37.606.015.018.037.051.048.049.02-.003.742-1.642.804-1.765.036-.07.03-.055.003-.112zm3.861-.913h-.872a.126.126 0 0 1-.116-.178l1.178-2.625a.025.025 0 0 0-.023-.035l-1.318-.003a.148.148 0 0 1-.135-.21l.876-1.954a.025.025 0 0 0-.023-.035h-1.56c-.01 0-.02.006-.024.015l-.926 2.068c-.085.169-.314.634-.399.938a.534.534 0 0 0-.02.191.46.46 0 0 0 .23.378.981.981 0 0 0 .46.119h.59c.041 0-.688 1.482-.834 1.972a.53.53 0 0 0-.023.172.465.465 0 0 0 .23.398c.15.092.342.12.475.12l1.66-.001c.01 0 .02-.006.023-.015l.575-1.28a.025.025 0 0 0-.024-.035zm-6.93-4.937H3.1a.032.032 0 0 0-.034.033c0 1.048-.01 2.795-.01 6.829 0 .288-.269.262-.28.262h-.74c-.04.001-.044.004-.04.047.001.037.465 1.064.555 1.263.01.02.03.033.051.033.157.003.767.009.938-.014.153-.02.3-.06.438-.132.3-.156.49-.419.595-.765.052-.172.075-.353.075-.533.002-2.33 0-4.66-.007-6.991a.032.032 0 0 0-.032-.032zm11.784 6.896c0-.014-.01-.021-.024-.022h-1.465c-.048-.001-.049-.002-.05-.049v-4.66c0-.072-.005-.07.07-.07h.863c.08 0 .075.004.075-.074V8.393c0-.082.006-.076-.08-.076h-3.5c-.064 0-.075-.006-.075.073v1.445c0 .083-.006.077.08.077h.854c.075 0 .07-.004.07.07v4.624c0 .095.008.084-.085.084-.37 0-1.11-.002-1.304 0-.048.001-.06.03-.06.03l-.697 1.519s-.014.025-.008.036c.006.01.013.008.058.008 1.748.003 3.495.002 5.243.002.03-.001.034-.006.035-.033v-1.539zm4.177-3.43c0 .013-.007.023-.02.024-.346.006-.692.004-1.037.004-.014-.002-.022-.01-.022-.024-.005-.434-.007-.869-.01-1.303 0-.072-.006-.071.07-.07l.733-.003c.041 0 .081.002.12.015.093.025.16.107.165.204.006.431.002 1.153.001 1.153zm2.67.244a1.953 1.953 0 0 0-.883-.222h-.18c-.04-.001-.04-.003-.042-.04V10.21c0-.132-.007-.263-.025-.394a1.823 1.823 0 0 0-.153-.53 1.533 1.533 0 0 0-.677-.71 2.167 2.167 0 0 0-1-.258c-.153-.003-.567 0-.72 0-.07 0-.068.004-.068-.065V7.76c0-.031-.01-.041-.046-.039H17.93s-.016 0-.023.007c-.006.006-.008.012-.008.023v.546c-.008.036-.057.015-.082.022h-.95c-.022.002-.028.008-.03.032v1.481c0 .09-.004.082.082.082h.913c.082 0 .072.128.072.128V11.19s.003.117-.06.117h-1.482c-.068 0-.06.082-.06.082v1.445s-.01.068.064.068h1.457c.082 0 .076-.006.076.079v3.225c0 .088-.007.081.082.081h1.43c.09 0 .082.007.082-.08v-3.27c0-.029.006-.035.033-.035l2.323-.003c.098 0 .191.02.28.061a.46.46 0 0 1 .274.407c.008.395.003.79.003 1.185 0 .259-.107.367-.33.367h-1.218c-.023.002-.029.008-.028.033.184.437.374.871.57 1.303a.045.045 0 0 0 .04.026c.17.005.34.002.51.003.15-.002.517.004.666-.01a2.03 2.03 0 0 0 .408-.075c.59-.18.975-.698.976-1.313v-1.981c0-.128-.01-.254-.034-.38 0 .078-.029-.641-.724-.998z"/></svg>
+          
+        </a>
+      
+      
+        
+        
+        <a href="/atom.xml" aria-label="RSS feed" data-tooltip="RSS feed">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rss flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-rss"></use></svg>
+
+        </a>
+      
+    </div>
+  </section>
+
+  
+
+  
+    <div class="post-sticky-stack">
+      <section class="side-card toc-card">
+        <header class="toc-card__head">
+          <h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table-of-contents flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-table-of-contents"></use></svg>
+文章目录</h2>
+          <button type="button" class="toc-toggle-all" data-action="toggle-toc" aria-pressed="false" aria-label="展开全部目录" title="展开全部目录">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-chevron-down"></use></svg>
+
+          </button>
+        </header>
+        <div class="toc-content">
+          
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%BD%95"><span class="toc-text">目录</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#01-08-%C2%B7-%E7%9B%B4%E8%A7%89%E5%85%88%E8%A1%8C%EF%BD%9CDINO-%E5%9C%A8%E5%AD%A6%E4%BB%80%E4%B9%88%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E4%BC%9A%E5%9D%8D%E7%BC%A9"><span class="toc-text">01 &#x2F; 08 · 直觉先行｜DINO 在学什么，为什么不会坍缩</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E4%B8%80%E5%8F%A5%E8%AF%9D%E8%AF%B4%E6%B8%85"><span class="toc-text">1.1 一句话说清</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-%E6%9C%80%E5%AE%B9%E6%98%93%E6%8E%89%E8%BF%9B%E5%8E%BB%E7%9A%84%E5%9D%91%EF%BC%9A%E5%9D%8D%E7%BC%A9"><span class="toc-text">1.2 最容易掉进去的坑：坍缩</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-3-%E5%85%A8%E5%B1%80%E6%B5%81%E7%A8%8B"><span class="toc-text">1.3 全局流程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-4-%E8%AE%B2%E5%B8%88%E7%99%BD%E6%9D%BF%EF%BC%9A%E4%BA%A4%E5%8F%89%E9%85%8D%E5%AF%B9%E6%98%AF%E5%85%B3%E9%94%AE"><span class="toc-text">1.4 讲师白板：交叉配对是关键</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#02-08-%C2%B7-%E6%95%B0%E5%AD%A6%E5%BD%A2%E5%BC%8F%EF%BD%9C%E5%9B%9B%E4%B8%AA%E5%85%AC%E5%BC%8F%E4%B8%8E%E4%B8%80%E5%BC%A0%E7%AC%A6%E5%8F%B7%E8%A1%A8"><span class="toc-text">02 &#x2F; 08 · 数学形式｜四个公式与一张符号表</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E7%AC%A6%E5%8F%B7%E4%B8%8E%E4%BB%A3%E7%A0%81%E5%8F%98%E9%87%8F%E5%AF%B9%E7%85%A7"><span class="toc-text">2.1 符号与代码变量对照</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-%E5%9B%9B%E4%B8%AA%E5%85%AC%E5%BC%8F"><span class="toc-text">2.2 四个公式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-%E5%BD%A2%E7%8A%B6%E6%A3%80%E6%9F%A5"><span class="toc-text">2.3 形状检查</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#03-08-%C2%B7-%E8%A7%86%E9%A2%91%E8%84%89%E7%BB%9C%EF%BD%9C10-%E5%88%86%E9%92%9F%E9%87%8C%E4%BB%A3%E7%A0%81%E6%98%AF%E6%80%8E%E4%B9%88%E9%95%BF%E5%87%BA%E6%9D%A5%E7%9A%84"><span class="toc-text">03 &#x2F; 08 · 视频脉络｜10 分钟里代码是怎么长出来的</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#04-08-%C2%B7-%E9%80%90%E6%AE%B5%E4%BB%A3%E7%A0%81%EF%BD%9C%E4%BB%8E%E5%AF%BC%E5%85%A5%E5%88%B0%E5%8F%8C%E5%A1%94"><span class="toc-text">04 &#x2F; 08 · 逐段代码｜从导入到双塔</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E5%AF%BC%E5%85%A5%E4%B8%8E%E8%AE%BE%E5%A4%87"><span class="toc-text">4.1 导入与设备</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E7%94%A8-timm-%E5%8C%85%E4%B8%80%E5%B1%82-ViT"><span class="toc-text">4.2 用 timm 包一层 ViT</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-%E6%95%B0%E6%8D%AE%E5%A2%9E%E5%BC%BA%E4%B8%8E-DataLoader"><span class="toc-text">4.3 数据增强与 DataLoader</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-4-%E5%8F%8C%E7%BD%91%E7%BB%9C%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B8%8E%E4%B8%AD%E5%BF%83-C"><span class="toc-text">4.4 双网络初始化与中心 C</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-5-%E5%9B%9B%E4%B8%AA%E8%B6%85%E5%8F%82%E6%95%B0"><span class="toc-text">4.5 四个超参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-6-augment%EF%BC%9A%E6%9C%80%E3%80%8C%E6%9A%B4%E5%8A%9B%E3%80%8D%E7%9A%84%E7%AE%80%E5%8C%96"><span class="toc-text">4.6 augment：最「暴力」的简化</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#05-08-%C2%B7-%E6%A0%B8%E5%BF%83%EF%BD%9C%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0-H-%E7%9A%84%E4%B8%A4%E6%AC%A1%E5%86%99%E6%B3%95"><span class="toc-text">05 &#x2F; 08 · 核心｜损失函数 H 的两次写法</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E7%AC%AC%E4%B8%80%E7%89%88%EF%BC%88%E7%BA%A6-04-00%EF%BC%8C%E5%8F%AA%E7%9C%8B%E6%80%9D%E8%B7%AF%EF%BC%89"><span class="toc-text">5.1 第一版（约 04:00，只看思路）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-%E7%BB%88%E7%89%88%EF%BC%8805-10-%E8%B5%B7%E4%BF%9D%E7%95%99%E5%88%B0%E7%BB%93%E6%9D%9F%EF%BC%89"><span class="toc-text">5.2 终版（05:10 起保留到结束）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E8%83%BD%E7%9B%B4%E6%8E%A5%E7%94%A8-F-cross-entropy"><span class="toc-text">5.3 为什么不能直接用 F.cross_entropy</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#06-08-%C2%B7-%E8%AE%AD%E7%BB%83%E5%BE%AA%E7%8E%AF%EF%BD%9C%E5%89%8D%E5%90%91%E3%80%81%E6%8D%9F%E5%A4%B1%E3%80%81EMA%E3%80%81%E4%B8%AD%E5%BF%83"><span class="toc-text">06 &#x2F; 08 · 训练循环｜前向、损失、EMA、中心</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E5%89%8D%E5%90%91%E4%B8%8E%E4%BA%A4%E5%8F%89%E9%85%8D%E5%AF%B9"><span class="toc-text">6.1 前向与交叉配对</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E4%BC%98%E5%8C%96%E5%99%A8%E4%B8%8E%E5%8F%8D%E4%BC%A0"><span class="toc-text">6.2 优化器与反传</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-no-grad-%E9%87%8C%E7%9A%84%E4%B8%A4%E4%BB%B6%E4%BA%8B"><span class="toc-text">6.3 no_grad 里的两件事</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-4-%E7%BB%88%E7%A8%BF%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81"><span class="toc-text">6.4 终稿完整代码</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#07-08-%C2%B7-%E4%BB%A3%E7%A0%81%E9%87%8C%E7%9A%84%E4%BA%94%E4%B8%AA%E9%97%AE%E9%A2%98%E4%B8%8E%E4%BF%AE%E6%AD%A3"><span class="toc-text">07 &#x2F; 08 · 代码里的五个问题与修正</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#7-1-%E5%8F%98%E9%87%8F%E5%90%8D%E4%B8%8D%E4%B8%80%E8%87%B4"><span class="toc-text">7.1 变量名不一致</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-2-%E5%AE%9E%E5%8F%82%E9%A1%BA%E5%BA%8F%E5%8F%8D%E4%BA%86%EF%BC%88%E6%9C%80%E4%B8%A5%E9%87%8D%EF%BC%89"><span class="toc-text">7.2 实参顺序反了（最严重）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-3-%E9%BB%98%E8%AE%A4%E5%8F%82%E6%95%B0%E7%BB%91%E5%AE%9A%E9%99%B7%E9%98%B1%EF%BC%88%E6%9C%80%E9%9A%90%E8%94%BD%EF%BC%89"><span class="toc-text">7.3 默认参数绑定陷阱（最隐蔽）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-4-%E6%95%99%E5%B8%88%E5%89%8D%E5%90%91%E6%B2%A1%E6%9C%89-no-grad"><span class="toc-text">7.4 教师前向没有 no_grad()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-5-zero-grad-%E7%9A%84%E4%BD%8D%E7%BD%AE"><span class="toc-text">7.5 zero_grad() 的位置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-6-%E6%95%99%E5%AD%A6%E7%AE%80%E5%8C%96%EF%BC%8C%E4%B8%8D%E6%98%AF-bug%EF%BC%8C%E4%BD%86%E5%88%AB%E5%BD%93%E8%AE%BA%E6%96%87%E9%85%8D%E7%BD%AE"><span class="toc-text">7.6 教学简化，不是 bug，但别当论文配置</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#08-08-%C2%B7-%E5%8F%AF%E8%BF%90%E8%A1%8C%E7%89%88%E3%80%81%E5%AF%B9%E7%85%A7%E8%A1%A8%E4%B8%8E%E8%A6%81%E7%82%B9%E5%9B%9E%E9%A1%BE"><span class="toc-text">08 &#x2F; 08 · 可运行版、对照表与要点回顾</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#8-1-%E4%BF%AE%E6%AD%A3%E7%89%88%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81"><span class="toc-text">8.1 修正版完整代码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-2-%E6%80%8E%E4%B9%88%E5%88%A4%E6%96%AD%E3%80%8C%E7%9C%9F%E7%9A%84%E8%AE%AD%E8%B5%B7%E6%9D%A5%E4%BA%86%E3%80%8D"><span class="toc-text">8.2 怎么判断「真的训起来了」</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-3-%E4%BB%8E-toy-%E5%88%B0%E7%9C%9F-DINO"><span class="toc-text">8.3 从 toy 到真 DINO</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-4-%E8%A6%81%E7%82%B9%E5%9B%9E%E9%A1%BE"><span class="toc-text">8.4 要点回顾</span></a></li></ol></li></ol>
+          
+        </div>
+      </section>
+      
+
+
+    </div>
+  
+
+  
+
+</aside>
+
+    <section class="paper-main">
+      
+
+<div class="article-tape-wrap">
+<span class="tape tape--top-right" aria-hidden="true"></span>
+<article class="article-paper">
+  
+  <header class="article-header">
+    
+      <a class="label-pill" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+        学习笔记
+      </a>
+    
+    <h1>DINO 代码详解｜无标签自蒸馏如何落到 100 行 PyTorch</h1>
+    <div class="meta-line meta-line--article">
+      <span class="meta-date">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-calendar"></use></svg>
+2026-11-26</span>
+      
+        <span class="meta-tags">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+          <a class="meta-tag-link" href="/tags/ViT/">#ViT</a><a class="meta-tag-link" href="/tags/%E5%A4%9A%E6%A8%A1%E6%80%81/">#多模态</a><a class="meta-tag-link" href="/tags/DINO/">#DINO</a><a class="meta-tag-link" href="/tags/%E8%87%AA%E7%9B%91%E7%9D%A3%E5%AD%A6%E4%B9%A0/">#自监督学习</a><a class="meta-tag-link" href="/tags/PyTorch/">#PyTorch</a>
+        </span>
+      
+    </div>
+  </header>
+
+  
+
+
+  <div class="article-content">
+    <blockquote>
+<p><strong>一句话导读</strong>：DINO 不需要任何人工标签，只要求「同一张图的两个不同视图，网络给出一致的输出分布」。本文把这套机制从论文公式拆到 <code>course-DINO.py</code> 的每一行，并修掉终稿里三个会让训练完全失效的问题。</p>
+</blockquote>
+<p><strong>适用读者</strong>：了解 ViT 与基本 PyTorch 训练流程，想搞懂自监督「学生—教师」范式代码落地的人。<br><strong>阅读时长</strong>：约 20 分钟。<br><strong>关键词</strong>：self-distillation、momentum encoder、stop-gradient、centering、sharpening、soft-label cross entropy。</p>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li><a href="#sec01">01 &#x2F; 08 · 直觉先行｜DINO 在学什么，为什么不会坍缩</a></li>
+<li><a href="#sec02">02 &#x2F; 08 · 数学形式｜四个公式与一张符号表</a></li>
+<li><a href="#sec03">03 &#x2F; 08 · 视频脉络｜10 分钟里代码是怎么长出来的</a></li>
+<li><a href="#sec04">04 &#x2F; 08 · 逐段代码｜从导入到双塔</a></li>
+<li><a href="#sec05">05 &#x2F; 08 · 核心｜损失函数 H 的两次写法</a></li>
+<li><a href="#sec06">06 &#x2F; 08 · 训练循环｜前向、损失、EMA、中心</a></li>
+<li><a href="#sec07">07 &#x2F; 08 · 代码里的五个问题与修正</a></li>
+<li><a href="#sec08">08 &#x2F; 08 · 可运行版、对照表与要点回顾</a></li>
+</ul>
+<hr>
+<p><a id="sec01"></a></p>
+<h2 id="01-08-·-直觉先行｜DINO-在学什么，为什么不会坍缩"><a href="#01-08-·-直觉先行｜DINO-在学什么，为什么不会坍缩" class="headerlink" title="01 &#x2F; 08 · 直觉先行｜DINO 在学什么，为什么不会坍缩"></a>01 &#x2F; 08 · 直觉先行｜DINO 在学什么，为什么不会坍缩</h2><p><strong>本节结论</strong>：DINO 是「无标签自蒸馏」——教师输出当软标签，学生去拟合，教师由学生的指数移动平均（EMA）得到；四个机制共同防止网络输出退化为常数。</p>
+<h3 id="1-1-一句话说清"><a href="#1-1-一句话说清" class="headerlink" title="1.1 一句话说清"></a>1.1 一句话说清</h3><p>把同一张图片做两次不同的「破坏」（裁剪、翻转、加噪），让网络对这两个视图给出<strong>尽可能一致的输出分布</strong>。全程不需要标签：训练循环里写的是 <code>for x, _ in dataloader:</code>，那个 <code>_</code> 就是被丢弃的 label。</p>
+<p>DINO 即 *self-<strong>DI</strong>stillation with <strong>NO</strong> labels*。它和 MoCo &#x2F; SimCLR 那类对比学习最大的区别是：<strong>不需要负样本，也不需要显式对比损失</strong>，靠一个「慢慢移动的目标」自己给自己当老师。</p>
+<h3 id="1-2-最容易掉进去的坑：坍缩"><a href="#1-2-最容易掉进去的坑：坍缩" class="headerlink" title="1.2 最容易掉进去的坑：坍缩"></a>1.2 最容易掉进去的坑：坍缩</h3><p>如果没有任何约束，网络会找到一个稳赚不赔的解：<strong>不管输入什么，都输出同一个固定向量</strong>（所有维度概率都是 <code>1/K</code>）。两个视图当然「一致」，loss 立刻降到常数，但什么特征也没学到。这叫 <strong>collapse（表征坍缩）</strong>。</p>
+<p>DINO 用四道防线联合堵死这条路：</p>
+<table>
+<thead>
+<tr>
+<th>机制</th>
+<th>代码里怎么做</th>
+<th>起什么作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>stop-gradient</strong></td>
+<td>教师分支 <code>detach()</code> &#x2F; <code>no_grad()</code></td>
+<td>阻断「两边一起往常数跑」的退化路径，让教师成为缓慢移动的目标</td>
+</tr>
+<tr>
+<td><strong>EMA &#x2F; momentum encoder</strong></td>
+<td><code>θ_t ← λθ_t + (1−λ)θ_s</code></td>
+<td>教师不是学生的即时镜像，而是学生的<strong>时间平均</strong>，目标更稳定</td>
+</tr>
+<tr>
+<td><strong>centering</strong></td>
+<td>教师 logits 减 <code>c</code>，<code>c</code> 用 batch 均值滑动更新</td>
+<td>防止某一个输出维度长期霸占，把分布<strong>拉回均衡</strong></td>
+</tr>
+<tr>
+<td><strong>sharpening</strong></td>
+<td>教师温度 <code>τ_t=0.07</code> 小于学生 <code>τ_s=0.1</code></td>
+<td>让教师目标更尖锐、更有信心，<strong>对抗 centering 带来的过度均匀</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>判断</strong>：centering 把分布摊平，sharpening 把分布捏尖，两者是一对反向力；EMA 让目标慢慢变，stop-gradient 保证梯度只更新学生。缺 centering 容易单维坍缩，缺 sharpening 容易均匀坍缩，四个机制必须成套使用。</p>
+</blockquote>
+<h3 id="1-3-全局流程"><a href="#1-3-全局流程" class="headerlink" title="1.3 全局流程"></a>1.3 全局流程</h3><p><img src="/2026/11/26/dino-code-walkthrough/dino-p10-fig01-flow.jpg" alt="图 1：DINO 训练全流程——两个视图、双塔、交叉熵、每步三件事"></p>
+<p><em>图 1：本集代码的全貌。左侧生成视图，中间学生&#x2F;教师双塔，右侧交叉配对损失，底部是每个 iteration 依次执行的三件事。</em></p>
+<h3 id="1-4-讲师白板：交叉配对是关键"><a href="#1-4-讲师白板：交叉配对是关键" class="headerlink" title="1.4 讲师白板：交叉配对是关键"></a>1.4 讲师白板：交叉配对是关键</h3><p><img src="/2026/11/26/dino-code-walkthrough/dino-p10-fig02-whiteboard.jpg" alt="图 2：DINO 论文结构图与讲师手写公式"></p>
+<p><em>图 2：白板上半是论文结构图，下半是手写的「谁喂给谁」以及三条更新公式。</em></p>
+<p>白板上的对应关系读出来就是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x1 -&gt; student -&gt; s1      x2 -&gt; teacher -&gt; t2    =&gt;  H(t2, s1)</span><br><span class="line">x2 -&gt; student -&gt; s2      x1 -&gt; teacher -&gt; t1    =&gt;  H(t1, s2)</span><br></pre></td></tr></table></figure>
+
+<p><strong>注意这个「交叉」</strong>：教师看视图 1 得到的 <code>t1</code>，要去监督学生在<strong>视图 2</strong> 上的输出 <code>s2</code>；反过来 <code>t2</code> 监督 <code>s1</code>。绝不拿同一个视图自己监督自己——那样网络只要学会恒等映射就够了，学不到任何视图不变性。后面的纠错章节会说明，视频终稿恰恰把这两个实参写反了。</p>
+<hr>
+<p><a id="sec02"></a></p>
+<h2 id="02-08-·-数学形式｜四个公式与一张符号表"><a href="#02-08-·-数学形式｜四个公式与一张符号表" class="headerlink" title="02 &#x2F; 08 · 数学形式｜四个公式与一张符号表"></a>02 &#x2F; 08 · 数学形式｜四个公式与一张符号表</h2><p><strong>本节结论</strong>：学生侧是「可导的预测分布」，教师侧是「不回传梯度的目标分布」，损失是软标签交叉熵；教师与中心都不通过反向传播更新。</p>
+<h3 id="2-1-符号与代码变量对照"><a href="#2-1-符号与代码变量对照" class="headerlink" title="2.1 符号与代码变量对照"></a>2.1 符号与代码变量对照</h3><table>
+<thead>
+<tr>
+<th>符号</th>
+<th>论文写法</th>
+<th>代码变量</th>
+<th>本集取值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>学生网络</td>
+<td><code>g_θs</code></td>
+<td><code>gs</code></td>
+<td>ViT-S&#x2F;16</td>
+<td>有梯度，被优化器更新</td>
+</tr>
+<tr>
+<td>教师网络</td>
+<td><code>g_θt</code></td>
+<td><code>gt</code></td>
+<td>ViT-S&#x2F;16</td>
+<td>无梯度，EMA 更新</td>
+</tr>
+<tr>
+<td>两个视图</td>
+<td><code>x1, x2 ~ Aug(x)</code></td>
+<td><code>x1, x2</code></td>
+<td>加高斯噪声</td>
+<td>同一张图的两个版本</td>
+</tr>
+<tr>
+<td>输出维度</td>
+<td><code>K</code></td>
+<td><code>output_dim</code></td>
+<td>128</td>
+<td>论文常用 65536</td>
+</tr>
+<tr>
+<td>学生温度</td>
+<td><code>τ_s</code></td>
+<td><code>tps</code></td>
+<td>0.1</td>
+<td>较大，分布较平</td>
+</tr>
+<tr>
+<td>教师温度</td>
+<td><code>τ_t</code></td>
+<td><code>tpt</code></td>
+<td>0.07</td>
+<td>较小，sharpening</td>
+</tr>
+<tr>
+<td>EMA 系数</td>
+<td><code>λ</code></td>
+<td><code>l</code></td>
+<td>0.6</td>
+<td>论文 0.996 → 1</td>
+</tr>
+<tr>
+<td>中心动量</td>
+<td><code>m</code></td>
+<td><code>m</code></td>
+<td>0.5</td>
+<td>论文 0.9</td>
+</tr>
+<tr>
+<td>中心</td>
+<td><code>c</code></td>
+<td><code>C</code></td>
+<td>全零 <code>(128,)</code></td>
+<td>教师 logits 的滑动均值</td>
+</tr>
+</tbody></table>
+<h3 id="2-2-四个公式"><a href="#2-2-四个公式" class="headerlink" title="2.2 四个公式"></a>2.2 四个公式</h3><p><strong>公式一 · 学生分布</strong>（梯度从这里走）</p>
+<blockquote>
+<p><code>P_s(x) = softmax( g_θs(x) / τ_s )</code></p>
+</blockquote>
+<p><strong>公式二 · 教师分布</strong>（<code>sg</code> 表示 stop-gradient）</p>
+<blockquote>
+<p><code>P_t(x) = softmax( ( g_θt(x) − c ) / τ_t ) ,  sg</code></p>
+</blockquote>
+<p>减 <code>c</code> 是 centering，除以更小的 <code>τ_t</code> 是 sharpening。</p>
+<p><strong>公式三 · 损失</strong>（两个视图交叉配对，两视图时除以 2）</p>
+<blockquote>
+<p><code>L = ½[ −P_t(x2) log P_s(x1) ] + ½[ −P_t(x1) log P_s(x2) ]</code></p>
+</blockquote>
+<p>代码里 <code>H(target, student)</code> &#x3D; <code>-(P_t * log P_s).sum(dim=1).mean()</code>：</p>
+<ul>
+<li><code>.sum(dim=1)</code>：沿 K&#x3D;128 个输出维度求和。因为 <code>P_t</code> 是<strong>软分布</strong>而不是类别 id，不能直接用 <code>F.cross_entropy</code>。</li>
+<li><code>.mean()</code>：沿 batch 的 B&#x3D;64 个样本求平均，得到标量。</li>
+</ul>
+<p><strong>公式四 · 两个「不靠梯度」的更新</strong></p>
+<blockquote>
+<p><code>θ_t ← λθ_t + (1−λ)θ_s</code><br><code>c ← m·c + (1−m)·(1/B) Σ_&#123;i=1..B&#125; g_θt(x_i)</code></p>
+</blockquote>
+<h3 id="2-3-形状检查"><a href="#2-3-形状检查" class="headerlink" title="2.3 形状检查"></a>2.3 形状检查</h3><table>
+<thead>
+<tr>
+<th>张量</th>
+<th>形状</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>x</code> &#x2F; <code>x1</code> &#x2F; <code>x2</code></td>
+<td><code>(64, 3, 224, 224)</code></td>
+<td>CIFAR-10 放大到 224</td>
+</tr>
+<tr>
+<td><code>s1, s2, t1, t2</code></td>
+<td><code>(64, 128)</code></td>
+<td>双塔 logits</td>
+</tr>
+<tr>
+<td><code>C</code></td>
+<td><code>(128,)</code></td>
+<td>要能广播到 <code>(B, K)</code></td>
+</tr>
+<tr>
+<td><code>loss</code></td>
+<td><code>()</code></td>
+<td>标量，才能 <code>backward()</code></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>要点</strong>：视频在 <code>s = F.softmax(s / tps, dim=1)</code> 后面特意写了注释 <code># (B,128)</code>，就是在提醒这个形状。读代码时先盯住形状，很多错误一眼就能看出来。</p>
+</blockquote>
+<hr>
+<p><a id="sec03"></a></p>
+<h2 id="03-08-·-视频脉络｜10-分钟里代码是怎么长出来的"><a href="#03-08-·-视频脉络｜10-分钟里代码是怎么长出来的" class="headerlink" title="03 &#x2F; 08 · 视频脉络｜10 分钟里代码是怎么长出来的"></a>03 &#x2F; 08 · 视频脉络｜10 分钟里代码是怎么长出来的</h2><p><strong>本节结论</strong>：这一集是现场手写 <code>course-DINO.py</code>，代码是<strong>边讲边改</strong>的；同一个函数出现过两版，读的时候一定要以终稿为准。</p>
+<p>画面固定为左右分屏：左边 VS Code，右边白板原理图。</p>
+<p><img src="/2026/11/26/dino-code-walkthrough/dino-p10-fig03-screen.jpg" alt="图 3：课程典型画面，左代码右原理"></p>
+<p><em>图 3：左侧深色编辑器，右侧白板上是 DINO 结构图与手写推导。</em></p>
+<table>
+<thead>
+<tr>
+<th>时间段（约）</th>
+<th>屏幕上的动作</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>00:00–01:30</td>
+<td>写 imports、<code>device</code>、封装 <code>class ViT</code>；<code>Compose</code> 里逐个补 <code>Resize / RandomCrop / RandomHorizontalFlip / ToTensor / Normalize</code></td>
+</tr>
+<tr>
+<td>01:30–02:30</td>
+<td>补 <code>CIFAR10</code> + <code>DataLoader</code>；<code>output_dim=128</code>；建 <code>gs</code>、<code>gt</code> 并 <code>load_state_dict</code>；<code>C = torch.zeros(...)</code></td>
+</tr>
+<tr>
+<td>02:30–03:20</td>
+<td>写 <code>augment()</code>、<code>tps/tpt/l/m</code> 四个超参、<code>optim.SGD</code>，起训练循环</td>
+</tr>
+<tr>
+<td>03:20–04:00</td>
+<td><code>x1,x2</code> → <code>s1,s2</code> → <code>t1,t2</code> → <code>loss = H(s1,t2)/2 + H(s2,t1)/2</code></td>
+</tr>
+<tr>
+<td>04:00–04:40</td>
+<td>第一版 <code>H</code>：只有逐元素相乘，没有求和</td>
+</tr>
+<tr>
+<td>04:40–05:30</td>
+<td><strong>推倒重写</strong> <code>H</code>：加 <code>detach()</code>、centering，改成 <code>-(t*log(s)).sum(dim=1).mean()</code></td>
+</tr>
+<tr>
+<td>05:30–06:30</td>
+<td><code>loss.backward()</code> &#x2F; <code>optimizer.step()</code> &#x2F; <code>optimizer.zero_grad()</code></td>
+</tr>
+<tr>
+<td>06:30–08:00</td>
+<td><code>with torch.no_grad():</code> 里写教师 EMA 的 <code>zip</code> 循环</td>
+</tr>
+<tr>
+<td>08:00–09:20</td>
+<td>讲中心 <code>C</code> 的更新，为什么是 <code>mean(dim=0)</code></td>
+</tr>
+<tr>
+<td>09:20–10:05</td>
+<td>整体回看，对照白板收尾</td>
+</tr>
+</tbody></table>
+<hr>
+<p><a id="sec04"></a></p>
+<h2 id="04-08-·-逐段代码｜从导入到双塔"><a href="#04-08-·-逐段代码｜从导入到双塔" class="headerlink" title="04 &#x2F; 08 · 逐段代码｜从导入到双塔"></a>04 &#x2F; 08 · 逐段代码｜从导入到双塔</h2><p><strong>本节结论</strong>：整份代码只有五个零件——ViT 封装、数据管道、双塔、超参、损失函数；真正的「DINO」全在损失函数与训练循环里。</p>
+<h3 id="4-1-导入与设备"><a href="#4-1-导入与设备" class="headerlink" title="4.1 导入与设备"></a>4.1 导入与设备</h3><p><img src="/2026/11/26/dino-code-walkthrough/dino-p10-fig04-imports-vit.jpg" alt="图 4：imports 与 ViT 封装"></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"><span class="keyword">import</span> torch.optim <span class="keyword">as</span> optim</span><br><span class="line"><span class="keyword">import</span> timm</span><br><span class="line"><span class="keyword">from</span> torchvision.transforms <span class="keyword">import</span> Compose, RandomCrop, RandomHorizontalFlip, ToTensor, Normalize, Resize</span><br><span class="line"><span class="keyword">from</span> torch.utils.data <span class="keyword">import</span> DataLoader</span><br><span class="line"><span class="keyword">from</span> torchvision.datasets <span class="keyword">import</span> CIFAR10</span><br><span class="line"></span><br><span class="line">device = torch.device(<span class="string">&quot;cuda&quot;</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">&quot;cpu&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p><code>F</code> 专门用来手写 <code>softmax</code> &#x2F; <code>log_softmax</code>——<strong>DINO 的损失必须自己写，不能用 <code>nn.CrossEntropyLoss</code></strong>，因为目标是软分布。<code>timm</code> 用来一行拿到 ViT 骨架。</p>
+<h3 id="4-2-用-timm-包一层-ViT"><a href="#4-2-用-timm-包一层-ViT" class="headerlink" title="4.2 用 timm 包一层 ViT"></a>4.2 用 timm 包一层 ViT</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">ViT</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, output_dim</span>):</span><br><span class="line">        <span class="built_in">super</span>(ViT, <span class="variable language_">self</span>).__init__()</span><br><span class="line">        <span class="comment"># Use a ViT model from timm</span></span><br><span class="line">        <span class="variable language_">self</span>.vit = timm.create_model(<span class="string">&#x27;vit_small_patch16_224&#x27;</span>,</span><br><span class="line">                                     pretrained=<span class="literal">False</span>,</span><br><span class="line">                                     num_classes=output_dim)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.vit(x)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>判断</strong>：这里是本集最大的简化——<code>num_classes=output_dim</code> 相当于<strong>直接把 ViT 的分类头当成 DINO head</strong>。论文里的 head 是 3 层 MLP（隐藏层 2048）+ weight normalization + L2 normalize + 无 bias 最后一层，输出 K&#x3D;65536 维。包一层的意义是后面要建两个结构相同、参数独立的实例，也方便以后替换成真正的 head。</p>
+</blockquote>
+<h3 id="4-3-数据增强与-DataLoader"><a href="#4-3-数据增强与-DataLoader" class="headerlink" title="4.3 数据增强与 DataLoader"></a>4.3 数据增强与 DataLoader</h3><p><img src="/2026/11/26/dino-code-walkthrough/dino-p10-fig05-transforms.jpg" alt="图 5：get_dataloader 里的 transform"></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_dataloader</span>(<span class="params">batch_size</span>):</span><br><span class="line">    transform = Compose([</span><br><span class="line">        Resize(<span class="number">224</span>),               <span class="comment"># Resize the image to 224x224</span></span><br><span class="line">        RandomCrop(<span class="number">224</span>, padding=<span class="number">4</span>),</span><br><span class="line">        RandomHorizontalFlip(),</span><br><span class="line">        ToTensor(),</span><br><span class="line">        Normalize((<span class="number">0.5</span>, <span class="number">0.5</span>, <span class="number">0.5</span>), (<span class="number">0.5</span>, <span class="number">0.5</span>, <span class="number">0.5</span>)),</span><br><span class="line">    ])</span><br><span class="line">    dataset = CIFAR10(root=<span class="string">&#x27;./cifar10&#x27;</span>, train=<span class="literal">True</span>,</span><br><span class="line">                      transform=transform, download=<span class="literal">True</span>)</span><br><span class="line">    <span class="keyword">return</span> DataLoader(dataset, batch_size=batch_size, shuffle=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>变换</th>
+<th>作用</th>
+<th>必要性</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Resize(224)</code></td>
+<td>CIFAR-10 的 32×32 → 224×224</td>
+<td>ViT-S&#x2F;16 的位置编码对应 224 输入，不改尺寸会对不上</td>
+</tr>
+<tr>
+<td><code>RandomCrop(224, padding=4)</code></td>
+<td>补 4 像素边再随机裁回</td>
+<td>制造平移与局部形变不变性</td>
+</tr>
+<tr>
+<td><code>RandomHorizontalFlip()</code></td>
+<td>随机水平翻转</td>
+<td>制造镜像不变性</td>
+</tr>
+<tr>
+<td><code>ToTensor()</code></td>
+<td>HWC&#x2F;uint8 → CHW&#x2F;float <code>[0,1]</code></td>
+<td>PyTorch 约定</td>
+</tr>
+<tr>
+<td><code>Normalize((0.5,)*3, (0.5,)*3)</code></td>
+<td><code>[0,1]</code> → <code>[-1,1]</code></td>
+<td>三通道均值方差的简化写法</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>注意</strong>：这是<strong>单视图</strong>增强，一个样本只过一次 <code>transform</code>。真正的 DINO 用 multi-crop 生成 2 张全局视图 + 6~8 张局部视图，并叠加颜色抖动、灰度化、模糊、solarization。本集把这套机制压缩成了 4.6 节那个 <code>augment()</code>。</p>
+</blockquote>
+<h3 id="4-4-双网络初始化与中心-C"><a href="#4-4-双网络初始化与中心-C" class="headerlink" title="4.4 双网络初始化与中心 C"></a>4.4 双网络初始化与中心 C</h3><p><img src="/2026/11/26/dino-code-walkthrough/dino-p10-fig06-init-center.jpg" alt="图 6：双塔初始化与中心向量"></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">output_dim = <span class="number">128</span></span><br><span class="line"></span><br><span class="line">gs = ViT(output_dim).to(device)          <span class="comment"># student</span></span><br><span class="line">gt = ViT(output_dim).to(device)          <span class="comment"># teacher</span></span><br><span class="line">gt.load_state_dict(gs.state_dict())      <span class="comment"># 关键：两者起点必须完全一致</span></span><br><span class="line"></span><br><span class="line">C = torch.zeros(output_dim, device=device)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>gs</code> &#x2F; <code>gt</code> 对应 <code>g_θs</code> &#x2F; <code>g_θt</code>。命名里的 <code>s</code>&#x2F;<code>t</code> 也带到了输出上：<code>s1,s2</code> 是学生，<code>t1,t2</code> 是教师。</li>
+<li><code>load_state_dict</code> 让教师从学生<strong>完全相同的参数</strong>起步；省掉这步，第 0 步两边输出就不一致，EMA 也会被污染。</li>
+<li><code>C</code> 形状是 <code>(128,)</code>，才能广播到 <code>(B,128)</code>。</li>
+</ul>
+<blockquote>
+<p><strong>判断</strong>：<code>optimizer = optim.SGD(gs.parameters(), ...)</code> 只吃 <code>gs</code>，<code>for teacher_param, student_param in zip(gt.parameters(), gs.parameters())</code> 只手动改 <code>gt</code>——<strong>教师永远不进优化器</strong>，这就是 momentum encoder 的全部含义。</p>
+</blockquote>
+<h3 id="4-5-四个超参数"><a href="#4-5-四个超参数" class="headerlink" title="4.5 四个超参数"></a>4.5 四个超参数</h3><p><img src="/2026/11/26/dino-code-walkthrough/dino-p10-fig07-hyperparams.jpg" alt="图 7：augment 与四个超参"></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">batch_size = <span class="number">64</span></span><br><span class="line">tps = <span class="number">0.1</span>    <span class="comment"># Temperature for student softmax</span></span><br><span class="line">tpt = <span class="number">0.07</span>   <span class="comment"># Temperature for teacher softmax</span></span><br><span class="line">l   = <span class="number">0.6</span>    <span class="comment"># Network momentum rate</span></span><br><span class="line">m   = <span class="number">0.5</span>    <span class="comment"># Center momentum rate</span></span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>作用</th>
+<th>调大 &#x2F; 调小</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>tps</code></td>
+<td>学生 softmax 温度</td>
+<td>太大 → 学生没主见、梯度糊</td>
+</tr>
+<tr>
+<td><code>tpt</code></td>
+<td>教师 softmax 温度</td>
+<td>太小 → 目标接近 one-hot、训练不稳；论文从 0.04 warmup 到 0.07</td>
+</tr>
+<tr>
+<td><code>l</code></td>
+<td>教师 EMA 惯性</td>
+<td>0.6 意味着教师一步就吃掉 40% 学生，其实很激进；论文 λ≈0.996~1</td>
+</tr>
+<tr>
+<td><code>m</code></td>
+<td>中心 <code>c</code> 的惯性</td>
+<td>0.5 更新很快；论文 0.9</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>判断</strong>：这四个值是「为了让 10 分钟的代码看得懂」而设的，不是复现论文的取值。想复现请按 8.3 节的对照表改。另外 SGD 的 <code>momentum=0.9</code> 与教师 EMA 的 <code>l</code> 完全无关，别混：前者加速学生收敛，后者决定教师跟随学生的速度。</p>
+</blockquote>
+<h3 id="4-6-augment：最「暴力」的简化"><a href="#4-6-augment：最「暴力」的简化" class="headerlink" title="4.6 augment：最「暴力」的简化"></a>4.6 augment：最「暴力」的简化</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">augment</span>(<span class="params">x</span>):</span><br><span class="line">    <span class="keyword">return</span> x + <span class="number">0.1</span> * torch.randn_like(x)</span><br></pre></td></tr></table></figure>
+
+<p>调用两次 <code>x1, x2 = augment(x), augment(x)</code>，因为每次调用重新采样噪声，所以 <code>x1 ≠ x2</code>。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>本集 toy 版</th>
+<th>真实 DINO</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>视图差异来源</td>
+<td>像素级高斯噪声</td>
+<td>几何裁剪 + 颜色扰动 + 模糊 + 多尺度</td>
+</tr>
+<tr>
+<td>学到的不变性</td>
+<td>仅抗噪</td>
+<td>尺度、视角、局部—全局语义一致</td>
+</tr>
+<tr>
+<td>local → global 对应</td>
+<td>无</td>
+<td>有，这是 DINO 特征出现物体轮廓&#x2F;分割感的关键</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>要点</strong>：正因为 DINOv2 是用 multi-crop 训出来的，它的 patch 特征才自带语义分组能力。只加高斯噪声训出来的特征不会有这种空间结构。这是「看懂这份代码」和「能用 DINO 特征」之间的分水岭。</p>
+</blockquote>
+<hr>
+<p><a id="sec05"></a></p>
+<h2 id="05-08-·-核心｜损失函数-H-的两次写法"><a href="#05-08-·-核心｜损失函数-H-的两次写法" class="headerlink" title="05 &#x2F; 08 · 核心｜损失函数 H 的两次写法"></a>05 &#x2F; 08 · 核心｜损失函数 H 的两次写法</h2><p><strong>本节结论</strong>：<code>H(teacher, student)</code> 的三件事是——教师 <code>detach</code> + 减中心 + 小温度 softmax；学生大温度 softmax + 取 log；最后沿 K 求和、沿 B 求平均。</p>
+<h3 id="5-1-第一版（约-04-00，只看思路）"><a href="#5-1-第一版（约-04-00，只看思路）" class="headerlink" title="5.1 第一版（约 04:00，只看思路）"></a>5.1 第一版（约 04:00，只看思路）</h3><p><img src="/2026/11/26/dino-code-walkthrough/dino-p10-fig08-loss-v1.jpg" alt="图 8：损失函数第一版"></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">H</span>(<span class="params">t, s, C=C, tps=tps, tpt=tpt</span>):</span><br><span class="line">    <span class="comment"># t: teacher, s: student</span></span><br><span class="line">    <span class="keyword">return</span> -F.softmax(t / tps, dim=<span class="number">1</span>) * F.log_softmax(s / tpt, dim=<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+
+<p>三个问题当场就被发现：</p>
+<ol>
+<li><strong>只做了逐元素相乘，没有 <code>.sum(dim=1).mean()</code></strong> → 返回 <code>(B,128)</code> 矩阵而不是标量，<code>loss.backward()</code> 会直接报错。</li>
+<li>温度用反了：教师用了 <code>tps</code>，学生用了 <code>tpt</code>。</li>
+<li>没有 <code>detach()</code>，完全没用上 <code>C</code>。</li>
+</ol>
+<p>于是 04:40 左右整段删掉重写。</p>
+<h3 id="5-2-终版（05-10-起保留到结束）"><a href="#5-2-终版（05-10-起保留到结束）" class="headerlink" title="5.2 终版（05:10 起保留到结束）"></a>5.2 终版（05:10 起保留到结束）</h3><p><img src="/2026/11/26/dino-code-walkthrough/dino-p10-fig09-loss-final.jpg" alt="图 9：损失函数终版，detach + centering + 交叉熵"></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">H</span>(<span class="params">t, s, C=C, tps=tps, tpt=tpt</span>):</span><br><span class="line">    t = t.detach()                                  <span class="comment"># (1) stop-gradient</span></span><br><span class="line">    s = F.softmax(s / tps, dim=<span class="number">1</span>)                   <span class="comment"># (2) 学生分布 (B,128)</span></span><br><span class="line">    t = F.softmax((t - C) / tpt, dim=<span class="number">1</span>)             <span class="comment"># (3) centering + sharpening</span></span><br><span class="line">    <span class="keyword">return</span> -(t * torch.log(s)).<span class="built_in">sum</span>(dim=<span class="number">1</span>).mean()    <span class="comment"># (4) 软标签交叉熵</span></span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>行</th>
+<th>做了什么</th>
+<th>为什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>(1)</td>
+<td>教师输出从计算图摘下来</td>
+<td>教师是目标不是预测，梯度绝不能回传到 <code>gt</code></td>
+</tr>
+<tr>
+<td>(2)</td>
+<td>学生 logits → <code>P_s</code></td>
+<td>温度 0.1，梯度从这里流向 <code>gs</code></td>
+</tr>
+<tr>
+<td>(3)</td>
+<td>教师 logits 减中心再除小温度 → <code>P_t</code></td>
+<td>减 <code>C</code> &#x3D; centering 防单维霸占；<code>/0.07</code> &#x3D; sharpening 防均匀坍缩</td>
+</tr>
+<tr>
+<td>(4)</td>
+<td><code>-(t*log(s)).sum(1).mean()</code></td>
+<td><code>sum</code> 沿 K 维、<code>mean</code> 沿 B 维，得标量</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>注意</strong>：视频用 <code>torch.log(s)</code> 而不是 <code>F.log_softmax(...)</code>，数值稳定性略差（<code>s</code> 接近 0 时容易下溢）。8.1 节的修正版改用 <code>F.log_softmax(s/tps, dim=1)</code>。</p>
+</blockquote>
+<h3 id="5-3-为什么不能直接用-F-cross-entropy"><a href="#5-3-为什么不能直接用-F-cross-entropy" class="headerlink" title="5.3 为什么不能直接用 F.cross_entropy"></a>5.3 为什么不能直接用 <code>F.cross_entropy</code></h3><p><code>F.cross_entropy(logits, target)</code> 假定 <code>target</code> 是<strong>类别索引</strong>（一个整数），内部做 <code>log_softmax + nll_loss</code>。而 DINO 的目标是整个 K 维软分布 <code>P_t</code>，损失是 <code>−Σ_k P_t^(k) log P_s^(k)</code>。较新的 PyTorch 虽然支持 soft target，但显式写出来更能看清梯度该走哪一侧。</p>
+<hr>
+<p><a id="sec06"></a></p>
+<h2 id="06-08-·-训练循环｜前向、损失、EMA、中心"><a href="#06-08-·-训练循环｜前向、损失、EMA、中心" class="headerlink" title="06 &#x2F; 08 · 训练循环｜前向、损失、EMA、中心"></a>06 &#x2F; 08 · 训练循环｜前向、损失、EMA、中心</h2><p><strong>本节结论</strong>：每个 iteration 依次做三件事——更新学生（SGD）、EMA 更新教师、滑动更新中心 <code>C</code>；顺序不能乱。</p>
+<h3 id="6-1-前向与交叉配对"><a href="#6-1-前向与交叉配对" class="headerlink" title="6.1 前向与交叉配对"></a>6.1 前向与交叉配对</h3><p><img src="/2026/11/26/dino-code-walkthrough/dino-p10-fig10-training-loop.jpg" alt="图 10：训练循环与 EMA 更新"></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># training</span></span><br><span class="line">loader = get_dataloader(batch_size)</span><br><span class="line"><span class="keyword">for</span> x, _ <span class="keyword">in</span> dataloader:</span><br><span class="line">    x = x.to(device)</span><br><span class="line"></span><br><span class="line">    x1, x2 = augment(x), augment(x)     <span class="comment"># 两个视图</span></span><br><span class="line">    s1, s2 = gs(x1), gs(x2)             <span class="comment"># 学生看两个视图</span></span><br><span class="line">    t1, t2 = gt(x1), gt(x2)             <span class="comment"># 教师看两个视图</span></span><br><span class="line"></span><br><span class="line">    loss = H(s1, t2)/<span class="number">2</span> + H(s2, t1)/<span class="number">2</span>    <span class="comment"># 交叉配对</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>这里要慢下来看</strong>：<code>H</code> 的定义是 <code>H(teacher_logits, student_logits)</code>，第一个参数被 <code>detach</code> + centering + <code>tpt</code> 处理，第二个被 <code>tps</code> + <code>log</code> 处理。所以「<code>t2</code> 监督 <code>s1</code>」应该写 <code>H(t2, s1)</code>。视频终稿写的 <code>H(s1, t2)</code> <strong>实参顺序反了</strong>，详见 7.2 节。</p>
+<h3 id="6-2-优化器与反传"><a href="#6-2-优化器与反传" class="headerlink" title="6.2 优化器与反传"></a>6.2 优化器与反传</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">optimizer = optim.SGD(gs.parameters(), lr=<span class="number">0.03</span>, momentum=<span class="number">0.9</span>, weight_decay=<span class="number">5e-4</span>)</span><br><span class="line"></span><br><span class="line">    loss.backward()                     <span class="comment"># back-propagate</span></span><br><span class="line">    optimizer.step()                    <span class="comment"># SGD update for student</span></span><br><span class="line">    optimizer.zero_grad()               <span class="comment"># Clear gradients</span></span><br></pre></td></tr></table></figure>
+
+<p>没有 <code>epoch</code> 循环、没有日志、没有 checkpoint——这是讲原理用的骨架，不是训练脚本。</p>
+<h3 id="6-3-no-grad-里的两件事"><a href="#6-3-no-grad-里的两件事" class="headerlink" title="6.3 no_grad 里的两件事"></a>6.3 <code>no_grad</code> 里的两件事</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> torch.no_grad():</span><br><span class="line">    <span class="comment"># (2) 教师：momentum encoder</span></span><br><span class="line">    <span class="keyword">for</span> teacher_param, student_param <span class="keyword">in</span> <span class="built_in">zip</span>(gt.parameters(), gs.parameters()):</span><br><span class="line">        teacher_param.data = l * teacher_param.data + (<span class="number">1</span> - l) * student_param.data</span><br><span class="line"></span><br><span class="line">    <span class="comment"># (3) 中心：centering</span></span><br><span class="line">    C = m * C + (<span class="number">1</span> - m) * torch.cat([t1, t2]).mean(dim=<span class="number">0</span>)   <span class="comment"># Update center</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>zip</code> 把两塔参数逐一对齐，<code>l*teacher + (1-l)*student</code> 就是 EMA。这些是参数层面的手动赋值，不是可微操作，所以显式放进 <code>no_grad()</code>。</li>
+<li><code>torch.cat([t1, t2])</code> → <code>(2B,128)</code>，<code>.mean(dim=0)</code> → <code>(128,)</code>，正好和 <code>C</code> 同形，对应论文公式里的批次均值。</li>
+</ul>
+<blockquote>
+<p><strong>要点</strong>：08:00–09:20 讲的是这行为什么是 <code>dim=0</code>。沿 <code>dim=0</code> 得到「每个输出维度平均有多大」，才是要被扣掉的中心；写成 <code>dim=1</code> 会得到 <code>(2B,)</code>，含义变成每个样本在 K 维上的平均概率（恒等于 <code>1/K</code>），完全没意义。</p>
+</blockquote>
+<h3 id="6-4-终稿完整代码"><a href="#6-4-终稿完整代码" class="headerlink" title="6.4 终稿完整代码"></a>6.4 终稿完整代码</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"><span class="keyword">import</span> torch.optim <span class="keyword">as</span> optim</span><br><span class="line"><span class="keyword">import</span> timm</span><br><span class="line"><span class="keyword">from</span> torchvision.transforms <span class="keyword">import</span> Compose, RandomCrop, RandomHorizontalFlip, ToTensor, Normalize, Resize</span><br><span class="line"><span class="keyword">from</span> torch.utils.data <span class="keyword">import</span> DataLoader</span><br><span class="line"><span class="keyword">from</span> torchvision.datasets <span class="keyword">import</span> CIFAR10</span><br><span class="line"></span><br><span class="line">device = torch.device(<span class="string">&quot;cuda&quot;</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">&quot;cpu&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ViT</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, output_dim</span>):</span><br><span class="line">        <span class="built_in">super</span>(ViT, <span class="variable language_">self</span>).__init__()</span><br><span class="line">        <span class="variable language_">self</span>.vit = timm.create_model(<span class="string">&#x27;vit_small_patch16_224&#x27;</span>,</span><br><span class="line">                                     pretrained=<span class="literal">False</span>, num_classes=output_dim)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.vit(x)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_dataloader</span>(<span class="params">batch_size</span>):</span><br><span class="line">    transform = Compose([</span><br><span class="line">        Resize(<span class="number">224</span>),</span><br><span class="line">        RandomCrop(<span class="number">224</span>, padding=<span class="number">4</span>),</span><br><span class="line">        RandomHorizontalFlip(),</span><br><span class="line">        ToTensor(),</span><br><span class="line">        Normalize((<span class="number">0.5</span>, <span class="number">0.5</span>, <span class="number">0.5</span>), (<span class="number">0.5</span>, <span class="number">0.5</span>, <span class="number">0.5</span>)),</span><br><span class="line">    ])</span><br><span class="line">    dataset = CIFAR10(root=<span class="string">&#x27;./cifar10&#x27;</span>, train=<span class="literal">True</span>,</span><br><span class="line">                      transform=transform, download=<span class="literal">True</span>)</span><br><span class="line">    <span class="keyword">return</span> DataLoader(dataset, batch_size=batch_size, shuffle=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">output_dim = <span class="number">128</span></span><br><span class="line">gs = ViT(output_dim).to(device)</span><br><span class="line">gt = ViT(output_dim).to(device)</span><br><span class="line">gt.load_state_dict(gs.state_dict())</span><br><span class="line"></span><br><span class="line">C = torch.zeros(output_dim, device=device)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">augment</span>(<span class="params">x</span>):</span><br><span class="line">    <span class="keyword">return</span> x + <span class="number">0.1</span> * torch.randn_like(x)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">batch_size = <span class="number">64</span></span><br><span class="line">tps = <span class="number">0.1</span>    <span class="comment"># Temperature for student softmax</span></span><br><span class="line">tpt = <span class="number">0.07</span>   <span class="comment"># Temperature for teacher softmax</span></span><br><span class="line">l   = <span class="number">0.6</span>    <span class="comment"># Network momentum rate</span></span><br><span class="line">m   = <span class="number">0.5</span>    <span class="comment"># Center momentum rate</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">H</span>(<span class="params">t, s, C=C, tps=tps, tpt=tpt</span>):</span><br><span class="line">    t = t.detach()</span><br><span class="line">    s = F.softmax(s / tps, dim=<span class="number">1</span>)                 <span class="comment"># (B,128)</span></span><br><span class="line">    t = F.softmax((t - C) / tpt, dim=<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">return</span> -(t * torch.log(s)).<span class="built_in">sum</span>(dim=<span class="number">1</span>).mean()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">optimizer = optim.SGD(gs.parameters(), lr=<span class="number">0.03</span>, momentum=<span class="number">0.9</span>, weight_decay=<span class="number">5e-4</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># training</span></span><br><span class="line">loader = get_dataloader(batch_size)</span><br><span class="line"><span class="keyword">for</span> x, _ <span class="keyword">in</span> dataloader:</span><br><span class="line">    x = x.to(device)</span><br><span class="line"></span><br><span class="line">    x1, x2 = augment(x), augment(x)</span><br><span class="line">    s1, s2 = gs(x1), gs(x2)</span><br><span class="line">    t1, t2 = gt(x1), gt(x2)</span><br><span class="line"></span><br><span class="line">    loss = H(s1, t2)/<span class="number">2</span> + H(s2, t1)/<span class="number">2</span></span><br><span class="line"></span><br><span class="line">    loss.backward()                               <span class="comment"># back-propagate</span></span><br><span class="line">    optimizer.step()                              <span class="comment"># SGD update for student</span></span><br><span class="line">    optimizer.zero_grad()                         <span class="comment"># Clear gradients</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">        <span class="keyword">for</span> teacher_param, student_param <span class="keyword">in</span> <span class="built_in">zip</span>(gt.parameters(), gs.parameters()):</span><br><span class="line">            teacher_param.data = l * teacher_param.data + (<span class="number">1</span> - l) * student_param.data</span><br><span class="line"></span><br><span class="line">        C = m * C + (<span class="number">1</span> - m) * torch.cat([t1, t2]).mean(dim=<span class="number">0</span>)   <span class="comment"># Update center</span></span><br></pre></td></tr></table></figure>
+
+
+<p><img src="/2026/11/26/dino-code-walkthrough/dino-p10-fig11-final-code.jpg" alt="图 11：09:50 的完整代码终稿"></p>
+<p><em>图 11：视频结束时的屏幕，可对照上面的转写逐行核对。</em></p>
+<hr>
+<p><a id="sec07"></a></p>
+<h2 id="07-08-·-代码里的五个问题与修正"><a href="#07-08-·-代码里的五个问题与修正" class="headerlink" title="07 &#x2F; 08 · 代码里的五个问题与修正"></a>07 &#x2F; 08 · 代码里的五个问题与修正</h2><p><strong>本节结论</strong>：终稿里前三个问题会让训练<strong>实际上学不到东西</strong>，后两个是工程规范问题。下面是明确判断，不是待商榷的建议。</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>位置</th>
+<th>问题</th>
+<th>严重度</th>
+<th>修法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>loader</code> &#x2F; <code>dataloader</code></td>
+<td>变量名不一致</td>
+<td>运行即报错</td>
+<td>统一命名</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>H(s1, t2)</code></td>
+<td>实参顺序反了</td>
+<td>学生完全不更新</td>
+<td>改成 <code>H(t2, s1, C)</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>def H(..., C=C)</code></td>
+<td>默认参数绑定陷阱</td>
+<td>centering 恒为 0</td>
+<td>显式传 <code>C</code> + <code>C.copy_()</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>gt(x1), gt(x2)</code></td>
+<td>教师前向没禁图</td>
+<td>白建图、费显存</td>
+<td>包进 <code>no_grad()</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>zero_grad()</code> 位置</td>
+<td>放在 <code>step()</code> 之后</td>
+<td>可用但不规范</td>
+<td>移到 <code>backward()</code> 之前</td>
+</tr>
+</tbody></table>
+<h3 id="7-1-变量名不一致"><a href="#7-1-变量名不一致" class="headerlink" title="7.1 变量名不一致"></a>7.1 变量名不一致</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">loader = get_dataloader(batch_size)      <span class="comment"># 定义为 loader</span></span><br><span class="line"><span class="keyword">for</span> x, _ <span class="keyword">in</span> dataloader:                  <span class="comment"># 用的是 dataloader -&gt; NameError</span></span><br></pre></td></tr></table></figure>
+
+<p>现场敲码的手误，统一成 <code>dataloader = get_dataloader(batch_size)</code> 即可。</p>
+<h3 id="7-2-实参顺序反了（最严重）"><a href="#7-2-实参顺序反了（最严重）" class="headerlink" title="7.2 实参顺序反了（最严重）"></a>7.2 实参顺序反了（最严重）</h3><p>并排看定义与调用：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">H</span>(<span class="params">t, s, ...</span>):            <span class="comment"># t 被 detach + centering + tpt -&gt; t 是教师</span></span><br><span class="line">    t = t.detach()           <span class="comment"># s 被 softmax/tps + log      -&gt; s 是学生</span></span><br><span class="line">    ...</span><br><span class="line">loss = H(s1, t2)/<span class="number">2</span> + H(s2, t1)/<span class="number">2</span></span><br><span class="line"><span class="comment">#       ^学生  ^教师         与形参语义正好相反</span></span><br></pre></td></tr></table></figure>
+
+<p>后果链条：</p>
+<ol>
+<li><code>s1</code>（学生输出）被 <code>detach()</code> → <strong>学生对 loss 的梯度路径被切断</strong>；</li>
+<li><code>t2</code>（教师输出）被 <code>softmax(.../tps)</code> 且没 detach → 梯度反而流进 <code>gt</code>；</li>
+<li><code>optimizer</code> 只管 <code>gs.parameters()</code> → 这批梯度永远不会被用上；</li>
+<li><code>gs</code> 一步也没更新，下一轮 EMA 只是把两个随机初始化的网络互相搅一搅；</li>
+<li>loss 停在常数附近，两个网络都停在随机特征上。</li>
+</ol>
+<p><strong>修法</strong>：<code>loss = (H(t2, s1, C) + H(t1, s2, C)) / 2</code>。更不容易错的做法是把形参直接改成 <code>H(teacher_logits, student_logits, C)</code>，让名字自己说话。</p>
+<blockquote>
+<p><strong>判断</strong>：<code>detach</code> 的那一侧必须是教师，保留梯度、<code>log</code> 的那一侧必须是学生。这一条是判断任何自蒸馏代码对错的快速检验法。</p>
+</blockquote>
+<h3 id="7-3-默认参数绑定陷阱（最隐蔽）"><a href="#7-3-默认参数绑定陷阱（最隐蔽）" class="headerlink" title="7.3 默认参数绑定陷阱（最隐蔽）"></a>7.3 默认参数绑定陷阱（最隐蔽）</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">C = torch.zeros(<span class="number">128</span>)</span><br><span class="line"><span class="keyword">def</span> <span class="title function_">H</span>(<span class="params">t, s, C=C, ...</span>):        <span class="comment"># 定义时把「当时那个全零张量对象」绑进默认值</span></span><br><span class="line">    t = F.softmax((t - C) / tpt, dim=<span class="number">1</span>)</span><br><span class="line">...</span><br><span class="line"><span class="keyword">with</span> torch.no_grad():</span><br><span class="line">    C = m * C + (<span class="number">1</span> - m) * ... <span class="comment"># 新建张量 + 重新绑定模块级名字 C</span></span><br></pre></td></tr></table></figure>
+
+<p>Python 的<strong>默认参数在函数定义时求值一次并永久绑定对象</strong>。循环里的 <code>C = ...</code> 只是重新绑定名字，并没有改动 <code>H</code> 里那个旧张量；而且 <code>m*C + ...</code> 本来就新建张量、不是原地修改。于是 <code>H</code> 用的 <code>C</code> 永远是初始全零 → <strong>centering 形同虚设</strong>，只剩 sharpening 单腿站着，更容易坍缩。</p>
+<p>两种修法，推荐都做：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># A: H 不吃默认参数，调用时显式传当前 C</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">H</span>(<span class="params">t, s, C, tps=<span class="number">0.1</span>, tpt=<span class="number">0.07</span></span>):</span><br><span class="line">    ...</span><br><span class="line">loss = (H(t2, s1, C) + H(t1, s2, C)) / <span class="number">2</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># B: 原地更新 C，旧对象的内容真的改变</span></span><br><span class="line"><span class="keyword">with</span> torch.no_grad():</span><br><span class="line">    C.copy_(m * C + (<span class="number">1</span> - m) * torch.cat([t1, t2]).mean(dim=<span class="number">0</span>))</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>要点</strong>：凡是「会被循环更新的张量」都不要塞进默认参数。写 EMA、running mean、center、prototype 时这个坑非常常见。</p>
+</blockquote>
+<h3 id="7-4-教师前向没有-no-grad"><a href="#7-4-教师前向没有-no-grad" class="headerlink" title="7.4 教师前向没有 no_grad()"></a>7.4 教师前向没有 <code>no_grad()</code></h3><p><code>t1, t2 = gt(x1), gt(x2)</code> 会完整构建 <code>gt</code> 的计算图。虽然 <code>H</code> 里的 <code>detach()</code> 让梯度回不去，但图已经建了，白白占显存。规范写法是把这两行包进 <code>with torch.no_grad():</code>。</p>
+<h3 id="7-5-zero-grad-的位置"><a href="#7-5-zero-grad-的位置" class="headerlink" title="7.5 zero_grad() 的位置"></a>7.5 <code>zero_grad()</code> 的位置</h3><p><code>backward()</code> → <code>step()</code> → <code>zero_grad()</code> <strong>能跑</strong>（等价于下一轮前梯度是干净的），但不是常规写法，中途 <code>continue</code> 或异常时容易隐性梯度累积。标准顺序是 <code>zero_grad()</code> → <code>backward()</code> → <code>step()</code>。</p>
+<h3 id="7-6-教学简化，不是-bug，但别当论文配置"><a href="#7-6-教学简化，不是-bug，但别当论文配置" class="headerlink" title="7.6 教学简化，不是 bug，但别当论文配置"></a>7.6 教学简化，不是 bug，但别当论文配置</h3><table>
+<thead>
+<tr>
+<th>项</th>
+<th>本集 toy 值</th>
+<th>论文值</th>
+<th>影响</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>视图生成</td>
+<td>加 0.1 高斯噪声</td>
+<td>multi-crop + 强色彩增强</td>
+<td>学不到尺度 &#x2F; 局部—全局对应，这是最本质的差距</td>
+</tr>
+<tr>
+<td>head</td>
+<td><code>num_classes=128</code> 线性层</td>
+<td>3 层 MLP + L2 norm，K&#x3D;65536</td>
+<td>表征容量与聚类粒度差很多</td>
+</tr>
+<tr>
+<td><code>l</code> (λ)</td>
+<td>0.6</td>
+<td>0.996 → 1（cosine schedule）</td>
+<td>教师跟得太快，目标不稳</td>
+</tr>
+<tr>
+<td><code>m</code></td>
+<td>0.5</td>
+<td>0.9</td>
+<td>中心抖得太快</td>
+</tr>
+<tr>
+<td><code>tpt</code></td>
+<td>固定 0.07</td>
+<td>0.04 warmup → 0.07</td>
+<td>训练初期可能不稳</td>
+</tr>
+<tr>
+<td>数据 &#x2F; epoch</td>
+<td>CIFAR-10 单轮</td>
+<td>ImageNet &#x2F; 100~300 epoch</td>
+<td>量级完全不同</td>
+</tr>
+</tbody></table>
+<hr>
+<p><a id="sec08"></a></p>
+<h2 id="08-08-·-可运行版、对照表与要点回顾"><a href="#08-08-·-可运行版、对照表与要点回顾" class="headerlink" title="08 &#x2F; 08 · 可运行版、对照表与要点回顾"></a>08 &#x2F; 08 · 可运行版、对照表与要点回顾</h2><p><strong>本节结论</strong>：只修 bug、保留教学设定的版本可以直接跑；用「教师输出熵」就能快速判断有没有坍缩。</p>
+<h3 id="8-1-修正版完整代码"><a href="#8-1-修正版完整代码" class="headerlink" title="8.1 修正版完整代码"></a>8.1 修正版完整代码</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># course_DINO_fixed.py —— 依据视频代码修正，可直接 python 运行</span></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"><span class="keyword">import</span> torch.optim <span class="keyword">as</span> optim</span><br><span class="line"><span class="keyword">import</span> timm</span><br><span class="line"><span class="keyword">from</span> torchvision.transforms <span class="keyword">import</span> Compose, Resize, RandomCrop, RandomHorizontalFlip, ToTensor, Normalize</span><br><span class="line"><span class="keyword">from</span> torch.utils.data <span class="keyword">import</span> DataLoader</span><br><span class="line"><span class="keyword">from</span> torchvision.datasets <span class="keyword">import</span> CIFAR10</span><br><span class="line"></span><br><span class="line">device = torch.device(<span class="string">&quot;cuda&quot;</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">&quot;cpu&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ViT</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, output_dim</span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.vit = timm.create_model(<span class="string">&quot;vit_small_patch16_224&quot;</span>,</span><br><span class="line">                                     pretrained=<span class="literal">False</span>, num_classes=output_dim)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.vit(x)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_dataloader</span>(<span class="params">batch_size</span>):</span><br><span class="line">    transform = Compose([</span><br><span class="line">        Resize(<span class="number">224</span>),</span><br><span class="line">        RandomCrop(<span class="number">224</span>, padding=<span class="number">4</span>),</span><br><span class="line">        RandomHorizontalFlip(),</span><br><span class="line">        ToTensor(),</span><br><span class="line">        Normalize((<span class="number">0.5</span>, <span class="number">0.5</span>, <span class="number">0.5</span>), (<span class="number">0.5</span>, <span class="number">0.5</span>, <span class="number">0.5</span>)),</span><br><span class="line">    ])</span><br><span class="line">    dataset = CIFAR10(root=<span class="string">&quot;./cifar10&quot;</span>, train=<span class="literal">True</span>,</span><br><span class="line">                      transform=transform, download=<span class="literal">True</span>)</span><br><span class="line">    <span class="keyword">return</span> DataLoader(dataset, batch_size=batch_size, shuffle=<span class="literal">True</span>,</span><br><span class="line">                      num_workers=<span class="number">2</span>, pin_memory=<span class="literal">True</span>, drop_last=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">H</span>(<span class="params">teacher_logits, student_logits, C, tps=<span class="number">0.1</span>, tpt=<span class="number">0.07</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;软标签交叉熵 H(P_t, P_s)。</span></span><br><span class="line"><span class="string">    teacher_logits: (B,K) 教师输出，不参与梯度</span></span><br><span class="line"><span class="string">    student_logits: (B,K) 学生输出，梯度从这里走</span></span><br><span class="line"><span class="string">    C:              (K,)  centering 中心</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">with</span> torch.no_grad():                                   <span class="comment"># stop-gradient + centering + sharpening</span></span><br><span class="line">        p_t = F.softmax((teacher_logits - C) / tpt, dim=<span class="number">1</span>)</span><br><span class="line">    log_p_s = F.log_softmax(student_logits / tps, dim=<span class="number">1</span>)   <span class="comment"># 数值更稳</span></span><br><span class="line">    <span class="keyword">return</span> -(p_t * log_p_s).<span class="built_in">sum</span>(dim=<span class="number">1</span>).mean()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    output_dim, batch_size = <span class="number">128</span>, <span class="number">64</span></span><br><span class="line">    tps, tpt, lam, m = <span class="number">0.1</span>, <span class="number">0.07</span>, <span class="number">0.6</span>, <span class="number">0.5</span></span><br><span class="line">    num_epochs = <span class="number">5</span></span><br><span class="line"></span><br><span class="line">    gs = ViT(output_dim).to(device)</span><br><span class="line">    gt = ViT(output_dim).to(device)</span><br><span class="line">    gt.load_state_dict(gs.state_dict())                     <span class="comment"># 同起点</span></span><br><span class="line">    <span class="keyword">for</span> p <span class="keyword">in</span> gt.parameters():</span><br><span class="line">        p.requires_grad_(<span class="literal">False</span>)                             <span class="comment"># 教师永不建梯度</span></span><br><span class="line"></span><br><span class="line">    C = torch.zeros(output_dim, device=device)</span><br><span class="line">    optimizer = optim.SGD(gs.parameters(), lr=<span class="number">0.03</span>, momentum=<span class="number">0.9</span>, weight_decay=<span class="number">5e-4</span>)</span><br><span class="line">    dataloader = get_dataloader(batch_size)                 <span class="comment"># 修 7.1：名字统一</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">augment</span>(<span class="params">x</span>):</span><br><span class="line">        <span class="keyword">return</span> x + <span class="number">0.1</span> * torch.randn_like(x)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(num_epochs):</span><br><span class="line">        running, n = <span class="number">0.0</span>, <span class="number">0</span></span><br><span class="line">        <span class="keyword">for</span> x, _ <span class="keyword">in</span> dataloader:</span><br><span class="line">            x = x.to(device, non_blocking=<span class="literal">True</span>)</span><br><span class="line">            x1, x2 = augment(x), augment(x)</span><br><span class="line"></span><br><span class="line">            s1, s2 = gs(x1), gs(x2)                        <span class="comment"># 学生：有梯度</span></span><br><span class="line">            <span class="keyword">with</span> torch.no_grad():                           <span class="comment"># 修 7.4：教师不建图</span></span><br><span class="line">                t1, t2 = gt(x1), gt(x2)</span><br><span class="line"></span><br><span class="line">            <span class="comment"># 修 7.2：教师在前、学生在后，交叉配对</span></span><br><span class="line">            <span class="comment"># 修 7.3：C 显式传入，不再靠默认参数</span></span><br><span class="line">            loss = (H(t2, s1, C, tps, tpt) + H(t1, s2, C, tps, tpt)) / <span class="number">2</span></span><br><span class="line"></span><br><span class="line">            optimizer.zero_grad()                           <span class="comment"># 修 7.5：标准顺序</span></span><br><span class="line">            loss.backward()</span><br><span class="line">            optimizer.step()</span><br><span class="line"></span><br><span class="line">            <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">                <span class="keyword">for</span> p_t, p_s <span class="keyword">in</span> <span class="built_in">zip</span>(gt.parameters(), gs.parameters()):</span><br><span class="line">                    p_t.mul_(lam).add_(p_s, alpha=<span class="number">1</span> - lam)   <span class="comment"># 教师 EMA，原地更新</span></span><br><span class="line">                C.copy_(m * C + (<span class="number">1</span> - m) * torch.cat([t1, t2]).mean(dim=<span class="number">0</span>))</span><br><span class="line"></span><br><span class="line">            running += loss.item()</span><br><span class="line">            n += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">            prob = F.softmax((t1 - C) / tpt, dim=<span class="number">1</span>)</span><br><span class="line">            entropy = -(prob * (prob + <span class="number">1e-8</span>).log()).<span class="built_in">sum</span>(<span class="number">1</span>).mean()</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;epoch <span class="subst">&#123;epoch+<span class="number">1</span>&#125;</span>/<span class="subst">&#123;num_epochs&#125;</span>  loss=<span class="subst">&#123;running/n:<span class="number">.4</span>f&#125;</span>  &quot;</span></span><br><span class="line">              <span class="string">f&quot;teacher_entropy=<span class="subst">&#123;entropy:<span class="number">.3</span>f&#125;</span> / max=<span class="subst">&#123;torch.log(torch.tensor(output_dim)):<span class="number">.3</span>f&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    torch.save(&#123;<span class="string">&quot;student&quot;</span>: gs.state_dict(), <span class="string">&quot;teacher&quot;</span>: gt.state_dict(), <span class="string">&quot;C&quot;</span>: C&#125;,</span><br><span class="line">               <span class="string">&quot;dino_toy_ckpt.pth&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
+
+<p>依赖：<code>torch</code>、<code>torchvision</code>、<code>timm</code>（<code>pip install timm</code>）。CPU 也能跑但很慢，CIFAR-10 首次运行自动下载。</p>
+<h3 id="8-2-怎么判断「真的训起来了」"><a href="#8-2-怎么判断「真的训起来了」" class="headerlink" title="8.2 怎么判断「真的训起来了」"></a>8.2 怎么判断「真的训起来了」</h3><table>
+<thead>
+<tr>
+<th>观察量</th>
+<th>健康</th>
+<th>异常</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>loss</code></td>
+<td>缓慢下降并稳定</td>
+<td>一步掉到常数不动 → 检查 7.2 &#x2F; 7.3</td>
+</tr>
+<tr>
+<td><code>teacher_entropy</code></td>
+<td>接近但略低于 <code>log K = log 128 ≈ 4.85</code></td>
+<td>趋近 0 → 单点坍缩；恒等于 4.85 → 均匀坍缩</td>
+</tr>
+<tr>
+<td><code>C</code> 的范数</td>
+<td>从 0 增长并趋于稳定</td>
+<td>一直精确为 0 → 默认参数陷阱还在</td>
+</tr>
+</tbody></table>
+<p>三个诊断实验：</p>
+<ol>
+<li>注释掉 <code>C.copy_(...)</code>（等价于不 centering），看 <code>teacher_entropy</code> 是否明显下降。</li>
+<li>把 <code>tpt</code> 调到和 <code>tps</code> 一样大（去掉 sharpening），看分布是否变均匀。</li>
+<li>把 EMA 的 <code>lam</code> 改成 <code>0.0</code>（教师 &#x3D; 学生的即时副本），看训练是否震荡——这解释了论文为什么要 λ≈1。</li>
+</ol>
+<h3 id="8-3-从-toy-到真-DINO"><a href="#8-3-从-toy-到真-DINO" class="headerlink" title="8.3 从 toy 到真 DINO"></a>8.3 从 toy 到真 DINO</h3><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>本集（10 分钟讲完）</th>
+<th>DINO &#x2F; DINOv2 论文</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>视图</strong></td>
+<td><code>x + 0.1·randn</code> 两个噪声副本</td>
+<td>multi-crop：2×224 全局 + 6~8×96 局部；ColorJitter、Grayscale、GaussianBlur、Solarize</td>
+</tr>
+<tr>
+<td><strong>配对规则</strong></td>
+<td>2 个视图两两交叉，共 2 项</td>
+<td>教师<strong>只看全局视图</strong>，学生看全部视图；对所有 <code>teacher_view ≠ student_view</code> 组合求 loss</td>
+</tr>
+<tr>
+<td><strong>backbone</strong></td>
+<td><code>vit_small_patch16_224</code></td>
+<td>ViT-S&#x2F;B、ResNet-50；DINOv2 用 ViT-L&#x2F;g</td>
+</tr>
+<tr>
+<td><strong>head</strong></td>
+<td><code>num_classes=128</code> 线性层</td>
+<td>3 层 MLP(→2048) + weight norm + L2 norm，最后一层无 bias，K&#x3D;65536</td>
+</tr>
+<tr>
+<td><strong>损失</strong></td>
+<td>手写 <code>-(P_t*logP_s).sum(1).mean()</code></td>
+<td>同形式、多视图求和；DINOv2 另加 iBOT patch-level 损失 + KoLeo 正则</td>
+</tr>
+<tr>
+<td><strong>λ</strong></td>
+<td>常数 0.6</td>
+<td>cosine schedule 0.996 → 1.0</td>
+</tr>
+<tr>
+<td><strong>τ_t</strong></td>
+<td>常数 0.07</td>
+<td>0.04 → 0.07 warmup（前 30 epoch）</td>
+</tr>
+<tr>
+<td><strong>m</strong></td>
+<td>0.5</td>
+<td>0.9</td>
+</tr>
+<tr>
+<td><strong>优化器</strong></td>
+<td>SGD lr&#x3D;0.03</td>
+<td>AdamW + 大 batch(1024) + lr warmup + cosine decay</td>
+</tr>
+<tr>
+<td><strong>归一化</strong></td>
+<td>默认 BN &#x2F; LN</td>
+<td>FreeNorm、GN，避免 BN 跨卡泄漏造成坍缩</td>
+</tr>
+<tr>
+<td><strong>数据 &#x2F; 规模</strong></td>
+<td>CIFAR-10，1 轮</td>
+<td>ImageNet-1k &#x2F; LVD-142M，100~300 epoch</td>
+</tr>
+<tr>
+<td><strong>产出</strong></td>
+<td>教学演示</td>
+<td>冻结特征直接做 k-NN 分类、线性探测、语义分割、深度估计</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>判断</strong>：视频讲的是「自蒸馏的最小可运行骨架」，论文贡献的是「让这个骨架在大规模数据上不塌且学出空间语义」的一整套工程细节。别拿 toy 版的结论去推断 DINOv2 特征的性质。</p>
+</blockquote>
+<h3 id="8-4-要点回顾"><a href="#8-4-要点回顾" class="headerlink" title="8.4 要点回顾"></a>8.4 要点回顾</h3><ol>
+<li>DINO &#x3D; <strong>无标签自蒸馏</strong>：教师输出当软标签，学生去拟合，教师由学生 EMA 得到。</li>
+<li><strong>梯度只走学生</strong>；教师 <code>no_grad</code> + <code>detach</code>，这是自蒸馏与普通双塔最直观的区别。</li>
+<li><strong>交叉配对</strong>：<code>t2 → s1</code>、<code>t1 → s2</code>，绝不自己监督自己。</li>
+<li><strong>防坍缩靠两股反向力</strong>：centering 摊平 + sharpening 捏尖，EMA 让目标慢慢变。</li>
+<li>损失是<strong>软标签交叉熵</strong>，要 <code>sum(dim=1)</code> 而不是 <code>F.cross_entropy</code>；形状 <code>(B,K) → (B,) → 标量</code>。</li>
+<li>每个 iteration 三件事：<strong>更新学生 → EMA 更新教师 → 滑动更新中心 C</strong>，顺序不能乱。</li>
+</ol>
+<hr>
+<p><em>标签：DINO &#x2F; 自监督学习 &#x2F; ViT &#x2F; PyTorch &#x2F; 多模态大模型</em></p>
+
+  </div>
+
+  <footer class="article-reactions">
+    <div class="reaction-group">
+      <button type="button" class="reaction reaction--comment" aria-label="跳转到评论区" data-action="scroll-to-comments">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-message-circle"></use></svg>
+
+      </button>
+      <span class="reaction-label">评论</span>
+      
+    </div>
+    <div class="reaction-group reaction-group--right">
+      
+      <button type="button" class="reaction reaction--share" aria-label="分享" data-action="share">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2 flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-share-2"></use></svg>
+
+      </button>
+      <span class="reaction-label">分享</span>
+    </div>
+  </footer>
+
+  
+
+
+  <nav class="article-actions">
+    
+      <span class="article-action article-action--prev is-disabled" aria-disabled="true">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-left"></use></svg>
+
+        <span class="action-label">上一篇</span>
+        <span class="action-title">没有更早的文章了</span>
+      </span>
+    
+    
+      <a class="article-action article-action--next" href="/2026/11/26/dl-basics-notes/">
+        <span class="action-label">下一篇</span>
+        <span class="action-title">深度学习基础知识速查手册</span>
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-right"></use></svg>
+
+      </a>
+    
+  </nav>
+</article>
+</div>
+
+<button type="button" class="back-to-top" data-action="scroll-to-top" aria-label="返回顶部" hidden>
+  
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-up"></use></svg>
+
+</button>
+
+
+  <section class="related-paper">
+    <header class="related-paper__head">
+      <h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-link"></use></svg>
+相关文章</h2>
+      <a class="related-paper__more" href="/archives/">
+        <span>查看更多</span>
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-right"></use></svg>
+
+      </a>
+    </header>
+    <div class="related-paper__grid">
+      
+        <a class="related-card" href="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-0 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260826193956246.png" alt="小知识点" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">小知识点</strong>
+            <em class="related-card__date">2026-09-05</em>
+          </span>
+        </a>
+      
+        <a class="related-card" href="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9_backup/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-1 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/./%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9.assets/image-20260826193956246.png" alt="小知识点（备份）" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">小知识点（备份）</strong>
+            <em class="related-card__date">2026-09-05</em>
+          </span>
+        </a>
+      
+        <a class="related-card" href="/2026/11/26/dl-basics-notes/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-2 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/2026/11/26/dl-basics-notes/image1.png" alt="深度学习基础知识速查手册" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">深度学习基础知识速查手册</strong>
+            <em class="related-card__date">2026-11-26</em>
+          </span>
+        </a>
+      
+    </div>
+  </section>
+
+
+      
+
+
+    </section>
+    
+  </main>
+
+  <div class="sidebar-backdrop js-sidebar-close" aria-hidden="true"></div>
+
+  
+<footer class="site-footer">
+  <span class="site-footer__left">© 2026 By lorena</span>
+  
+    <span class="site-footer__right">
+      
+        <span class="site-footer__row"><span class="site-footer__powered-prefix">Powered by Theme</span> <a href="https://github.com/Homulilly/hexo-theme-flatpaper" target="_blank" rel="noopener">FlatPaper</a></span>
+      
+    </span>
+  
+</footer>
+
+  
+<div class="search-panel" aria-hidden="true" data-index-url="/flatpaper-search.json">
+  <div class="search-backdrop js-search-close"></div>
+  <section class="search-dialog" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <span class="tape tape--top-left" aria-hidden="true"></span>
+    <header class="search-head">
+      <h2><span class="green-dot"></span>搜索文章</h2>
+      <button class="icon-button js-search-close" type="button" aria-label="关闭搜索">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+      </button>
+    </header>
+    <label class="search-field">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+      <input id="flatpaper-search" class="search-input" type="search" placeholder="输入关键词，按 Esc 关闭" autocomplete="off">
+    </label>
+    <div class="search-results" data-empty="输入关键词后显示匹配的文章">
+      <p class="search-empty">输入关键词后显示匹配的文章</p>
+    </div>
+  </section>
+</div>
+
+  <script>
+  window.FLATPAPER_I18N = {"language":"zh-CN","common.posts":"文章","common.categories":"分类","common.tags":"标签","common.comments":"评论","common.share":"分享","common.page":"页面","common.archive":"归档","common.post_list":"文章列表","common.search_posts":"搜索文章","common.random_posts":"随机文章","common.reward":"赞赏","common.view_all":"查看全部","pagination.prev":"上一页","pagination.next":"下一页","pagination.post_pager":"文章分页","pagination.archive_pager":"归档分页","index.featured":"精选文章","index.pinned":"置顶","index.read_more":"阅读全文","index.previous_slide":"上一张","index.next_slide":"下一张","index.carousel_pagination":"轮播页码","index.carousel_slide":"第 %d 张","index.latest_posts":"最新文章","index.empty_posts":"还没有文章。创建第一篇文章后，这里会显示最新内容。","archive.title":"归档","archive.post_list":"文章列表","taxonomy.category_count":"%d 篇","taxonomy.empty_categories":"暂时还没有分类。","taxonomy.empty_tags":"暂时还没有标签。","links.label":"友链","links.title":"友情链接","links.empty_data":"暂未加载到友链数据。请确认 source/_data/links.yml 存在并已 hexo clean。","links.rss_label":"%s 的 RSS","friends_feed.label":"朋友圈","friends_feed.title":"友链朋友圈","friends_feed.loading":"正在加载友链动态…","friends_feed.missing_url":"暂未配置 all.json 地址。","friends_feed.load_failed":"友链动态加载失败，请稍后再试。","friends_feed.empty":"暂时没有抓取到友链文章。","friends_feed.load_more":"加载更多","friends_feed.updated_at":"更新于 %s","friends_feed.friend_count":"%d 位友邻","friends_feed.active_count":"%d 位活跃","friends_feed.article_count":"%d 篇文章","friends_feed.unknown_author":"未知站点","friends_feed.date_unknown":"时间未知","guestbook.label":"留言板","guestbook.title":"留言板","guestbook.loading":"正在铺开留言墙…","guestbook.missing_config":"留言墙需要评论系统：请在主题配置中设置 comments: twikoo（并填写 envId）或 comments: artalk（并填写 server）。","guestbook.load_failed":"留言加载失败，请稍后再试。","guestbook.empty":"墙上还空着，来贴第一张留言吧！","guestbook.load_more":"展开更多留言","guestbook.total_count":"共 %d 条留言","guestbook.latest_note":"墙上展示最新 %d 条","guestbook.jump_to_comment":"查看留言","guestbook.sort_time":"查看最新","guestbook.sort_random":"随机排序","guestbook.anonymous":"匿名访客","guestbook.write_hint":"在下方留言，刷新后就会贴到墙上","post.scroll_to_comments":"跳转到评论区","post.previous":"上一篇","post.next":"下一篇","post.no_previous":"没有更早的文章了","post.no_next":"已经是最新的一篇","post.back_to_top":"返回顶部","post.related_posts":"相关文章","post.view_more":"查看更多","not_found.label":"页面走丢了","not_found.title":"找不到这个页面","not_found.text":"这个地址可能已经移动、删除，或者从未存在。","not_found.home":"返回首页","not_found.search":"搜索文章","search.placeholder":"输入关键词，按 Esc 关闭","search.empty":"输入关键词后显示匹配的文章","search.loading":"正在加载搜索索引…","search.load_failed":"搜索索引加载失败，请重新打开搜索重试","search.no_result":"没有找到与 \"%s\" 相关的文章","search.close":"关闭搜索","code.copy":"复制代码","code.collapse":"折叠代码","code.expand":"展开代码","heading.anchor":"链接到此节: %s","head.tag":"标签：%s","head.category":"分类：%s","head.archive":"归档","head.archive_with_date":"归档：%s","head.page_number":"第 %d 页","navigation.primary":"主导航","navigation.mobile":"移动端导航","navigation.brand_home":"FlatPaper 首页","navigation.brand_menu":"打开站点导航","navigation.open_sidebar":"打开侧边栏","navigation.close_sidebar":"关闭侧边栏","navigation.sidebar":"侧边栏","navigation.sidebar_tools":"侧边栏工具","navigation.site_links":"站点链接","navigation.site_info":"站点信息","colors.choose_theme_color":"选择主题色","colors.theme_color":"主题色","colors.toggle_color_mode":"切换颜色模式","colors.green":"绿色","colors.purple":"紫色","colors.pink":"粉色","colors.sakura":"樱花粉","colors.blue":"蓝色","colors.orange":"橙色","colors.black":"黑色","profile.default_bio":"热爱生活，热爱代码，喜欢分享技术与生活中的点滴。","profile.email_copied":"邮箱已复制","welcome.cta":"开始阅读","welcome.title":"欢迎来到 FlatPaper","welcome.text":"一个专注于内容与阅读体验的博客主题。","home_hero.label":"首页开屏","home_hero.enter":"开始阅读","home_hero.note":"今日","home_hero.default_subtitle":"日常记录","home_hero.nav_links":"开屏导航","home_hero.profile_links":"个人链接","home_hero.tools":"开屏工具","home_hero.shuffle_stickers":"打乱贴纸位置","home_hero.link":"链接","home_hero.sticker_image":"贴纸图片","home_hero.visit_confirm":"要访问 %s 吗？","home_hero.visit":"访问","home_hero.cancel":"取消","toc.title":"文章目录","toc.empty":"目录会根据文章标题自动生成。","toc.expand_all":"展开全部目录","toc.collapse_all":"收起全部目录","sidebar.hot_tags":"热门标签","sidebar.latest_posts":"最新文章"};
+  </script>
+  
+<script src="/js/main.js"></script>
+
+  
+  <script src="/js/twojian-ui.js" defer></script>
+  
+</body>
+</html>
