@@ -1086,3 +1086,248 @@ body.is-home .welcome-card {
     font-size: 11px;
   }
 }
+
+/* ==================================================================
+ * 文章正文 —— 参照 twojian/MyPost 的 .prose-notion（Notion 式阅读体验）
+ * 覆盖 FlatPaper 的手绘胶带 / 波浪线，改为克制的玻璃卡片排版
+ * ================================================================== */
+.article-content {
+  font-size: 15.5px;
+  line-height: 1.9;
+  color: var(--tj-fg);
+}
+
+.article-content p {
+  margin: 0.9em 0;
+  color: var(--tj-fg);
+}
+
+.article-content strong,
+.article-content b {
+  color: var(--tj-brand-strong);
+  font-weight: 700;
+}
+
+.dark-mode .article-content strong,
+.dark-mode .article-content b {
+  color: var(--tj-brand);
+}
+
+/* 标题：去掉手绘下划线，改成分隔线与色条 */
+.article-content h2,
+.article-content h3,
+.article-content h4 {
+  color: var(--tj-fg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.article-content h2 {
+  margin: 42px 0 18px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 23px;
+}
+
+.article-content h3 {
+  margin-top: 32px;
+  font-size: 19px;
+}
+
+.article-content h4 {
+  margin-top: 26px;
+  font-size: 16px;
+}
+
+.article-content h2::after,
+.article-content h3::after {
+  display: none;
+}
+
+.article-content h3::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 0.9em;
+  margin-right: 10px;
+  border-radius: 2px;
+  background: var(--tj-brand);
+  vertical-align: -2px;
+}
+
+/* 列表 */
+.article-content ul,
+.article-content ol {
+  padding-left: 24px;
+}
+
+.article-content li {
+  margin: 7px 0;
+  color: var(--tj-fg);
+  line-height: 1.8;
+}
+
+.article-content li::marker {
+  color: var(--tj-brand);
+}
+
+/* 行内代码 */
+.article-content :not(pre) > code {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(53, 191, 171, 0.1);
+  color: #b5485d;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 0.88em;
+}
+
+.dark-mode .article-content :not(pre) > code {
+  background: rgba(74, 211, 192, 0.12);
+  color: #ff7a90;
+}
+
+/* 代码块：Hexo 的 .highlight 容器 */
+.article-content .highlight {
+  margin: 22px 0;
+  border: 1px solid var(--tj-hairline);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #f6f8f8;
+  box-shadow: 0 6px 20px var(--tj-shadow);
+}
+
+.dark-mode .article-content .highlight {
+  background: #1e1e2e;
+}
+
+.article-content .highlight code {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* 数据表格（.highlight 内部的表格不受影响） */
+.article-content > table {
+  display: block;
+  width: 100%;
+  margin: 22px 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow-x: auto;
+  font-size: 14px;
+}
+
+.article-content > table th,
+.article-content > table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.article-content > table th {
+  background: rgba(53, 191, 171, 0.1);
+  color: var(--tj-fg);
+  font-weight: 700;
+}
+
+.article-content > table tr:nth-child(even) td {
+  background: rgba(53, 191, 171, 0.035);
+}
+
+.article-content > table tr:last-child td {
+  border-bottom: 0;
+}
+
+/* 图片与图注 */
+.article-content p > img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--tj-hairline);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px var(--tj-shadow);
+}
+
+.article-content > p:has(> img) {
+  margin: 26px 0 8px;
+  text-align: center;
+}
+
+.article-content .tj-figcaption {
+  margin: 0 0 26px !important;
+  color: var(--tj-muted) !important;
+  font-size: 12.5px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* 提示卡片：玻璃底 + 品牌色左条 */
+.article-content blockquote {
+  position: relative;
+  margin: 24px 0;
+  padding: 16px 20px;
+  border: 1px solid var(--tj-hairline);
+  border-left: 4px solid var(--tj-brand);
+  border-radius: 16px;
+  background: var(--tj-glass);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  box-shadow: 0 6px 20px var(--tj-shadow);
+  color: var(--tj-fg);
+}
+
+.article-content blockquote::before {
+  display: none;
+}
+
+.article-content blockquote p {
+  margin: 0;
+  color: var(--tj-fg);
+}
+
+/* 分隔线 */
+.article-content hr {
+  height: 1px;
+  margin: 32px 0;
+  border: 0;
+  background: var(--line);
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+@media (max-width: 640px) {
+  .article-content {
+    font-size: 15px;
+  }
+  .article-content h2 {
+    font-size: 20px;
+  }
+  .article-content h3 {
+    font-size: 17px;
+  }
+  .article-content > table {
+    font-size: 13px;
+  }
+}
+
+/* 覆盖 FlatPaper「simple」代码主题的黑色粗边框（原规则带 !important） */
+body[data-code-theme="simple"] .article-content .highlight,
+body[data-code-theme="simple"] .article-content > pre {
+  background: #f6f8f8 !important;
+  border: 1px solid var(--tj-hairline) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 6px 20px var(--tj-shadow) !important;
+}
+
+.dark-mode body[data-code-theme="simple"] .article-content .highlight,
+.dark-mode body[data-code-theme="simple"] .article-content > pre {
+  background: #1e1e2e !important;
+}
+
+body[data-code-theme="simple"] .article-content .highlight .code-bar {
+  border-bottom: 1px solid var(--line) !important;
+}
