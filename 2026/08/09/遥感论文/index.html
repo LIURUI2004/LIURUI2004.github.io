@@ -17,15 +17,19 @@
 <meta property="og:image" content="https://liurui2004.github.io/%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87.assets/image-20260813213508169.png">
 <meta property="og:image" content="https://liurui2004.github.io/%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87.assets/dc0e0b79-5c88-4439-84e7-76b0a1b37c02.png">
 <meta property="article:published_time" content="2026-08-09T13:51:42.000Z">
-<meta property="article:modified_time" content="2026-08-13T13:35:15.158Z">
+<meta property="article:modified_time" content="2026-11-26T08:01:21.866Z">
 <meta property="article:author" content="lorena">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="遥感">
+<meta property="article:tag" content="变化检测">
+<meta property="article:tag" content="论文精读">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://liurui2004.github.io/%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87.assets/image-20260813213508169.png">
 <link rel="canonical" href="https://liurui2004.github.io/2026/08/09/%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87/">
 
 <link rel="icon" href="/images/favicon.png" type="image/png">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"遥感论文","name":"遥感论文 | lorena的小博客","description":"遥感论文CNN&#x2F;Transformer视觉模型中，feature map的channel数量代表特征种类（feature数量），空间尺寸代表位置信息。Encoder通过降低空间分辨率、增加channel来获得更强语义；Decoder通过增加空间分辨率、调整channel恢复像素级预测。 一、MLP是什么？MLP：Multi-Layer Percep...","url":"https://liurui2004.github.io/2026/08/09/%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/08/09/%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87/","datePublished":"2026-08-09T13:51:42.000Z","dateModified":"2026-08-13T13:35:15.158Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"遥感论文","name":"遥感论文 | lorena的小博客","description":"遥感论文CNN&#x2F;Transformer视觉模型中，feature map的channel数量代表特征种类（feature数量），空间尺寸代表位置信息。Encoder通过降低空间分辨率、增加channel来获得更强语义；Decoder通过增加空间分辨率、调整channel恢复像素级预测。 一、MLP是什么？MLP：Multi-Layer Percep...","url":"https://liurui2004.github.io/2026/08/09/%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/08/09/%E9%81%A5%E6%84%9F%E8%AE%BA%E6%96%87/","datePublished":"2026-08-09T13:51:42.000Z","dateModified":"2026-11-26T08:01:21.866Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"},"keywords":"深度学习, 遥感, 变化检测, 论文精读"}</script>
 
 <script>
   (function () {
@@ -66,7 +70,7 @@
 
 
   
-  <link rel="stylesheet" href="/css/twojian-style.css?v=2">
+  <link rel="stylesheet" href="/css/twojian-style.css?v=3">
   
 <meta name="generator" content="Hexo 6.3.0"></head>
 
@@ -364,11 +368,25 @@
   
   <header class="article-header">
     
+      <a class="label-pill" href="/categories/%E7%A7%91%E7%A0%94%E7%AC%94%E8%AE%B0/">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+        科研笔记
+      </a>
+    
     <h1>遥感论文</h1>
     <div class="meta-line meta-line--article">
       <span class="meta-date">
 <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-calendar"></use></svg>
 2026-08-09</span>
+      
+        <span class="meta-tags">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+          <a class="meta-tag-link" href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/">#深度学习</a><a class="meta-tag-link" href="/tags/%E9%81%A5%E6%84%9F/">#遥感</a><a class="meta-tag-link" href="/tags/%E5%8F%98%E5%8C%96%E6%A3%80%E6%B5%8B/">#变化检测</a><a class="meta-tag-link" href="/tags/%E8%AE%BA%E6%96%87%E7%B2%BE%E8%AF%BB/">#论文精读</a>
+        </span>
       
     </div>
   </header>
@@ -762,6 +780,39 @@
 
 </button>
 
+
+  <section class="related-paper">
+    <header class="related-paper__head">
+      <h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-link"></use></svg>
+相关文章</h2>
+      <a class="related-paper__more" href="/archives/">
+        <span>查看更多</span>
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-right"></use></svg>
+
+      </a>
+    </header>
+    <div class="related-paper__grid">
+      
+        <a class="related-card" href="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-0 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260826193956246.png" alt="小知识点" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">小知识点</strong>
+            <em class="related-card__date">2026-09-05</em>
+          </span>
+        </a>
+      
+    </div>
+  </section>
 
 
       
