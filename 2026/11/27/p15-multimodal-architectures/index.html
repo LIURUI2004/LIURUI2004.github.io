@@ -1,0 +1,890 @@
+<!doctype html>
+
+<html lang="zh-CN" data-fancybox-enabled="1">
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f3e9" data-flatpaper-theme-color>
+
+<title>4.2 多模态网络的架构 | lorena的小博客</title>
+<meta name="description" content="一、视频信息与定位 项目 内容 稿件 BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程） 分P P15（4.2 多模态网络的架构），时长 336 秒（5:36） 本节定位 第四章的「地图」。上一节讲清多模态是什么，这一节把已有模型按架构归成四类，并给出统一的三要素视角。后面 P16–P20 的每一个模型（CLIP &#x2F; GLIP &#x2F; Fla...">
+<meta property="og:type" content="article">
+<meta property="og:title" content="4.2 多模态网络的架构 | lorena的小博客">
+<meta property="og:url" content="https://liurui2004.github.io/2026/11/27/p15-multimodal-architectures/">
+<meta property="og:site_name" content="lorena的小博客">
+<meta property="og:description" content="一、视频信息与定位 项目 内容 稿件 BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程） 分P P15（4.2 多模态网络的架构），时长 336 秒（5:36） 本节定位 第四章的「地图」。上一节讲清多模态是什么，这一节把已有模型按架构归成四类，并给出统一的三要素视角。后面 P16–P20 的每一个模型（CLIP &#x2F; GLIP &#x2F; Fla...">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p15-multimodal-architectures/P15_20.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p15-multimodal-architectures/P15_120.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p15-multimodal-architectures/P15_230.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p15-multimodal-architectures/P15_280.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p15-multimodal-architectures/P15_320.png">
+<meta property="article:published_time" content="2026-11-27T09:40:00.000Z">
+<meta property="article:modified_time" content="2026-11-27T11:22:42.438Z">
+<meta property="article:author" content="lorena">
+<meta property="article:tag" content="多模态大模型">
+<meta property="article:tag" content="模型架构">
+<meta property="article:tag" content="双塔">
+<meta property="article:tag" content="LLM">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liurui2004.github.io/2026/11/27/p15-multimodal-architectures/P15_20.png">
+<link rel="canonical" href="https://liurui2004.github.io/2026/11/27/p15-multimodal-architectures/">
+
+<link rel="icon" href="/images/favicon.png" type="image/png">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"4.2 多模态网络的架构","name":"4.2 多模态网络的架构 | lorena的小博客","description":"一、视频信息与定位 项目 内容 稿件 BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程） 分P P15（4.2 多模态网络的架构），时长 336 秒（5:36） 本节定位 第四章的「地图」。上一节讲清多模态是什么，这一节把已有模型按架构归成四类，并给出统一的三要素视角。后面 P16–P20 的每一个模型（CLIP / GLIP / Fla...","url":"https://liurui2004.github.io/2026/11/27/p15-multimodal-architectures/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/11/27/p15-multimodal-architectures/","datePublished":"2026-11-27T09:40:00.000Z","dateModified":"2026-11-27T11:22:42.438Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"},"keywords":"多模态大模型, 模型架构, 双塔, LLM"}</script>
+
+<script>
+  (function () {
+    var accents = { orange: 1, purple: 1, sakura: 1, blue: 1, pink: 1, green: 1, black: 1 };
+    var match = document.cookie.match(/(?:^|;\s*)flatpaper-accent=([^;]+)/);
+    var accent = 'green';
+    if (match) {
+      try { accent = decodeURIComponent(match[1]); } catch (e) {}
+    }
+    if (!accents[accent]) accent = 'green';
+    document.documentElement.setAttribute('data-accent', accent);
+    try {
+      if (localStorage.getItem('flatpaper-mode') === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+      }
+    } catch (e) {}
+  })();
+</script>
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css">
+<script defer src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+
+
+  
+  <link rel="stylesheet" href="/css/twojian-style.css?v=5">
+  
+<meta name="generator" content="Hexo 6.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body
+  class="is-post tape-disabled tag-style-tape bg-style-default"
+  data-default-accent="green"
+  data-code-theme="simple"
+  data-note-style="sticky"
+  data-note-icons="on"
+  data-button-style="circle"
+  data-strong-accent="on"
+>
+  
+    <div class="page-grain"></div>
+  
+  <svg width="0" height="0" style="position:absolute;z-index:-1;" aria-hidden="true">
+    <defs>
+      <filter id="paper-edge" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+  
+  <header class="site-header">
+  
+  <button class="icon-button js-sidebar-toggle sidebar-toggle" type="button" aria-label="打开侧边栏" aria-controls="paper-sidebar-drawer" aria-expanded="false">
+    
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-menu"></use></svg>
+
+  </button>
+
+  <div class="brand">
+    <div class="brand-mark-wrapper">
+      
+        <a class="brand-mark" href="/" aria-label="FlatPaper 首页">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-layout-grid"></use></svg>
+
+        </a>
+      
+    </div>
+    <a class="brand-text" href="/">lorena的小博客</a>
+  </div>
+
+  <nav class="site-nav" aria-label="主导航">
+    
+      
+        <a class="site-nav-link " href="/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+          <span>首页</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/categories/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+          <span>分类</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/tags/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+          <span>标签</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/archives/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+          <span>归档</span>
+        </a>
+      
+    
+  </nav>
+
+  <div class="header-tools">
+    <button class="icon-button js-search-open" type="button" aria-label="搜索文章">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+    </button>
+    <div class="accent-picker">
+      <button class="icon-button accent-toggle" type="button" aria-label="选择主题色" title="选择主题色" aria-haspopup="true" aria-expanded="false" aria-controls="accent-menu">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-palette flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-palette"></use></svg>
+
+      </button>
+      <div class="accent-menu" id="accent-menu" role="menu" aria-label="主题色">
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="橙色" aria-checked="false" data-accent-option="orange">
+          <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="紫色" aria-checked="false" data-accent-option="purple">
+          <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="樱花粉" aria-checked="false" data-accent-option="sakura">
+          <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="蓝色" aria-checked="false" data-accent-option="blue">
+          <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="粉色" aria-checked="false" data-accent-option="pink">
+          <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="绿色" aria-checked="false" data-accent-option="green">
+          <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="黑色" aria-checked="false" data-accent-option="black">
+          <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+    <button class="theme-toggle" type="button" aria-label="切换颜色模式">
+      <span class="theme-icon theme-icon--sun">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-sun"></use></svg>
+</span>
+      <span class="theme-icon theme-icon--moon">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-moon"></use></svg>
+</span>
+    </button>
+  </div>
+</header>
+
+
+  
+  <main class="paper-shell paper-shell--article">
+    
+
+<aside id="paper-sidebar-drawer" class="paper-sidebar paper-sidebar--right" aria-label="侧边栏">
+  <div class="drawer-toolbar" aria-label="侧边栏工具">
+    <div class="drawer-accent-options" role="group" aria-label="主题色">
+      <button type="button" class="accent-option" aria-label="橙色" aria-pressed="false" data-accent-option="orange">
+        <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="紫色" aria-pressed="false" data-accent-option="purple">
+        <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="樱花粉" aria-pressed="false" data-accent-option="sakura">
+        <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="蓝色" aria-pressed="false" data-accent-option="blue">
+        <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="粉色" aria-pressed="false" data-accent-option="pink">
+        <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="绿色" aria-pressed="false" data-accent-option="green">
+        <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="黑色" aria-pressed="false" data-accent-option="black">
+        <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+      </button>
+    </div>
+    <button class="icon-button drawer-close js-sidebar-close" type="button" aria-label="关闭侧边栏">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+    </button>
+  </div>
+
+  <section class="side-card nav-card">
+    <nav class="site-nav-drawer" aria-label="移动端导航">
+      
+        
+          <a class="" href="/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+            <span>首页</span>
+          </a>
+        
+      
+        
+          <a class="" href="/categories/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+            <span>分类</span>
+          </a>
+        
+      
+        
+          <a class="" href="/tags/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+            <span>标签</span>
+          </a>
+        
+      
+        
+          <a class="" href="/archives/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+            <span>归档</span>
+          </a>
+        
+      
+    </nav>
+  </section>
+
+  <section class="side-card profile-card">
+    
+      <div class="avatar avatar--image avatar--circle">
+        <img src="/images/avatar.jpg" alt="lorena" loading="lazy" referrerpolicy="no-referrer">
+      </div>
+    
+    <h3>lorena</h3>
+    <p class="profile-role">isfj 小女孩 · 懒惰但上进</p>
+    <p>目标成为estj的isfj小女孩，持续学习新知识中....</p>
+    
+    <div class="socials">
+      
+        <a href="https://github.com/LIURUI2004" target="_blank" rel="noopener" aria-label="GitHub" data-tooltip="GitHub">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 496 512" fill="currentColor" class="lucide lucide-github flatpaper-icon flatpaper-icon--fa-brands" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-fa-brands-github"></use></svg>
+
+          
+        </a>
+      
+        <a href="mailto:liurui20041008@gmail.com" target="_blank" rel="noopener" aria-label="Email" data-tooltip="Email">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-mail"></use></svg>
+
+          
+        </a>
+      
+        <a href="https://www.xiaohongshu.com/user/profile/66c9fef3000000001d0231f5" target="_blank" rel="noopener" aria-label="小红书" data-tooltip="小红书主页">
+          
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" class="lucide lucide-custom" aria-hidden="true"><path d="M22.405 9.879c.002.016.01.02.07.019h.725a.797.797 0 0 0 .78-.972.794.794 0 0 0-.884-.618.795.795 0 0 0-.692.794c0 .101-.002.666.001.777zm-11.509 4.808c-.203.001-1.353.004-1.685.003a2.528 2.528 0 0 1-.766-.126.025.025 0 0 0-.03.014L7.7 16.127a.025.025 0 0 0 .01.032c.111.06.336.124.495.124.66.01 1.32.002 1.981 0 .01 0 .02-.006.023-.015l.712-1.545a.025.025 0 0 0-.024-.036zM.477 9.91c-.071 0-.076.002-.076.01a.834.834 0 0 0-.01.08c-.027.397-.038.495-.234 3.06-.012.24-.034.389-.135.607-.026.057-.033.042.003.112.046.092.681 1.523.787 1.74.008.015.011.02.017.02.008 0 .033-.026.047-.044.147-.187.268-.391.371-.606.306-.635.44-1.325.486-1.706.014-.11.021-.22.03-.33l.204-2.616.022-.293c.003-.029 0-.033-.03-.034zm7.203 3.757a1.427 1.427 0 0 1-.135-.607c-.004-.084-.031-.39-.235-3.06a.443.443 0 0 0-.01-.082c-.004-.011-.052-.008-.076-.008h-1.48c-.03.001-.034.005-.03.034l.021.293c.076.982.153 1.964.233 2.946.05.4.186 1.085.487 1.706.103.215.223.419.37.606.015.018.037.051.048.049.02-.003.742-1.642.804-1.765.036-.07.03-.055.003-.112zm3.861-.913h-.872a.126.126 0 0 1-.116-.178l1.178-2.625a.025.025 0 0 0-.023-.035l-1.318-.003a.148.148 0 0 1-.135-.21l.876-1.954a.025.025 0 0 0-.023-.035h-1.56c-.01 0-.02.006-.024.015l-.926 2.068c-.085.169-.314.634-.399.938a.534.534 0 0 0-.02.191.46.46 0 0 0 .23.378.981.981 0 0 0 .46.119h.59c.041 0-.688 1.482-.834 1.972a.53.53 0 0 0-.023.172.465.465 0 0 0 .23.398c.15.092.342.12.475.12l1.66-.001c.01 0 .02-.006.023-.015l.575-1.28a.025.025 0 0 0-.024-.035zm-6.93-4.937H3.1a.032.032 0 0 0-.034.033c0 1.048-.01 2.795-.01 6.829 0 .288-.269.262-.28.262h-.74c-.04.001-.044.004-.04.047.001.037.465 1.064.555 1.263.01.02.03.033.051.033.157.003.767.009.938-.014.153-.02.3-.06.438-.132.3-.156.49-.419.595-.765.052-.172.075-.353.075-.533.002-2.33 0-4.66-.007-6.991a.032.032 0 0 0-.032-.032zm11.784 6.896c0-.014-.01-.021-.024-.022h-1.465c-.048-.001-.049-.002-.05-.049v-4.66c0-.072-.005-.07.07-.07h.863c.08 0 .075.004.075-.074V8.393c0-.082.006-.076-.08-.076h-3.5c-.064 0-.075-.006-.075.073v1.445c0 .083-.006.077.08.077h.854c.075 0 .07-.004.07.07v4.624c0 .095.008.084-.085.084-.37 0-1.11-.002-1.304 0-.048.001-.06.03-.06.03l-.697 1.519s-.014.025-.008.036c.006.01.013.008.058.008 1.748.003 3.495.002 5.243.002.03-.001.034-.006.035-.033v-1.539zm4.177-3.43c0 .013-.007.023-.02.024-.346.006-.692.004-1.037.004-.014-.002-.022-.01-.022-.024-.005-.434-.007-.869-.01-1.303 0-.072-.006-.071.07-.07l.733-.003c.041 0 .081.002.12.015.093.025.16.107.165.204.006.431.002 1.153.001 1.153zm2.67.244a1.953 1.953 0 0 0-.883-.222h-.18c-.04-.001-.04-.003-.042-.04V10.21c0-.132-.007-.263-.025-.394a1.823 1.823 0 0 0-.153-.53 1.533 1.533 0 0 0-.677-.71 2.167 2.167 0 0 0-1-.258c-.153-.003-.567 0-.72 0-.07 0-.068.004-.068-.065V7.76c0-.031-.01-.041-.046-.039H17.93s-.016 0-.023.007c-.006.006-.008.012-.008.023v.546c-.008.036-.057.015-.082.022h-.95c-.022.002-.028.008-.03.032v1.481c0 .09-.004.082.082.082h.913c.082 0 .072.128.072.128V11.19s.003.117-.06.117h-1.482c-.068 0-.06.082-.06.082v1.445s-.01.068.064.068h1.457c.082 0 .076-.006.076.079v3.225c0 .088-.007.081.082.081h1.43c.09 0 .082.007.082-.08v-3.27c0-.029.006-.035.033-.035l2.323-.003c.098 0 .191.02.28.061a.46.46 0 0 1 .274.407c.008.395.003.79.003 1.185 0 .259-.107.367-.33.367h-1.218c-.023.002-.029.008-.028.033.184.437.374.871.57 1.303a.045.045 0 0 0 .04.026c.17.005.34.002.51.003.15-.002.517.004.666-.01a2.03 2.03 0 0 0 .408-.075c.59-.18.975-.698.976-1.313v-1.981c0-.128-.01-.254-.034-.38 0 .078-.029-.641-.724-.998z"/></svg>
+          
+        </a>
+      
+      
+        
+        
+        <a href="/atom.xml" aria-label="RSS feed" data-tooltip="RSS feed">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rss flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-rss"></use></svg>
+
+        </a>
+      
+    </div>
+  </section>
+
+  
+
+  
+    <div class="post-sticky-stack">
+      <section class="side-card toc-card">
+        <header class="toc-card__head">
+          <h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table-of-contents flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-table-of-contents"></use></svg>
+文章目录</h2>
+          <button type="button" class="toc-toggle-all" data-action="toggle-toc" aria-pressed="false" aria-label="展开全部目录" title="展开全部目录">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-chevron-down"></use></svg>
+
+          </button>
+        </header>
+        <div class="toc-content">
+          
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E8%A7%86%E9%A2%91%E4%BF%A1%E6%81%AF%E4%B8%8E%E5%AE%9A%E4%BD%8D"><span class="toc-text">一、视频信息与定位</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%B4%A0%E6%9D%90%E6%9D%A5%E6%BA%90%E8%AF%B4%E6%98%8E"><span class="toc-text">素材来源说明</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E7%BB%9F%E4%B8%80%E8%A7%86%E8%A7%92%EF%BC%9A%E4%BB%BB%E4%BD%95%E5%A4%9A%E6%A8%A1%E6%80%81%E7%BD%91%E7%BB%9C%E9%83%BD%E6%98%AF%E4%B8%89%E8%A6%81%E7%B4%A0"><span class="toc-text">二、统一视角：任何多模态网络都是三要素</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%9B%9B%E7%A7%8D%E6%9E%B6%E6%9E%84%E7%B1%BB%E5%9E%8B"><span class="toc-text">三、四种架构类型</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E7%B1%BB%E5%9E%8B-A%EF%BC%9A%E5%8F%8C%E5%A1%94-%E5%8F%8C%E7%BC%96%E7%A0%81%E5%99%A8%EF%BC%88Dual-Encoder%EF%BC%89"><span class="toc-text">3.1 类型 A：双塔 &#x2F; 双编码器（Dual-Encoder）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-%E7%B1%BB%E5%9E%8B-B%EF%BC%9A%E8%9E%8D%E5%90%88%E5%BC%8F%EF%BC%88Fusion%EF%BC%89"><span class="toc-text">3.2 类型 B：融合式（Fusion）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-%E7%B1%BB%E5%9E%8B-C%EF%BC%9A%E7%BC%96%E7%A0%81%E5%99%A8%E2%80%93%E8%A7%A3%E7%A0%81%E5%99%A8%EF%BC%88Encoder-Decoder%EF%BC%89"><span class="toc-text">3.3 类型 C：编码器–解码器（Encoder-Decoder）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-4-%E7%B1%BB%E5%9E%8B-D%EF%BC%9A%E9%80%82%E9%85%8D-LLM%EF%BC%88Adapted-LLM%EF%BC%89"><span class="toc-text">3.4 类型 D：适配 LLM（Adapted LLM）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E4%B8%BA%E4%BB%80%E4%B9%88%E8%AF%B4%E3%80%8C%E4%B8%A4%E7%A7%8D%E6%9C%80%E5%B9%BF%E6%B3%9B%E4%BD%BF%E7%94%A8%E7%9A%84%E6%9E%B6%E6%9E%84%E9%83%BD%E4%BB%A5-LLM-%E4%B8%BA%E6%A0%B8%E5%BF%83%E3%80%8D"><span class="toc-text">四、为什么说「两种最广泛使用的架构都以 LLM 为核心」</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E6%8A%8A%E8%AE%AD%E7%BB%83%E6%B5%81%E7%A8%8B%E4%B9%9F%E5%BD%92%E4%B8%80%E4%B8%8B%EF%BC%9A%E4%B8%89%E9%98%B6%E6%AE%B5%E6%A8%A1%E6%9D%BF"><span class="toc-text">五、把训练流程也归一下：三阶段模板</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E6%8A%80%E6%9C%AF%E6%BC%94%E8%BF%9B%E7%9A%84%E4%B8%80%E6%9D%A1%E7%BA%BF%E7%B4%A2"><span class="toc-text">六、技术演进的一条线索</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E6%9C%AC%E7%AF%87%E8%A6%81%E7%82%B9%E6%A0%B8%E5%AF%B9%E6%B8%85%E5%8D%95"><span class="toc-text">七、本篇要点核对清单</span></a></li></ol>
+          
+        </div>
+      </section>
+      
+
+
+    </div>
+  
+
+  
+
+</aside>
+
+    <section class="paper-main">
+      
+
+<div class="article-tape-wrap">
+<span class="tape tape--top-right" aria-hidden="true"></span>
+<article class="article-paper">
+  
+  <header class="article-header">
+    
+      <a class="label-pill" href="/categories/%E5%A4%9A%E6%A8%A1%E6%80%81%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%AD%A6%E4%B9%A0/">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+        多模态大模型学习
+      </a>
+    
+    <h1>4.2 多模态网络的架构</h1>
+    <div class="meta-line meta-line--article">
+      <span class="meta-date">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-calendar"></use></svg>
+2026-11-27</span>
+      
+        <span class="meta-tags">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+          <a class="meta-tag-link" href="/tags/%E5%A4%9A%E6%A8%A1%E6%80%81%E5%A4%A7%E6%A8%A1%E5%9E%8B/">#多模态大模型</a><a class="meta-tag-link" href="/tags/%E6%A8%A1%E5%9E%8B%E6%9E%B6%E6%9E%84/">#模型架构</a><a class="meta-tag-link" href="/tags/%E5%8F%8C%E5%A1%94/">#双塔</a><a class="meta-tag-link" href="/tags/LLM/">#LLM</a>
+        </span>
+      
+    </div>
+  </header>
+
+  
+
+
+  <div class="article-content">
+    <h2 id="一、视频信息与定位"><a href="#一、视频信息与定位" class="headerlink" title="一、视频信息与定位"></a>一、视频信息与定位</h2><table>
+<thead>
+<tr>
+<th>项目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>稿件</td>
+<td>BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程）</td>
+</tr>
+<tr>
+<td>分P</td>
+<td>P15（4.2 多模态网络的架构），时长 336 秒（5:36）</td>
+</tr>
+<tr>
+<td>本节定位</td>
+<td>第四章的「地图」。上一节讲清多模态是什么，这一节把已有模型按架构归成四类，并给出统一的三要素视角。后面 P16–P20 的每一个模型（CLIP / GLIP / Flamingo / LLaVA）都能在这一节的地图上找到坐标，<strong>这一节就是后续五节的索引</strong>。</td>
+</tr>
+</tbody></table>
+<h3 id="素材来源说明"><a href="#素材来源说明" class="headerlink" title="素材来源说明"></a>素材来源说明</h3><ul>
+<li><strong>AI 字幕原文</strong>：152 条，336 秒，全片只有两页 PPT（要素页 + 架构分类页）；</li>
+<li><strong>定点截图</strong>：7 张（<code>P15_20</code>~`P15_320`），前 4 张是要素页的不同讲解位置，后 3 张是架构分类页与代表模型列表；</li>
+<li>讲师列举的代表模型是以「课程内的分类习惯」给出的，与论文原作者的自我归类不一定完全一致，文中按讲师口径叙述并注明。</li>
+</ul>
+<hr>
+<h2 id="二、统一视角：任何多模态网络都是三要素"><a href="#二、统一视角：任何多模态网络都是三要素" class="headerlink" title="二、统一视角：任何多模态网络都是三要素"></a>二、统一视角：任何多模态网络都是三要素</h2><p>讲师开场给了一个「万物归一」的框架——不管模型叫什么名字，都可以拆成三块：</p>
+<table>
+<thead>
+<tr>
+<th>要素</th>
+<th>作用</th>
+<th>常见实现</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>① 模态 Encoder</strong></td>
+<td>把每种模态的原始信号变成向量序列</td>
+<td>图像：ViT / ResNet / MAE；文本：BERT / CLIP-Text；音频：Whisper 编码器</td>
+</tr>
+<tr>
+<td><strong>② Alignment Strategy（对齐策略）</strong></td>
+<td>决定不同模态的表示如何「对上」</td>
+<td>对比学习（拉近正样本对、推远负样本对）、交叉注意力融合、线性投影映射</td>
+</tr>
+<tr>
+<td><strong>③ LLM（Optional）</strong></td>
+<td>承担推理与生成</td>
+<td>冻结 / 微调 / 从零训练的语言模型</td>
+</tr>
+</tbody></table>
+<p>关键在第二项：<strong>对齐策略是多模态模型真正的分水岭</strong>。同样是 ViT + BERT，用对比学习对齐就是 CLIP，用交叉注意力对齐就是 ViT-BERT 类融合模型，用线性投影接到 LLM 前面就是 LLaVA。</p>
+<p><img src="/2026/11/27/p15-multimodal-architectures/P15_20.png" alt="三要素：模态 Encoder / 对齐策略 / LLM"></p>
+<p>注意表中 LLM 标的是「可选」——早期多模态模型（如 VisualBERT、ViLBERT）根本没有 LLM 这一块，它们用 BERT 当融合器。LLM 成为默认配置，是 2022 年以后的事。</p>
+<p><img src="/2026/11/27/p15-multimodal-architectures/P15_120.png" alt="要素页讲解：对齐策略的决定性作用"></p>
+<hr>
+<h2 id="三、四种架构类型"><a href="#三、四种架构类型" class="headerlink" title="三、四种架构类型"></a>三、四种架构类型</h2><p>讲师把主流模型归成四类，并逐一给了代表模型（<code>P15_230</code>~`P15_320`）：</p>
+<h3 id="3-1-类型-A：双塔-双编码器（Dual-Encoder）"><a href="#3-1-类型-A：双塔-双编码器（Dual-Encoder）" class="headerlink" title="3.1 类型 A：双塔 / 双编码器（Dual-Encoder）"></a>3.1 类型 A：双塔 / 双编码器（Dual-Encoder）</h3><p>两个模态各走一个独立编码器，输出投影到同一维度后<strong>只做相似度计算</strong>，不融合中间特征。</p>
+<div class="math-display">
+<mjx-container class="MathJax" jax="SVG" overflow="overflow" display="true"><svg style="vertical-align: -2.172ex;" xmlns="http://www.w3.org/2000/svg" width="27.541ex" height="5.657ex" role="img" focusable="false" viewBox="0 -1540.5 12172.9 2500.5"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math" data-latex="s(I,T)=\frac{f_I(I)^{\top}}{\|f_I(I)\|}\cdot\frac{f_T(T)}{\|f_T(T)\|}"><g data-mml-node="mi" data-latex="s"><path data-c="1D460" d="M420 354C420 411 362 442 300 442C237 442 192 423 165 385C142 352 130 322 130 295C130 242 165 208 234 193C263 188 285 181 302 173C323 164 333 147 333 123C333 105 325 85 308 62C287 33 250 18 197 18C143 18 108 33 92 62C124 61 151 87 151 119C151 144 138 157 111 157C75 157 52 124 52 88C52 22 124-11 196-11C271-11 325 11 357 56C384 93 397 126 397 156C397 199 376 231 335 252C304 263 280 270 265 273C230 282 194 285 194 328C194 381 244 413 300 413C342 413 369 400 382 375C360 371 337 352 337 327C337 306 348 295 371 295C402 295 420 323 420 354Z"></path></g><g data-mml-node="mo" data-latex="(" transform="translate(469,0)"><path data-c="28" d="M318-248C327-248 332-243 332-234C332-231 330-227 327-223C275-183 233-117 202-26C175 53 161 131 161 208L161 292C161 369 175 447 202 526C233 617 275 683 327 723C330 726 332 730 332 734C332 743 327 748 318 748C317 748 314 747 311 745C251 699 201 631 160 540C121 453 101 371 101 292L101 208C101 129 121 47 160-40C201-131 251-199 311-245C314-247 317-248 318-248Z"></path></g><g data-mml-node="mi" data-latex="I" transform="translate(858,0)"><path data-c="1D43C" d="M497 667C497 678 491 683 478 683L349 680L218 683C202 684 194 676 194 659C194 649 205 644 226 644C269 644 290 639 290 630C290 625 289 620 288 615L155 82C150 60 140 47 125 42C118 40 100 39 69 39C44 39 34 38 34 15C34 5 40 0 53 0L181 3L313 0C329-1 337 7 337 23C337 39 325 39 303 39C264 39 240 37 240 53C240 58 241 65 244 75L376 602C381 623 391 636 406 641C413 643 431 644 462 644C486 644 497 645 497 667Z"></path></g><g data-mml-node="mo" data-latex="," transform="translate(1355,0)"><path data-c="2C" d="M139 106C107 106 86 82 86 50C86 20 109-5 139-5C153-5 165-1 174 8L175 0C175-63 154-117 112-160C105-168 101-174 101-178C101-188 105-193 114-193C123-193 135-181 152-158C186-110 203-57 203 0C203 53 185 106 139 106Z"></path></g><g data-mml-node="mi" data-latex="T" transform="translate(1799.7,0)"><path data-c="1D447" d="M344 631C344 628 343 621 340 611L208 83C204 68 200 59 197 55C188 44 154 39 94 39C63 39 49 42 49 16C49 5 56 0 69 0C120 0 192 4 235 3L317 2C331 2 386 0 403 0C420 0 428 8 428 24C428 34 416 39 391 39C339 39 309 41 300 46C297 48 295 52 295 58L430 603C433 617 436 626 439 629C443 635 467 638 511 638C566 638 604 634 623 625C642 616 652 595 652 561C652 543 649 517 644 483C642 475 641 469 641 464C641 453 646 447 657 447C666 447 672 456 675 473L702 645C703 650 704 656 704 662C704 672 694 677 673 677L125 677C99 677 97 674 89 655L30 481C27 472 25 466 24 462C24 452 29 447 40 447C48 447 55 455 60 470C85 543 110 588 133 607C159 628 209 638 282 638L321 638C332 638 344 639 344 631Z"></path></g><g data-mml-node="mo" data-latex=")" transform="translate(2503.7,0)"><path data-c="29" d="M78-245C138-199 188-131 229-40C268 47 288 129 288 208L288 292C288 371 268 453 229 540C188 631 138 699 78 745C75 747 72 748 71 748C62 748 57 743 57 734C57 730 59 726 62 723C114 683 156 617 187 526C214 447 228 369 228 292L228 208C228 131 214 53 187-26C156-117 114-183 62-223C59-227 57-231 57-234C57-243 62-248 71-248C72-248 75-247 78-245Z"></path></g><g data-mml-node="mo" data-latex="=" transform="translate(3170.4,0)"><path data-c="3D" d="M698 367L80 367C64 367 56 359 56 344C56 329 64 321 80 321L698 321C714 321 722 329 722 344C722 356 711 367 698 367M698 179L80 179C64 179 56 171 56 156C56 141 64 133 80 133L698 133C714 133 722 141 722 156C722 169 711 179 698 179Z"></path></g><g data-mml-node="mfrac" data-latex="\frac{f_I(I)^{\top}}{\|f_I(I)\|}" transform="translate(4226.2,0)"><g data-mml-node="mrow" data-latex="f_I(I)^{\top}" transform="translate(301.4,708)"><g data-mml-node="msub" data-latex="f_I"><g data-mml-node="mi" data-latex="f"><path data-c="1D453" d="M552 633C552 677 509 705 462 705C400 705 357 665 334 586C329 568 318 517 302 433L237 433C215 433 204 432 204 411C204 400 214 395 235 395L295 395L222 8C211-49 201-91 192-119C180-156 163-175 141-175C126-175 114-171 103-164C135-159 151-140 151-108C151-82 138-69 111-69C77-69 53-99 53-133C53-177 94-205 141-205C166-205 189-195 208-174C240-141 265-94 283-31C294 8 304 46 311 84L369 395L451 395C474 395 484 396 484 419C484 428 474 433 454 433L377 433C383 474 411 625 420 644C430 665 444 675 462 675C477 675 490 671 501 664C470 657 454 639 454 608C454 582 467 569 494 569C528 569 552 599 552 633Z"></path></g><g data-mml-node="mi" transform="translate(523,-150) scale(0.707)" data-latex="I"><path data-c="1D43C" d="M497 667C497 678 491 683 478 683L349 680L218 683C202 684 194 676 194 659C194 649 205 644 226 644C269 644 290 639 290 630C290 625 289 620 288 615L155 82C150 60 140 47 125 42C118 40 100 39 69 39C44 39 34 38 34 15C34 5 40 0 53 0L181 3L313 0C329-1 337 7 337 23C337 39 325 39 303 39C264 39 240 37 240 53C240 58 241 65 244 75L376 602C381 623 391 636 406 641C413 643 431 644 462 644C486 644 497 645 497 667Z"></path></g></g><g data-mml-node="mo" data-latex="(" transform="translate(924.4,0)"><path data-c="28" d="M318-248C327-248 332-243 332-234C332-231 330-227 327-223C275-183 233-117 202-26C175 53 161 131 161 208L161 292C161 369 175 447 202 526C233 617 275 683 327 723C330 726 332 730 332 734C332 743 327 748 318 748C317 748 314 747 311 745C251 699 201 631 160 540C121 453 101 371 101 292L101 208C101 129 121 47 160-40C201-131 251-199 311-245C314-247 317-248 318-248Z"></path></g><g data-mml-node="mi" data-latex="I" transform="translate(1313.4,0)"><path data-c="1D43C" d="M497 667C497 678 491 683 478 683L349 680L218 683C202 684 194 676 194 659C194 649 205 644 226 644C269 644 290 639 290 630C290 625 289 620 288 615L155 82C150 60 140 47 125 42C118 40 100 39 69 39C44 39 34 38 34 15C34 5 40 0 53 0L181 3L313 0C329-1 337 7 337 23C337 39 325 39 303 39C264 39 240 37 240 53C240 58 241 65 244 75L376 602C381 623 391 636 406 641C413 643 431 644 462 644C486 644 497 645 497 667Z"></path></g><g data-mml-node="msup" data-latex=")^{\top}" transform="translate(1810.4,0)"><g data-mml-node="mo" data-latex=")"><path data-c="29" d="M78-245C138-199 188-131 229-40C268 47 288 129 288 208L288 292C288 371 268 453 229 540C188 631 138 699 78 745C75 747 72 748 71 748C62 748 57 743 57 734C57 730 59 726 62 723C114 683 156 617 187 526C214 447 228 369 228 292L228 208C228 131 214 53 187-26C156-117 114-183 62-223C59-227 57-231 57-234C57-243 62-248 71-248C72-248 75-247 78-245Z"></path></g><g data-mml-node="TeXAtom" transform="translate(422,363) scale(0.707)" data-latex="{\top}" data-mjx-texclass="ORD"><g data-mml-node="mi" data-latex="\top"><path data-c="22A4" d="M698 664L80 664C64 664 56 656 56 640C56 625 64 617 80 617L365 617L365 4C365-12 373-20 389-20C405-20 413-12 413 4L413 617L698 617C714 617 722 625 722 640C722 653 711 664 698 664Z"></path></g></g></g></g><g data-mml-node="mrow" data-latex="\|f_I(I)\|" transform="translate(220,-710)"><g data-mml-node="mo" data-latex="\|"><path data-c="2016" d="M264-250C279-250 287-242 287-226L287 726C287 742 279 750 264 750C249 750 241 742 241 726L241-226C241-242 249-250 264-250M134-250C149-250 157-242 157-226L157 726C157 742 149 750 134 750C119 750 111 742 111 726L111-226C111-242 119-250 134-250Z"></path></g><g data-mml-node="msub" data-latex="f_I" transform="translate(398,0)"><g data-mml-node="mi" data-latex="f"><path data-c="1D453" d="M552 633C552 677 509 705 462 705C400 705 357 665 334 586C329 568 318 517 302 433L237 433C215 433 204 432 204 411C204 400 214 395 235 395L295 395L222 8C211-49 201-91 192-119C180-156 163-175 141-175C126-175 114-171 103-164C135-159 151-140 151-108C151-82 138-69 111-69C77-69 53-99 53-133C53-177 94-205 141-205C166-205 189-195 208-174C240-141 265-94 283-31C294 8 304 46 311 84L369 395L451 395C474 395 484 396 484 419C484 428 474 433 454 433L377 433C383 474 411 625 420 644C430 665 444 675 462 675C477 675 490 671 501 664C470 657 454 639 454 608C454 582 467 569 494 569C528 569 552 599 552 633Z"></path></g><g data-mml-node="mi" transform="translate(523,-150) scale(0.707)" data-latex="I"><path data-c="1D43C" d="M497 667C497 678 491 683 478 683L349 680L218 683C202 684 194 676 194 659C194 649 205 644 226 644C269 644 290 639 290 630C290 625 289 620 288 615L155 82C150 60 140 47 125 42C118 40 100 39 69 39C44 39 34 38 34 15C34 5 40 0 53 0L181 3L313 0C329-1 337 7 337 23C337 39 325 39 303 39C264 39 240 37 240 53C240 58 241 65 244 75L376 602C381 623 391 636 406 641C413 643 431 644 462 644C486 644 497 645 497 667Z"></path></g></g><g data-mml-node="mo" data-latex="(" transform="translate(1322.4,0)"><path data-c="28" d="M318-248C327-248 332-243 332-234C332-231 330-227 327-223C275-183 233-117 202-26C175 53 161 131 161 208L161 292C161 369 175 447 202 526C233 617 275 683 327 723C330 726 332 730 332 734C332 743 327 748 318 748C317 748 314 747 311 745C251 699 201 631 160 540C121 453 101 371 101 292L101 208C101 129 121 47 160-40C201-131 251-199 311-245C314-247 317-248 318-248Z"></path></g><g data-mml-node="mi" data-latex="I" transform="translate(1711.4,0)"><path data-c="1D43C" d="M497 667C497 678 491 683 478 683L349 680L218 683C202 684 194 676 194 659C194 649 205 644 226 644C269 644 290 639 290 630C290 625 289 620 288 615L155 82C150 60 140 47 125 42C118 40 100 39 69 39C44 39 34 38 34 15C34 5 40 0 53 0L181 3L313 0C329-1 337 7 337 23C337 39 325 39 303 39C264 39 240 37 240 53C240 58 241 65 244 75L376 602C381 623 391 636 406 641C413 643 431 644 462 644C486 644 497 645 497 667Z"></path></g><g data-mml-node="mo" data-latex=")" transform="translate(2208.4,0)"><path data-c="29" d="M78-245C138-199 188-131 229-40C268 47 288 129 288 208L288 292C288 371 268 453 229 540C188 631 138 699 78 745C75 747 72 748 71 748C62 748 57 743 57 734C57 730 59 726 62 723C114 683 156 617 187 526C214 447 228 369 228 292L228 208C228 131 214 53 187-26C156-117 114-183 62-223C59-227 57-231 57-234C57-243 62-248 71-248C72-248 75-247 78-245Z"></path></g><g data-mml-node="mo" data-latex="\|" transform="translate(2597.4,0)"><path data-c="2016" d="M264-250C279-250 287-242 287-226L287 726C287 742 279 750 264 750C249 750 241 742 241 726L241-226C241-242 249-250 264-250M134-250C149-250 157-242 157-226L157 726C157 742 149 750 134 750C119 750 111 742 111 726L111-226C111-242 119-250 134-250Z"></path></g></g><rect width="3195.4" height="60" x="120" y="220"></rect></g><g data-mml-node="mo" data-latex="\cdot" transform="translate(7883.9,0)"><path data-c="22C5" d="M192 250C192 279 168 303 139 303C110 303 86 279 86 250C86 221 110 197 139 197C168 197 192 221 192 250Z"></path></g><g data-mml-node="mfrac" data-latex="\frac{f_T(T)}{\|f_T(T)\|}" transform="translate(8384.1,0)"><g data-mml-node="mrow" data-latex="f_T(T)" transform="translate(618,708)"><g data-mml-node="msub" data-latex="f_T"><g data-mml-node="mi" data-latex="f"><path data-c="1D453" d="M552 633C552 677 509 705 462 705C400 705 357 665 334 586C329 568 318 517 302 433L237 433C215 433 204 432 204 411C204 400 214 395 235 395L295 395L222 8C211-49 201-91 192-119C180-156 163-175 141-175C126-175 114-171 103-164C135-159 151-140 151-108C151-82 138-69 111-69C77-69 53-99 53-133C53-177 94-205 141-205C166-205 189-195 208-174C240-141 265-94 283-31C294 8 304 46 311 84L369 395L451 395C474 395 484 396 484 419C484 428 474 433 454 433L377 433C383 474 411 625 420 644C430 665 444 675 462 675C477 675 490 671 501 664C470 657 454 639 454 608C454 582 467 569 494 569C528 569 552 599 552 633Z"></path></g><g data-mml-node="mi" transform="translate(523,-150) scale(0.707)" data-latex="T"><path data-c="1D447" d="M344 631C344 628 343 621 340 611L208 83C204 68 200 59 197 55C188 44 154 39 94 39C63 39 49 42 49 16C49 5 56 0 69 0C120 0 192 4 235 3L317 2C331 2 386 0 403 0C420 0 428 8 428 24C428 34 416 39 391 39C339 39 309 41 300 46C297 48 295 52 295 58L430 603C433 617 436 626 439 629C443 635 467 638 511 638C566 638 604 634 623 625C642 616 652 595 652 561C652 543 649 517 644 483C642 475 641 469 641 464C641 453 646 447 657 447C666 447 672 456 675 473L702 645C703 650 704 656 704 662C704 672 694 677 673 677L125 677C99 677 97 674 89 655L30 481C27 472 25 466 24 462C24 452 29 447 40 447C48 447 55 455 60 470C85 543 110 588 133 607C159 628 209 638 282 638L321 638C332 638 344 639 344 631Z"></path></g></g><g data-mml-node="mo" data-latex="(" transform="translate(1070.8,0)"><path data-c="28" d="M318-248C327-248 332-243 332-234C332-231 330-227 327-223C275-183 233-117 202-26C175 53 161 131 161 208L161 292C161 369 175 447 202 526C233 617 275 683 327 723C330 726 332 730 332 734C332 743 327 748 318 748C317 748 314 747 311 745C251 699 201 631 160 540C121 453 101 371 101 292L101 208C101 129 121 47 160-40C201-131 251-199 311-245C314-247 317-248 318-248Z"></path></g><g data-mml-node="mi" data-latex="T" transform="translate(1459.8,0)"><path data-c="1D447" d="M344 631C344 628 343 621 340 611L208 83C204 68 200 59 197 55C188 44 154 39 94 39C63 39 49 42 49 16C49 5 56 0 69 0C120 0 192 4 235 3L317 2C331 2 386 0 403 0C420 0 428 8 428 24C428 34 416 39 391 39C339 39 309 41 300 46C297 48 295 52 295 58L430 603C433 617 436 626 439 629C443 635 467 638 511 638C566 638 604 634 623 625C642 616 652 595 652 561C652 543 649 517 644 483C642 475 641 469 641 464C641 453 646 447 657 447C666 447 672 456 675 473L702 645C703 650 704 656 704 662C704 672 694 677 673 677L125 677C99 677 97 674 89 655L30 481C27 472 25 466 24 462C24 452 29 447 40 447C48 447 55 455 60 470C85 543 110 588 133 607C159 628 209 638 282 638L321 638C332 638 344 639 344 631Z"></path></g><g data-mml-node="mo" data-latex=")" transform="translate(2163.8,0)"><path data-c="29" d="M78-245C138-199 188-131 229-40C268 47 288 129 288 208L288 292C288 371 268 453 229 540C188 631 138 699 78 745C75 747 72 748 71 748C62 748 57 743 57 734C57 730 59 726 62 723C114 683 156 617 187 526C214 447 228 369 228 292L228 208C228 131 214 53 187-26C156-117 114-183 62-223C59-227 57-231 57-234C57-243 62-248 71-248C72-248 75-247 78-245Z"></path></g></g><g data-mml-node="mrow" data-latex="\|f_T(T)\|" transform="translate(220,-710)"><g data-mml-node="mo" data-latex="\|"><path data-c="2016" d="M264-250C279-250 287-242 287-226L287 726C287 742 279 750 264 750C249 750 241 742 241 726L241-226C241-242 249-250 264-250M134-250C149-250 157-242 157-226L157 726C157 742 149 750 134 750C119 750 111 742 111 726L111-226C111-242 119-250 134-250Z"></path></g><g data-mml-node="msub" data-latex="f_T" transform="translate(398,0)"><g data-mml-node="mi" data-latex="f"><path data-c="1D453" d="M552 633C552 677 509 705 462 705C400 705 357 665 334 586C329 568 318 517 302 433L237 433C215 433 204 432 204 411C204 400 214 395 235 395L295 395L222 8C211-49 201-91 192-119C180-156 163-175 141-175C126-175 114-171 103-164C135-159 151-140 151-108C151-82 138-69 111-69C77-69 53-99 53-133C53-177 94-205 141-205C166-205 189-195 208-174C240-141 265-94 283-31C294 8 304 46 311 84L369 395L451 395C474 395 484 396 484 419C484 428 474 433 454 433L377 433C383 474 411 625 420 644C430 665 444 675 462 675C477 675 490 671 501 664C470 657 454 639 454 608C454 582 467 569 494 569C528 569 552 599 552 633Z"></path></g><g data-mml-node="mi" transform="translate(523,-150) scale(0.707)" data-latex="T"><path data-c="1D447" d="M344 631C344 628 343 621 340 611L208 83C204 68 200 59 197 55C188 44 154 39 94 39C63 39 49 42 49 16C49 5 56 0 69 0C120 0 192 4 235 3L317 2C331 2 386 0 403 0C420 0 428 8 428 24C428 34 416 39 391 39C339 39 309 41 300 46C297 48 295 52 295 58L430 603C433 617 436 626 439 629C443 635 467 638 511 638C566 638 604 634 623 625C642 616 652 595 652 561C652 543 649 517 644 483C642 475 641 469 641 464C641 453 646 447 657 447C666 447 672 456 675 473L702 645C703 650 704 656 704 662C704 672 694 677 673 677L125 677C99 677 97 674 89 655L30 481C27 472 25 466 24 462C24 452 29 447 40 447C48 447 55 455 60 470C85 543 110 588 133 607C159 628 209 638 282 638L321 638C332 638 344 639 344 631Z"></path></g></g><g data-mml-node="mo" data-latex="(" transform="translate(1468.8,0)"><path data-c="28" d="M318-248C327-248 332-243 332-234C332-231 330-227 327-223C275-183 233-117 202-26C175 53 161 131 161 208L161 292C161 369 175 447 202 526C233 617 275 683 327 723C330 726 332 730 332 734C332 743 327 748 318 748C317 748 314 747 311 745C251 699 201 631 160 540C121 453 101 371 101 292L101 208C101 129 121 47 160-40C201-131 251-199 311-245C314-247 317-248 318-248Z"></path></g><g data-mml-node="mi" data-latex="T" transform="translate(1857.8,0)"><path data-c="1D447" d="M344 631C344 628 343 621 340 611L208 83C204 68 200 59 197 55C188 44 154 39 94 39C63 39 49 42 49 16C49 5 56 0 69 0C120 0 192 4 235 3L317 2C331 2 386 0 403 0C420 0 428 8 428 24C428 34 416 39 391 39C339 39 309 41 300 46C297 48 295 52 295 58L430 603C433 617 436 626 439 629C443 635 467 638 511 638C566 638 604 634 623 625C642 616 652 595 652 561C652 543 649 517 644 483C642 475 641 469 641 464C641 453 646 447 657 447C666 447 672 456 675 473L702 645C703 650 704 656 704 662C704 672 694 677 673 677L125 677C99 677 97 674 89 655L30 481C27 472 25 466 24 462C24 452 29 447 40 447C48 447 55 455 60 470C85 543 110 588 133 607C159 628 209 638 282 638L321 638C332 638 344 639 344 631Z"></path></g><g data-mml-node="mo" data-latex=")" transform="translate(2561.8,0)"><path data-c="29" d="M78-245C138-199 188-131 229-40C268 47 288 129 288 208L288 292C288 371 268 453 229 540C188 631 138 699 78 745C75 747 72 748 71 748C62 748 57 743 57 734C57 730 59 726 62 723C114 683 156 617 187 526C214 447 228 369 228 292L228 208C228 131 214 53 187-26C156-117 114-183 62-223C59-227 57-231 57-234C57-243 62-248 71-248C72-248 75-247 78-245Z"></path></g><g data-mml-node="mo" data-latex="\|" transform="translate(2950.8,0)"><path data-c="2016" d="M264-250C279-250 287-242 287-226L287 726C287 742 279 750 264 750C249 750 241 742 241 726L241-226C241-242 249-250 264-250M134-250C149-250 157-242 157-226L157 726C157 742 149 750 134 750C119 750 111 742 111 726L111-226C111-242 119-250 134-250Z"></path></g></g><rect width="3548.8" height="60" x="120" y="220"></rect></g></g></g></svg></mjx-container>
+</div>
+
+<ul>
+<li><strong>代表</strong>：CLIP（P16、P17）、ALIGN</li>
+<li><strong>优点</strong>：文本编码器可离线预算，图像只需一次前向，检索时支持向量索引，工程效率极高</li>
+<li><strong>缺点</strong>：<strong>没有生成能力</strong>，只能打分/检索/零样本分类；细粒度交互弱（图文各自成塔，中途不相见）</li>
+</ul>
+<h3 id="3-2-类型-B：融合式（Fusion）"><a href="#3-2-类型-B：融合式（Fusion）" class="headerlink" title="3.2 类型 B：融合式（Fusion）"></a>3.2 类型 B：融合式（Fusion）</h3><p>在同一编码器内部就让两个模态的 token 互相注意，得到<strong>联合表示</strong>再做下游任务。</p>
+<ul>
+<li><strong>代表</strong>：ViLBERT / LXMERT 类（课程未细化）、GLIP（P18，视觉-文本深度融合 + 检测头）、FLAVA</li>
+<li><strong>优点</strong>：能建模细粒度对应（哪个词对应哪个区域），适合检测、定位、VQA</li>
+<li><strong>缺点</strong>：每个样本都要跑两塔联合前向，训练与推理都贵；难以做大规模检索</li>
+</ul>
+<h3 id="3-3-类型-C：编码器–解码器（Encoder-Decoder）"><a href="#3-3-类型-C：编码器–解码器（Encoder-Decoder）" class="headerlink" title="3.3 类型 C：编码器–解码器（Encoder-Decoder）"></a>3.3 类型 C：编码器–解码器（Encoder-Decoder）</h3><p>图像侧编码，文本侧解码（或反之），本质是「条件生成」结构。</p>
+<ul>
+<li><strong>代表</strong>：SimVLM、CoCa、PaLI</li>
+<li><strong>优点</strong>：天生支持生成（图像描述、VQA 生成式回答）</li>
+<li><strong>缺点</strong>：解码器需要与编码器一起训练，规模上去后成本高；逐渐被「直接接 LLM」的路线替代</li>
+</ul>
+<h3 id="3-4-类型-D：适配-LLM（Adapted-LLM）"><a href="#3-4-类型-D：适配-LLM（Adapted-LLM）" class="headerlink" title="3.4 类型 D：适配 LLM（Adapted LLM）"></a>3.4 类型 D：适配 LLM（Adapted LLM）</h3><p><strong>保留一个强大的语言模型作为「大脑」</strong>，只训练一个轻量连接器把视觉特征翻译成 LLM 能吃的 token。</p>
+<ul>
+<li><strong>代表</strong>：Frozen、MetaLM、KOSMOS、BLIP-2、Flamingo（P19）、LLaVA（P20）</li>
+<li><strong>优点</strong>：直接继承 LLM 的语言能力与指令跟随能力；可训练参数极少（LLaVA 第一阶段只训投影层）；多轮对话天然支持</li>
+<li><strong>缺点</strong>：视觉信息在「翻译」时被压缩，细粒度定位弱；幻觉问题继承自 LLM</li>
+</ul>
+<p><img src="/2026/11/27/p15-multimodal-architectures/P15_230.png" alt="四种架构分类与代表模型"></p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>是否融合中间特征</th>
+<th>能否生成</th>
+<th>训练成本</th>
+<th>典型任务</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A 双塔</td>
+<td>否（只在末端算相似度）</td>
+<td>否</td>
+<td>低</td>
+<td>检索、零样本分类</td>
+</tr>
+<tr>
+<td>B 融合</td>
+<td>是（token 级交叉注意）</td>
+<td>弱</td>
+<td>高</td>
+<td>检测、定位、VQA</td>
+</tr>
+<tr>
+<td>C 编码器-解码器</td>
+<td>部分</td>
+<td>是</td>
+<td>中高</td>
+<td>图像描述、生成式 VQA</td>
+</tr>
+<tr>
+<td>D 适配 LLM</td>
+<td>通过连接器间接</td>
+<td>是（强）</td>
+<td>中（可训参数少）</td>
+<td>多模态对话、指令任务</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="四、为什么说「两种最广泛使用的架构都以-LLM-为核心」"><a href="#四、为什么说「两种最广泛使用的架构都以-LLM-为核心」" class="headerlink" title="四、为什么说「两种最广泛使用的架构都以 LLM 为核心」"></a>四、为什么说「两种最广泛使用的架构都以 LLM 为核心」</h2><p>讲师在这一段给了本节最重要的判断：<strong>当前工业界真正跑量的两类架构，都是类型 D 的变体</strong>，区别只在 LLM 放在哪：</p>
+<ol>
+<li><strong>LLM 在后（生成器）</strong>：编码器 + 连接器 → LLM 生成答案。代表：LLaVA、Flamingo、BLIP-2。视觉特征是「提示」，LLM 负责「作答」；</li>
+<li><strong>LLM 在中间（连接器/调度者）</strong>：多个模态编码器各自出 token，由 LLM 统一编排（如 Frozen、MetaLM 的思路）。LLM 不只是生成器，还承担跨模态的语义对齐。</li>
+</ol>
+<p>两者的共同点：<strong>LLM 冻结或只做轻量微调，可训练参数集中在连接器上</strong>。这就是「大模型降本」的核心操作——把最贵的部分固定，只训练最便宜的部分。</p>
+<p><img src="/2026/11/27/p15-multimodal-architectures/P15_280.png" alt="架构页讲解：以 LLM 为核心的两种形态"></p>
+<hr>
+<h2 id="五、把训练流程也归一下：三阶段模板"><a href="#五、把训练流程也归一下：三阶段模板" class="headerlink" title="五、把训练流程也归一下：三阶段模板"></a>五、把训练流程也归一下：三阶段模板</h2><p>虽然本节不细讲训练，但讲师提到的模型几乎都遵循同一个三阶段模板，提前记住这张表，后面五节会反复用到：</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>目标</th>
+<th>数据</th>
+<th>可训练部分</th>
+<th>对应章节</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>① 表征对齐预训练</td>
+<td>让图文落到同一空间</td>
+<td>大规模弱配对图文（4 亿对）</td>
+<td>两个编码器</td>
+<td>CLIP（P16、P17）</td>
+</tr>
+<tr>
+<td>② 连接器训练</td>
+<td>把视觉特征翻译成 LLM token</td>
+<td>图文对 / 描述数据</td>
+<td>只有投影层或 Q-Former</td>
+<td>BLIP-2、LLaVA 第一阶段（P20）</td>
+</tr>
+<tr>
+<td>③ 指令微调</td>
+<td>学会按指令回答</td>
+<td>GPT-4 造的指令数据</td>
+<td>投影层 + LLM（LoRA/全参）</td>
+<td>Flamingo、LLaVA 第二阶段（P19、P20）</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="六、技术演进的一条线索"><a href="#六、技术演进的一条线索" class="headerlink" title="六、技术演进的一条线索"></a>六、技术演进的一条线索</h2><p>把四种架构按时间排一下，可以看出演进逻辑并不是「新模型替换旧模型」，而是<strong>分工固化</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">双塔（解决"对齐"） → 融合（解决"细粒度"） → 编码器-解码器（解决"生成"） → 适配 LLM（解决"推理"）</span><br></pre></td></tr></table></figure>
+
+<p>到 LLaVA 这一代，实际上把前面几代的成果全用上了：视觉编码器用 CLIP 的 ViT（类型 A 的产物），连接器做投影（类型 D 的做法），LLM 用 LLaMA（类型 C 的生成能力）。<strong>「多模态大模型」不是一个全新架构，而是把已有模块按最优分工拼起来。</strong></p>
+<p><img src="/2026/11/27/p15-multimodal-architectures/P15_320.png" alt="课程给出的代表模型谱系"></p>
+<hr>
+<h2 id="七、本篇要点核对清单"><a href="#七、本篇要点核对清单" class="headerlink" title="七、本篇要点核对清单"></a>七、本篇要点核对清单</h2><ul>
+<li><input checked="" disabled="" type="checkbox"> 三要素框架：模态 Encoder / Alignment Strategy / LLM（可选）</li>
+<li><input checked="" disabled="" type="checkbox"> 对齐策略是区分架构的关键（对比学习 vs 交叉注意 vs 投影映射）</li>
+<li><input checked="" disabled="" type="checkbox"> 四种架构：双塔（CLIP）、融合（GLIP/FLAVA）、编码器-解码器（SimVLM/CoCa/PaLI）、适配 LLM（Flamingo/LLaVA/BLIP-2）</li>
+<li><input checked="" disabled="" type="checkbox"> 四种架构在「是否融合 / 能否生成 / 训练成本 / 典型任务」上的差异</li>
+<li><input checked="" disabled="" type="checkbox"> 为什么当前主流是「LLM 为核心」的两种形态，以及可训练参数集中在连接器</li>
+<li><input checked="" disabled="" type="checkbox"> 三阶段训练模板与后续章节的对应关系</li>
+</ul>
+
+  </div>
+
+  <footer class="article-reactions">
+    <div class="reaction-group">
+      <button type="button" class="reaction reaction--comment" aria-label="跳转到评论区" data-action="scroll-to-comments">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-message-circle"></use></svg>
+
+      </button>
+      <span class="reaction-label">评论</span>
+      
+    </div>
+    <div class="reaction-group reaction-group--right">
+      
+      <button type="button" class="reaction reaction--share" aria-label="分享" data-action="share">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2 flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-share-2"></use></svg>
+
+      </button>
+      <span class="reaction-label">分享</span>
+    </div>
+  </footer>
+
+  
+
+
+  <nav class="article-actions">
+    
+      <a class="article-action article-action--prev" href="/2026/11/27/p16-p17-clip-model-and-code/">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-left"></use></svg>
+
+        <span class="action-label">上一篇</span>
+        <span class="action-title">4.3-4.4 CLIP 模型与代码详解</span>
+      </a>
+    
+    
+      <a class="article-action article-action--next" href="/2026/11/27/p14-multimodal-concept/">
+        <span class="action-label">下一篇</span>
+        <span class="action-title">4.1 多模态学习的概念</span>
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-right"></use></svg>
+
+      </a>
+    
+  </nav>
+</article>
+</div>
+
+<button type="button" class="back-to-top" data-action="scroll-to-top" aria-label="返回顶部" hidden>
+  
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-up"></use></svg>
+
+</button>
+
+
+  <section class="related-paper">
+    <header class="related-paper__head">
+      <h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-link"></use></svg>
+相关文章</h2>
+      <a class="related-paper__more" href="/archives/">
+        <span>查看更多</span>
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-right"></use></svg>
+
+      </a>
+    </header>
+    <div class="related-paper__grid">
+      
+        <a class="related-card" href="/2026/11/27/p20-llava-model/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-0 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/2026/11/27/p20-llava-model/P20_160.png" alt="4.7 LLaVA 模型" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">4.7 LLaVA 模型</strong>
+            <em class="related-card__date">2026-11-27</em>
+          </span>
+        </a>
+      
+        <a class="related-card" href="/2026/11/27/p19-flamingo-model/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-1 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/2026/11/27/p19-flamingo-model/P19_10.png" alt="4.6 Flamingo 模型" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">4.6 Flamingo 模型</strong>
+            <em class="related-card__date">2026-11-27</em>
+          </span>
+        </a>
+      
+        <a class="related-card" href="/2026/11/27/p18-glip-model/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-2 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/2026/11/27/p18-glip-model/P18_10.png" alt="4.5 GLIP 模型" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">4.5 GLIP 模型</strong>
+            <em class="related-card__date">2026-11-27</em>
+          </span>
+        </a>
+      
+        <a class="related-card" href="/2026/11/27/p16-p17-clip-model-and-code/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-0 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/2026/11/27/p16-p17-clip-model-and-code/P16_5.png" alt="4.3-4.4 CLIP 模型与代码详解" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">4.3-4.4 CLIP 模型与代码详解</strong>
+            <em class="related-card__date">2026-11-27</em>
+          </span>
+        </a>
+      
+    </div>
+  </section>
+
+
+      
+
+
+    </section>
+    
+  </main>
+
+  <div class="sidebar-backdrop js-sidebar-close" aria-hidden="true"></div>
+
+  
+<footer class="site-footer">
+  <span class="site-footer__left">© 2026 By lorena</span>
+  
+    <span class="site-footer__right">
+      
+        <span class="site-footer__row"><span class="site-footer__powered-prefix">Powered by Theme</span> <a href="https://github.com/Homulilly/hexo-theme-flatpaper" target="_blank" rel="noopener">FlatPaper</a></span>
+      
+    </span>
+  
+</footer>
+
+  
+<div class="search-panel" aria-hidden="true" data-index-url="/flatpaper-search.json">
+  <div class="search-backdrop js-search-close"></div>
+  <section class="search-dialog" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <span class="tape tape--top-left" aria-hidden="true"></span>
+    <header class="search-head">
+      <h2><span class="green-dot"></span>搜索文章</h2>
+      <button class="icon-button js-search-close" type="button" aria-label="关闭搜索">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+      </button>
+    </header>
+    <label class="search-field">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+      <input id="flatpaper-search" class="search-input" type="search" placeholder="输入关键词，按 Esc 关闭" autocomplete="off">
+    </label>
+    <div class="search-results" data-empty="输入关键词后显示匹配的文章">
+      <p class="search-empty">输入关键词后显示匹配的文章</p>
+    </div>
+  </section>
+</div>
+
+  <script>
+  window.FLATPAPER_I18N = {"language":"zh-CN","common.posts":"文章","common.categories":"分类","common.tags":"标签","common.comments":"评论","common.share":"分享","common.page":"页面","common.archive":"归档","common.post_list":"文章列表","common.search_posts":"搜索文章","common.random_posts":"随机文章","common.reward":"赞赏","common.view_all":"查看全部","pagination.prev":"上一页","pagination.next":"下一页","pagination.post_pager":"文章分页","pagination.archive_pager":"归档分页","index.featured":"精选文章","index.pinned":"置顶","index.read_more":"阅读全文","index.previous_slide":"上一张","index.next_slide":"下一张","index.carousel_pagination":"轮播页码","index.carousel_slide":"第 %d 张","index.latest_posts":"最新文章","index.empty_posts":"还没有文章。创建第一篇文章后，这里会显示最新内容。","archive.title":"归档","archive.post_list":"文章列表","taxonomy.category_count":"%d 篇","taxonomy.empty_categories":"暂时还没有分类。","taxonomy.empty_tags":"暂时还没有标签。","links.label":"友链","links.title":"友情链接","links.empty_data":"暂未加载到友链数据。请确认 source/_data/links.yml 存在并已 hexo clean。","links.rss_label":"%s 的 RSS","friends_feed.label":"朋友圈","friends_feed.title":"友链朋友圈","friends_feed.loading":"正在加载友链动态…","friends_feed.missing_url":"暂未配置 all.json 地址。","friends_feed.load_failed":"友链动态加载失败，请稍后再试。","friends_feed.empty":"暂时没有抓取到友链文章。","friends_feed.load_more":"加载更多","friends_feed.updated_at":"更新于 %s","friends_feed.friend_count":"%d 位友邻","friends_feed.active_count":"%d 位活跃","friends_feed.article_count":"%d 篇文章","friends_feed.unknown_author":"未知站点","friends_feed.date_unknown":"时间未知","guestbook.label":"留言板","guestbook.title":"留言板","guestbook.loading":"正在铺开留言墙…","guestbook.missing_config":"留言墙需要评论系统：请在主题配置中设置 comments: twikoo（并填写 envId）或 comments: artalk（并填写 server）。","guestbook.load_failed":"留言加载失败，请稍后再试。","guestbook.empty":"墙上还空着，来贴第一张留言吧！","guestbook.load_more":"展开更多留言","guestbook.total_count":"共 %d 条留言","guestbook.latest_note":"墙上展示最新 %d 条","guestbook.jump_to_comment":"查看留言","guestbook.sort_time":"查看最新","guestbook.sort_random":"随机排序","guestbook.anonymous":"匿名访客","guestbook.write_hint":"在下方留言，刷新后就会贴到墙上","post.scroll_to_comments":"跳转到评论区","post.previous":"上一篇","post.next":"下一篇","post.no_previous":"没有更早的文章了","post.no_next":"已经是最新的一篇","post.back_to_top":"返回顶部","post.related_posts":"相关文章","post.view_more":"查看更多","not_found.label":"页面走丢了","not_found.title":"找不到这个页面","not_found.text":"这个地址可能已经移动、删除，或者从未存在。","not_found.home":"返回首页","not_found.search":"搜索文章","search.placeholder":"输入关键词，按 Esc 关闭","search.empty":"输入关键词后显示匹配的文章","search.loading":"正在加载搜索索引…","search.load_failed":"搜索索引加载失败，请重新打开搜索重试","search.no_result":"没有找到与 \"%s\" 相关的文章","search.close":"关闭搜索","code.copy":"复制代码","code.collapse":"折叠代码","code.expand":"展开代码","heading.anchor":"链接到此节: %s","head.tag":"标签：%s","head.category":"分类：%s","head.archive":"归档","head.archive_with_date":"归档：%s","head.page_number":"第 %d 页","navigation.primary":"主导航","navigation.mobile":"移动端导航","navigation.brand_home":"FlatPaper 首页","navigation.brand_menu":"打开站点导航","navigation.open_sidebar":"打开侧边栏","navigation.close_sidebar":"关闭侧边栏","navigation.sidebar":"侧边栏","navigation.sidebar_tools":"侧边栏工具","navigation.site_links":"站点链接","navigation.site_info":"站点信息","colors.choose_theme_color":"选择主题色","colors.theme_color":"主题色","colors.toggle_color_mode":"切换颜色模式","colors.green":"绿色","colors.purple":"紫色","colors.pink":"粉色","colors.sakura":"樱花粉","colors.blue":"蓝色","colors.orange":"橙色","colors.black":"黑色","profile.default_bio":"热爱生活，热爱代码，喜欢分享技术与生活中的点滴。","profile.email_copied":"邮箱已复制","welcome.cta":"开始阅读","welcome.title":"欢迎来到 FlatPaper","welcome.text":"一个专注于内容与阅读体验的博客主题。","home_hero.label":"首页开屏","home_hero.enter":"开始阅读","home_hero.note":"今日","home_hero.default_subtitle":"日常记录","home_hero.nav_links":"开屏导航","home_hero.profile_links":"个人链接","home_hero.tools":"开屏工具","home_hero.shuffle_stickers":"打乱贴纸位置","home_hero.link":"链接","home_hero.sticker_image":"贴纸图片","home_hero.visit_confirm":"要访问 %s 吗？","home_hero.visit":"访问","home_hero.cancel":"取消","toc.title":"文章目录","toc.empty":"目录会根据文章标题自动生成。","toc.expand_all":"展开全部目录","toc.collapse_all":"收起全部目录","sidebar.hot_tags":"热门标签","sidebar.latest_posts":"最新文章"};
+  </script>
+  
+<script src="/js/main.js"></script>
+
+  
+  <script src="/js/twojian-ui.js" defer></script>
+  
+</body>
+</html>
