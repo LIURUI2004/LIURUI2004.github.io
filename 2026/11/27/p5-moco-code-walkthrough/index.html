@@ -1,0 +1,1172 @@
+<!doctype html>
+
+<html lang="zh-CN" data-fancybox-enabled="1">
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f3e9" data-flatpaper-theme-color>
+
+<title>lorena的小博客</title>
+<meta name="description" content="P5 · 2.4 MoCo 代码详解 —— 学习笔记一、视频信息与定位 项目 内容 稿件 BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程） 分P P5 &#x2F; 第 5 讲 标题 2.4 MoCo 代码详解 时长 14:13（853 秒） UP主 AI应用开发- 前置依赖 P3（对比学习与 SimCLR &#x2F; InfoNCE...">
+<meta property="og:type" content="article">
+<meta property="og:title" content="lorena的小博客">
+<meta property="og:url" content="https://liurui2004.github.io/2026/11/27/p5-moco-code-walkthrough/">
+<meta property="og:site_name" content="lorena的小博客">
+<meta property="og:description" content="P5 · 2.4 MoCo 代码详解 —— 学习笔记一、视频信息与定位 项目 内容 稿件 BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程） 分P P5 &#x2F; 第 5 讲 标题 2.4 MoCo 代码详解 时长 14:13（853 秒） UP主 AI应用开发- 前置依赖 P3（对比学习与 SimCLR &#x2F; InfoNCE...">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p5-moco-code-walkthrough/P5_30.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p5-moco-code-walkthrough/P5_80.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p5-moco-code-walkthrough/P5_150.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p5-moco-code-walkthrough/P5_300.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p5-moco-code-walkthrough/P5_460.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p5-moco-code-walkthrough/P5_540.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p5-moco-code-walkthrough/P5_680.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p5-moco-code-walkthrough/P5_780.png">
+<meta property="article:published_time" content="2026-11-27T05:30:55.921Z">
+<meta property="article:modified_time" content="2026-11-27T05:30:59.488Z">
+<meta property="article:author" content="lorena">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liurui2004.github.io/2026/11/27/p5-moco-code-walkthrough/P5_30.png">
+<link rel="canonical" href="https://liurui2004.github.io/2026/11/27/p5-moco-code-walkthrough/">
+
+<link rel="icon" href="/images/favicon.png" type="image/png">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"","name":"lorena的小博客","description":"P5 · 2.4 MoCo 代码详解 —— 学习笔记一、视频信息与定位 项目 内容 稿件 BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程） 分P P5 &#x2F; 第 5 讲 标题 2.4 MoCo 代码详解 时长 14:13（853 秒） UP主 AI应用开发- 前置依赖 P3（对比学习与 SimCLR &#x2F; InfoNCE...","url":"https://liurui2004.github.io/2026/11/27/p5-moco-code-walkthrough/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/11/27/p5-moco-code-walkthrough/","datePublished":"2026-11-27T05:30:55.921Z","dateModified":"2026-11-27T05:30:59.488Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"}}</script>
+
+<script>
+  (function () {
+    var accents = { orange: 1, purple: 1, sakura: 1, blue: 1, pink: 1, green: 1, black: 1 };
+    var match = document.cookie.match(/(?:^|;\s*)flatpaper-accent=([^;]+)/);
+    var accent = 'green';
+    if (match) {
+      try { accent = decodeURIComponent(match[1]); } catch (e) {}
+    }
+    if (!accents[accent]) accent = 'green';
+    document.documentElement.setAttribute('data-accent', accent);
+    try {
+      if (localStorage.getItem('flatpaper-mode') === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+      }
+    } catch (e) {}
+  })();
+</script>
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css">
+<script defer src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+
+
+  
+  <link rel="stylesheet" href="/css/twojian-style.css?v=5">
+  
+<meta name="generator" content="Hexo 6.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body
+  class="is-post tape-disabled tag-style-tape bg-style-default"
+  data-default-accent="green"
+  data-code-theme="simple"
+  data-note-style="sticky"
+  data-note-icons="on"
+  data-button-style="circle"
+  data-strong-accent="on"
+>
+  
+    <div class="page-grain"></div>
+  
+  <svg width="0" height="0" style="position:absolute;z-index:-1;" aria-hidden="true">
+    <defs>
+      <filter id="paper-edge" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+  
+  <header class="site-header">
+  
+  <button class="icon-button js-sidebar-toggle sidebar-toggle" type="button" aria-label="打开侧边栏" aria-controls="paper-sidebar-drawer" aria-expanded="false">
+    
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-menu"></use></svg>
+
+  </button>
+
+  <div class="brand">
+    <div class="brand-mark-wrapper">
+      
+        <a class="brand-mark" href="/" aria-label="FlatPaper 首页">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-layout-grid"></use></svg>
+
+        </a>
+      
+    </div>
+    <a class="brand-text" href="/">lorena的小博客</a>
+  </div>
+
+  <nav class="site-nav" aria-label="主导航">
+    
+      
+        <a class="site-nav-link " href="/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+          <span>首页</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/categories/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+          <span>分类</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/tags/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+          <span>标签</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/archives/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+          <span>归档</span>
+        </a>
+      
+    
+  </nav>
+
+  <div class="header-tools">
+    <button class="icon-button js-search-open" type="button" aria-label="搜索文章">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+    </button>
+    <div class="accent-picker">
+      <button class="icon-button accent-toggle" type="button" aria-label="选择主题色" title="选择主题色" aria-haspopup="true" aria-expanded="false" aria-controls="accent-menu">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-palette flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-palette"></use></svg>
+
+      </button>
+      <div class="accent-menu" id="accent-menu" role="menu" aria-label="主题色">
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="橙色" aria-checked="false" data-accent-option="orange">
+          <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="紫色" aria-checked="false" data-accent-option="purple">
+          <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="樱花粉" aria-checked="false" data-accent-option="sakura">
+          <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="蓝色" aria-checked="false" data-accent-option="blue">
+          <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="粉色" aria-checked="false" data-accent-option="pink">
+          <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="绿色" aria-checked="false" data-accent-option="green">
+          <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="黑色" aria-checked="false" data-accent-option="black">
+          <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+    <button class="theme-toggle" type="button" aria-label="切换颜色模式">
+      <span class="theme-icon theme-icon--sun">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-sun"></use></svg>
+</span>
+      <span class="theme-icon theme-icon--moon">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-moon"></use></svg>
+</span>
+    </button>
+  </div>
+</header>
+
+
+  
+  <main class="paper-shell paper-shell--article">
+    
+
+<aside id="paper-sidebar-drawer" class="paper-sidebar paper-sidebar--right" aria-label="侧边栏">
+  <div class="drawer-toolbar" aria-label="侧边栏工具">
+    <div class="drawer-accent-options" role="group" aria-label="主题色">
+      <button type="button" class="accent-option" aria-label="橙色" aria-pressed="false" data-accent-option="orange">
+        <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="紫色" aria-pressed="false" data-accent-option="purple">
+        <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="樱花粉" aria-pressed="false" data-accent-option="sakura">
+        <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="蓝色" aria-pressed="false" data-accent-option="blue">
+        <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="粉色" aria-pressed="false" data-accent-option="pink">
+        <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="绿色" aria-pressed="false" data-accent-option="green">
+        <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="黑色" aria-pressed="false" data-accent-option="black">
+        <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+      </button>
+    </div>
+    <button class="icon-button drawer-close js-sidebar-close" type="button" aria-label="关闭侧边栏">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+    </button>
+  </div>
+
+  <section class="side-card nav-card">
+    <nav class="site-nav-drawer" aria-label="移动端导航">
+      
+        
+          <a class="" href="/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+            <span>首页</span>
+          </a>
+        
+      
+        
+          <a class="" href="/categories/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+            <span>分类</span>
+          </a>
+        
+      
+        
+          <a class="" href="/tags/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+            <span>标签</span>
+          </a>
+        
+      
+        
+          <a class="" href="/archives/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+            <span>归档</span>
+          </a>
+        
+      
+    </nav>
+  </section>
+
+  <section class="side-card profile-card">
+    
+      <div class="avatar avatar--image avatar--circle">
+        <img src="/images/avatar.jpg" alt="lorena" loading="lazy" referrerpolicy="no-referrer">
+      </div>
+    
+    <h3>lorena</h3>
+    <p class="profile-role">isfj 小女孩 · 懒惰但上进</p>
+    <p>目标成为estj的isfj小女孩，持续学习新知识中....</p>
+    
+    <div class="socials">
+      
+        <a href="https://github.com/LIURUI2004" target="_blank" rel="noopener" aria-label="GitHub" data-tooltip="GitHub">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 496 512" fill="currentColor" class="lucide lucide-github flatpaper-icon flatpaper-icon--fa-brands" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-fa-brands-github"></use></svg>
+
+          
+        </a>
+      
+        <a href="mailto:liurui20041008@gmail.com" target="_blank" rel="noopener" aria-label="Email" data-tooltip="Email">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-mail"></use></svg>
+
+          
+        </a>
+      
+        <a href="https://www.xiaohongshu.com/user/profile/66c9fef3000000001d0231f5" target="_blank" rel="noopener" aria-label="小红书" data-tooltip="小红书主页">
+          
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" class="lucide lucide-custom" aria-hidden="true"><path d="M22.405 9.879c.002.016.01.02.07.019h.725a.797.797 0 0 0 .78-.972.794.794 0 0 0-.884-.618.795.795 0 0 0-.692.794c0 .101-.002.666.001.777zm-11.509 4.808c-.203.001-1.353.004-1.685.003a2.528 2.528 0 0 1-.766-.126.025.025 0 0 0-.03.014L7.7 16.127a.025.025 0 0 0 .01.032c.111.06.336.124.495.124.66.01 1.32.002 1.981 0 .01 0 .02-.006.023-.015l.712-1.545a.025.025 0 0 0-.024-.036zM.477 9.91c-.071 0-.076.002-.076.01a.834.834 0 0 0-.01.08c-.027.397-.038.495-.234 3.06-.012.24-.034.389-.135.607-.026.057-.033.042.003.112.046.092.681 1.523.787 1.74.008.015.011.02.017.02.008 0 .033-.026.047-.044.147-.187.268-.391.371-.606.306-.635.44-1.325.486-1.706.014-.11.021-.22.03-.33l.204-2.616.022-.293c.003-.029 0-.033-.03-.034zm7.203 3.757a1.427 1.427 0 0 1-.135-.607c-.004-.084-.031-.39-.235-3.06a.443.443 0 0 0-.01-.082c-.004-.011-.052-.008-.076-.008h-1.48c-.03.001-.034.005-.03.034l.021.293c.076.982.153 1.964.233 2.946.05.4.186 1.085.487 1.706.103.215.223.419.37.606.015.018.037.051.048.049.02-.003.742-1.642.804-1.765.036-.07.03-.055.003-.112zm3.861-.913h-.872a.126.126 0 0 1-.116-.178l1.178-2.625a.025.025 0 0 0-.023-.035l-1.318-.003a.148.148 0 0 1-.135-.21l.876-1.954a.025.025 0 0 0-.023-.035h-1.56c-.01 0-.02.006-.024.015l-.926 2.068c-.085.169-.314.634-.399.938a.534.534 0 0 0-.02.191.46.46 0 0 0 .23.378.981.981 0 0 0 .46.119h.59c.041 0-.688 1.482-.834 1.972a.53.53 0 0 0-.023.172.465.465 0 0 0 .23.398c.15.092.342.12.475.12l1.66-.001c.01 0 .02-.006.023-.015l.575-1.28a.025.025 0 0 0-.024-.035zm-6.93-4.937H3.1a.032.032 0 0 0-.034.033c0 1.048-.01 2.795-.01 6.829 0 .288-.269.262-.28.262h-.74c-.04.001-.044.004-.04.047.001.037.465 1.064.555 1.263.01.02.03.033.051.033.157.003.767.009.938-.014.153-.02.3-.06.438-.132.3-.156.49-.419.595-.765.052-.172.075-.353.075-.533.002-2.33 0-4.66-.007-6.991a.032.032 0 0 0-.032-.032zm11.784 6.896c0-.014-.01-.021-.024-.022h-1.465c-.048-.001-.049-.002-.05-.049v-4.66c0-.072-.005-.07.07-.07h.863c.08 0 .075.004.075-.074V8.393c0-.082.006-.076-.08-.076h-3.5c-.064 0-.075-.006-.075.073v1.445c0 .083-.006.077.08.077h.854c.075 0 .07-.004.07.07v4.624c0 .095.008.084-.085.084-.37 0-1.11-.002-1.304 0-.048.001-.06.03-.06.03l-.697 1.519s-.014.025-.008.036c.006.01.013.008.058.008 1.748.003 3.495.002 5.243.002.03-.001.034-.006.035-.033v-1.539zm4.177-3.43c0 .013-.007.023-.02.024-.346.006-.692.004-1.037.004-.014-.002-.022-.01-.022-.024-.005-.434-.007-.869-.01-1.303 0-.072-.006-.071.07-.07l.733-.003c.041 0 .081.002.12.015.093.025.16.107.165.204.006.431.002 1.153.001 1.153zm2.67.244a1.953 1.953 0 0 0-.883-.222h-.18c-.04-.001-.04-.003-.042-.04V10.21c0-.132-.007-.263-.025-.394a1.823 1.823 0 0 0-.153-.53 1.533 1.533 0 0 0-.677-.71 2.167 2.167 0 0 0-1-.258c-.153-.003-.567 0-.72 0-.07 0-.068.004-.068-.065V7.76c0-.031-.01-.041-.046-.039H17.93s-.016 0-.023.007c-.006.006-.008.012-.008.023v.546c-.008.036-.057.015-.082.022h-.95c-.022.002-.028.008-.03.032v1.481c0 .09-.004.082.082.082h.913c.082 0 .072.128.072.128V11.19s.003.117-.06.117h-1.482c-.068 0-.06.082-.06.082v1.445s-.01.068.064.068h1.457c.082 0 .076-.006.076.079v3.225c0 .088-.007.081.082.081h1.43c.09 0 .082.007.082-.08v-3.27c0-.029.006-.035.033-.035l2.323-.003c.098 0 .191.02.28.061a.46.46 0 0 1 .274.407c.008.395.003.79.003 1.185 0 .259-.107.367-.33.367h-1.218c-.023.002-.029.008-.028.033.184.437.374.871.57 1.303a.045.045 0 0 0 .04.026c.17.005.34.002.51.003.15-.002.517.004.666-.01a2.03 2.03 0 0 0 .408-.075c.59-.18.975-.698.976-1.313v-1.981c0-.128-.01-.254-.034-.38 0 .078-.029-.641-.724-.998z"/></svg>
+          
+        </a>
+      
+      
+        
+        
+        <a href="/atom.xml" aria-label="RSS feed" data-tooltip="RSS feed">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rss flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-rss"></use></svg>
+
+        </a>
+      
+    </div>
+  </section>
+
+  
+
+  
+    <div class="post-sticky-stack">
+      <section class="side-card toc-card">
+        <header class="toc-card__head">
+          <h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table-of-contents flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-table-of-contents"></use></svg>
+文章目录</h2>
+          <button type="button" class="toc-toggle-all" data-action="toggle-toc" aria-pressed="false" aria-label="展开全部目录" title="展开全部目录">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-chevron-down"></use></svg>
+
+          </button>
+        </header>
+        <div class="toc-content">
+          
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E8%A7%86%E9%A2%91%E4%BF%A1%E6%81%AF%E4%B8%8E%E5%AE%9A%E4%BD%8D"><span class="toc-text">一、视频信息与定位</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%85%88%E6%8A%8A%E6%95%B4%E4%BB%BD%E4%BB%A3%E7%A0%81%E7%9A%84%E9%AA%A8%E6%9E%B6%E7%9C%8B%E6%B8%85%E6%A5%9A"><span class="toc-text">二、先把整份代码的骨架看清楚</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E9%80%90%E6%AE%B5%E5%AE%9E%E7%8E%B0"><span class="toc-text">三、逐段实现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E5%AF%BC%E5%85%A5%E4%BE%9D%E8%B5%96%E5%8C%85"><span class="toc-text">3.1 导入依赖包</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-%E6%95%B0%E6%8D%AE%E5%8A%A0%E8%BD%BD%EF%BC%9ACIFAR-10-DataLoader-batch-64"><span class="toc-text">3.2 数据加载：CIFAR-10 + DataLoader(batch&#x3D;64)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-backbone%EF%BC%9AResNet50-%E8%87%AA%E5%AE%9A%E4%B9%89%E8%BE%93%E5%87%BA%E7%BB%B4%E5%BA%A6"><span class="toc-text">3.3 backbone：ResNet50 + 自定义输出维度</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-4-%E8%B6%85%E5%8F%82%E6%95%B0%EF%BC%9AC%E3%80%81K%E3%80%81N%E3%80%81m%E3%80%81T"><span class="toc-text">3.4 超参数：C、K、N、m、T</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-5-%E5%8F%8C%E7%BC%96%E7%A0%81%E5%99%A8-Fq-Fk-%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-text">3.5 双编码器 Fq &#x2F; Fk 的初始化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-6-%E9%98%9F%E5%88%97%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B8%8E%E6%8C%87%E9%92%88"><span class="toc-text">3.6 队列初始化与指针</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-7-%E4%BC%98%E5%8C%96%E5%99%A8%EF%BC%9AAdam%EF%BC%8C%E5%8F%AA%E4%BC%98%E5%8C%96-Fq"><span class="toc-text">3.7 优化器：Adam，只优化 Fq</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-8-%E6%95%B0%E6%8D%AE%E5%A2%9E%E5%BC%BA%EF%BC%9A%E5%8A%A0-0-1-%E7%9A%84%E9%9A%8F%E6%9C%BA%E5%99%AA%E5%A3%B0"><span class="toc-text">3.8 数据增强：加 0.1 的随机噪声</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-9-%E8%AE%AD%E7%BB%83%E5%BE%AA%E7%8E%AF%E5%89%8D%E5%90%91%EF%BC%9A%E4%B8%A4%E8%B7%AF%E5%A2%9E%E5%BC%BA-%E2%86%92-%E5%8F%8C%E7%BC%96%E7%A0%81%E5%99%A8-%E2%86%92-detach"><span class="toc-text">3.9 训练循环前向：两路增强 → 双编码器 → detach</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-10-InfoNCE-loss-%E5%87%BD%E6%95%B0%EF%BC%9A%E4%B8%89%E4%B8%AA%E5%8F%82%E6%95%B0-%E6%B8%A9%E5%BA%A6"><span class="toc-text">3.10 InfoNCE loss 函数：三个参数 + 温度</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-11-%E5%8F%8D%E4%BC%A0%E4%B8%8E%E6%89%8B%E5%86%99%E5%8A%A8%E9%87%8F%E6%9B%B4%E6%96%B0"><span class="toc-text">3.11 反传与手写动量更新</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-12-%E9%98%9F%E5%88%97%E5%85%A5%E9%98%9F%E4%B8%8E%E6%8C%87%E9%92%88%E7%8E%AF%E5%BD%A2%E6%BB%9A%E5%8A%A8"><span class="toc-text">3.12 队列入队与指针环形滚动</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E5%AE%8C%E6%95%B4%E5%8F%AF%E8%BF%90%E8%A1%8C%E4%BB%A3%E7%A0%81%EF%BC%88%E6%95%B4%E5%90%88%E7%89%88%EF%BC%89"><span class="toc-text">四、完整可运行代码（整合版）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E4%B8%80%E6%AC%A1%E5%89%8D%E5%90%91%E7%9A%84%E5%AE%8C%E6%95%B4%E5%BC%A0%E9%87%8F%E6%B5%81%E6%B0%B4%E8%B4%A6"><span class="toc-text">五、一次前向的完整张量流水账</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E6%98%93%E9%94%99%E7%82%B9%E3%80%81%E5%9D%91%E4%B8%8E%E9%9D%A2%E8%AF%95%E8%BF%BD%E9%97%AE"><span class="toc-text">六、易错点、坑与面试追问</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E4%BA%94%E4%B8%AA%E9%AB%98%E9%A2%91%E5%9D%91"><span class="toc-text">6.1 五个高频坑</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E9%9D%A2%E8%AF%95%E8%BF%BD%E9%97%AE%E4%B8%8E%E5%8F%82%E8%80%83%E7%AD%94%E6%B3%95"><span class="toc-text">6.2 面试追问与参考答法</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E5%B0%8F%E7%BB%93"><span class="toc-text">七、小结</span></a></li></ol>
+          
+        </div>
+      </section>
+      
+
+
+    </div>
+  
+
+  
+
+</aside>
+
+    <section class="paper-main">
+      
+
+<div class="article-tape-wrap">
+<span class="tape tape--top-right" aria-hidden="true"></span>
+<article class="article-paper">
+  
+  <header class="article-header">
+    
+    <h1></h1>
+    <div class="meta-line meta-line--article">
+      <span class="meta-date">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-calendar"></use></svg>
+2026-11-27</span>
+      
+    </div>
+  </header>
+
+  
+
+
+  <div class="article-content">
+    <h1 id="P5-·-2-4-MoCo-代码详解-——-学习笔记"><a href="#P5-·-2-4-MoCo-代码详解-——-学习笔记" class="headerlink" title="P5 · 2.4 MoCo 代码详解 —— 学习笔记"></a>P5 · 2.4 MoCo 代码详解 —— 学习笔记</h1><h2 id="一、视频信息与定位"><a href="#一、视频信息与定位" class="headerlink" title="一、视频信息与定位"></a>一、视频信息与定位</h2><table>
+<thead>
+<tr>
+<th>项目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>稿件</td>
+<td>BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程）</td>
+</tr>
+<tr>
+<td>分P</td>
+<td>P5 &#x2F; 第 5 讲</td>
+</tr>
+<tr>
+<td>标题</td>
+<td>2.4 MoCo 代码详解</td>
+</tr>
+<tr>
+<td>时长</td>
+<td>14:13（853 秒）</td>
+</tr>
+<tr>
+<td>UP主</td>
+<td>AI应用开发-</td>
+</tr>
+<tr>
+<td>前置依赖</td>
+<td>P3（对比学习与 SimCLR &#x2F; InfoNCE）、P4（MoCo 原理：队列 + 动量编码器）</td>
+</tr>
+<tr>
+<td>本节定位</td>
+<td>把 P4 讲的结构图<strong>一行行落成 PyTorch 代码</strong>。讲师明确说明做的是”一个简化的版本”，目的是”帮助大家更好的去理解 MoCo 它这样一个对比学习的方法，它是一个怎么样实现的”。</td>
+</tr>
+</tbody></table>
+<p>本节的实施脉络（讲师口述，时间点为该分P 内相对时间）：</p>
+<ol>
+<li>00:19 导入依赖包；</li>
+<li>00:23 数据加载：以 CIFAR-10（字幕 ASR 记作”CA10 &#x2F; C法时”）为例，<code>Dataset</code> + <code>DataLoader</code>，<code>batch_size = 64</code>；</li>
+<li>00:43 <strong>backbone</strong>：ResNet50，并自定义 <code>output_dim</code>；</li>
+<li>01:18 <strong>超参</strong>：<code>C</code>（负样本&#x2F;特征维度）、<code>K</code>（队列容量，取 4096）、<code>N</code>（batch size）；</li>
+<li>01:40 <strong>双编码器</strong>：<code>Fq</code> 与 <code>Fk</code>，初始时把 <code>Fq</code> 的参数复制给 <code>Fk</code>；</li>
+<li>02:11 <strong>队列</strong>：形状 <code>C × K</code>，放在 GPU 上，并配一个 <code>queue_ptr</code> 指针；</li>
+<li>02:20 <strong>动量系数 m</strong>：设为 0.99；</li>
+<li>02:43 <strong>优化器</strong>：Adam，<code>lr = 0.001</code>，只对 <code>Fq</code> 做梯度反传；</li>
+<li>03:05 <strong>数据增强</strong>：为简便，直接在原图上加 0.1 的随机噪声；</li>
+<li>03:25 进入<strong>训练循环</strong>：两路增强 → 双编码器前向 → <code>k.detach()</code> → InfoNCE → 反传 → 手写动量更新 → 队列入队与指针滚动；</li>
+<li>04:45 定义 <strong>InfoNCE loss 函数</strong>（<code>q</code>、<code>k</code>、<code>queue</code>、<code>temperature = 0.07</code>）；</li>
+<li>11:40 收尾：为什么用 <code>CrossEntropyLoss</code> 就等于 InfoNCE。</li>
+</ol>
+<blockquote>
+<p>说明：本分P 的 AI 字幕完整可用（364 条，852s ≈ 853s），下文大量引用讲师原话。字幕中”CCR &#x2F; CCL2”应为 <strong>SimCLR</strong>，”MOL &#x2F; MOCO &#x2F; MOO”应为 <strong>MoCo</strong>，”EDEN”应为 <strong>Adam</strong>，”INFNCE &#x2F; 信息NCC”应为 <strong>InfoNCE</strong>，”BMN &#x2F; BMI”应为 <strong>bmm（batch matrix multiply）</strong>，”199 &#x2F; 90.99”应为 <strong>0.99</strong>，均已按上下文校正。</p>
+</blockquote>
+<hr>
+<h2 id="二、先把整份代码的骨架看清楚"><a href="#二、先把整份代码的骨架看清楚" class="headerlink" title="二、先把整份代码的骨架看清楚"></a>二、先把整份代码的骨架看清楚</h2><p>在逐行拆解之前，先看全貌。整套实现只有 <strong>约 130 行</strong>，可以分成两块：<strong>“一次性准备”</strong> 与 <strong>“每个 batch 反复做”</strong>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">┌────────────────────────── 一次性准备 ──────────────────────────┐</span><br><span class="line">│ 1 导包            torch / torchvision                          │</span><br><span class="line">│ 2 数据           CIFAR10 + DataLoader(batch_size=64)           │</span><br><span class="line">│ 3 backbone       ResNet50(fc → output_dim=1024)                │</span><br><span class="line">│ 4 超参           C=1024  K=4096  N=64  m=0.99  T=0.07          │</span><br><span class="line">│ 5 双编码器       Fq（可训练） ←参数复制→ Fk（冻结）             │</span><br><span class="line">│ 6 队列           queue: (C, K) = (1024, 4096)，queue_ptr = 0    │</span><br><span class="line">│ 7 优化器         Adam(Fq.parameters(), lr=1e-3)                │</span><br><span class="line">└────────────────────────────────────────────────────────────────┘</span><br><span class="line">                              ↓</span><br><span class="line">┌───────────────────── 每个 batch 反复做 ────────────────────────┐</span><br><span class="line">│ ① 取一批 x, _  → 搬上 GPU                                       │</span><br><span class="line">│ ② 两次增强 → xq, xk                                            │</span><br><span class="line">│ ③ q = Fq(xq)          (64, 1024)                               │</span><br><span class="line">│    k = Fk(xk).detach()(64, 1024)   ← key 分支不建图            │</span><br><span class="line">│ ④ loss = InfoNCE(q, k, queue, T)                               │</span><br><span class="line">│ ⑤ zero_grad → backward → step   （只更新 Fq）                   │</span><br><span class="line">│ ⑥ 手写动量更新：θk = m·θk + (1-m)·θq                            │</span><br><span class="line">│ ⑦ 入队：queue[:, ptr:ptr+64] = k.T，ptr = (ptr+64) % 4096       │</span><br><span class="line">└────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<p><strong>一句话记住 MoCo 的代码本质</strong>：它就是在 SimCLR 的”两次增强 + InfoNCE”骨架上，加了两件东西——<strong>一个不参与反传、靠动量跟随的 key 编码器</strong>，和<strong>一个存放历史 key 的环形队列</strong>。</p>
+<hr>
+<h2 id="三、逐段实现"><a href="#三、逐段实现" class="headerlink" title="三、逐段实现"></a>三、逐段实现</h2><h3 id="3-1-导入依赖包"><a href="#3-1-导入依赖包" class="headerlink" title="3.1 导入依赖包"></a>3.1 导入依赖包</h3><p><img src="/2026/11/27/p5-moco-code-walkthrough/P5_30.png" alt="P5 导包与模型结构总览"></p>
+<p><strong>图 1</strong>：<code>P5_30.png</code>（00:30）。代码页开头，<code>import torch</code> &#x2F; <code>torch.nn</code> &#x2F; <code>torch.nn.functional</code> &#x2F; <code>torchvision</code> 等导入语句，下方紧接 MoCo 的整体结构定义。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"><span class="keyword">import</span> torchvision</span><br><span class="line"><span class="keyword">from</span> torchvision <span class="keyword">import</span> datasets, transforms</span><br><span class="line"><span class="keyword">from</span> torch.utils.data <span class="keyword">import</span> DataLoader</span><br></pre></td></tr></table></figure>
+
+<p>讲师只交代了一句”首先呢我们先进行一个包的导入”，但这里已经把后面要用的四个轮子全部备齐：</p>
+<table>
+<thead>
+<tr>
+<th>包</th>
+<th>本讲用到的部分</th>
+<th>用在哪</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>torch</code></td>
+<td><code>torch.bmm</code>、<code>torch.matmul</code>、<code>torch.cat</code>、<code>torch.zeros</code>、<code>torch.no_grad</code></td>
+<td>相似度计算、队列、标签</td>
+</tr>
+<tr>
+<td><code>torch.nn</code></td>
+<td><code>nn.Linear</code>、<code>nn.CrossEntropyLoss</code></td>
+<td>换掉 ResNet50 的 fc、算损失</td>
+</tr>
+<tr>
+<td><code>torch.nn.functional as F</code></td>
+<td><code>F.normalize</code>、<code>F.cross_entropy</code></td>
+<td>L2 归一化、InfoNCE</td>
+</tr>
+<tr>
+<td><code>torchvision</code> &#x2F; <code>datasets</code> &#x2F; <code>DataLoader</code></td>
+<td><code>resnet50</code>、<code>CIFAR10</code></td>
+<td>backbone 与数据</td>
+</tr>
+</tbody></table>
+<h3 id="3-2-数据加载：CIFAR-10-DataLoader-batch-64"><a href="#3-2-数据加载：CIFAR-10-DataLoader-batch-64" class="headerlink" title="3.2 数据加载：CIFAR-10 + DataLoader(batch&#x3D;64)"></a>3.2 数据加载：CIFAR-10 + DataLoader(batch&#x3D;64)</h3><p>讲师的说法是”我们加载 CIFAR-10 这样一个非常通用的一个数据集来做一个演示，无非就是说我们初始化一个 Dataset，然后呢我们加在这里一个 DataLoader，我们的 batch size 呢取 64”。</p>
+<p><img src="/2026/11/27/p5-moco-code-walkthrough/P5_80.png" alt="P5 ResNet50 backbone 与 DataLoader"></p>
+<p><strong>图 2</strong>：<code>P5_80.png</code>（01:20）。代码页，上半部分是 <code>resnet50(output_dim)</code> 的定义（取 <code>resnet50</code>、替换最后一层全连接），下半部分是 CIFAR10 数据集与 DataLoader 的构建。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 只用 ToTensor 把 PIL 图像变成 [0,1] 的张量；真正的&quot;对比学习增强&quot;在后面手写</span></span><br><span class="line">transform = transforms.ToTensor()</span><br><span class="line"></span><br><span class="line">train_set = datasets.CIFAR10(</span><br><span class="line">    root=<span class="string">&quot;./data&quot;</span>, train=<span class="literal">True</span>, download=<span class="literal">True</span>, transform=transform</span><br><span class="line">)</span><br><span class="line">loader = DataLoader(</span><br><span class="line">    train_set,</span><br><span class="line">    batch_size=<span class="number">64</span>,      <span class="comment"># 即下文的 N</span></span><br><span class="line">    shuffle=<span class="literal">True</span>,</span><br><span class="line">    num_workers=<span class="number">2</span>,</span><br><span class="line">    drop_last=<span class="literal">True</span>,     <span class="comment"># 关键：丢掉最后一个不满 64 的 batch</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> x, y <span class="keyword">in</span> loader:</span><br><span class="line">    <span class="built_in">print</span>(x.shape, y.shape)   <span class="comment"># torch.Size([64, 3, 32, 32]) torch.Size([64])</span></span><br><span class="line">    <span class="keyword">break</span></span><br></pre></td></tr></table></figure>
+
+<p>三个工程细节值得强调：</p>
+<ol>
+<li><strong><code>drop_last=True</code></strong>：MoCo 的队列入队是”一次塞进 64 列”，若最后一个 batch 只有 37 张，切片长度就会和 <code>k</code> 的行数对不上。丢掉它是最省事的做法。</li>
+<li><strong>这里不做 <code>transforms.RandomResizedCrop</code></strong>：因为讲师把数据增强单独抽成一个函数（3.8 节），用”加噪声”替代了 SimCLR 的强增强。数据集这里只负责 <code>ToTensor</code>。</li>
+<li><strong>标签 <code>y</code> 全程不用</strong>：这就是”自监督”的字面含义——<code>for x, y in loader</code> 里 <code>y</code> 只占位，<code>_</code> 掉即可。真正的”标签”是数据增强造出来的伪标签（正样本对）。</li>
+</ol>
+<h3 id="3-3-backbone：ResNet50-自定义输出维度"><a href="#3-3-backbone：ResNet50-自定义输出维度" class="headerlink" title="3.3 backbone：ResNet50 + 自定义输出维度"></a>3.3 backbone：ResNet50 + 自定义输出维度</h3><p>讲师原话：”在 backbone 网络这边呢，我们使用 ResNet50 作为我们的 backbone，我们首先需要去定义一个 resnet50 的网络结构，我们的 <code>output_dim</code> 呢就代表是说我们希望这个 resnet50 它的输出的这个维度是多少，那我们直接调用 ResNet50，然后呢我们可以把它的最后一层变成我们希望的它的一个维度。”</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_resnet50</span>(<span class="params">output_dim=<span class="number">1024</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;构造一个 ResNet50 backbone，并把分类头换成 output_dim 维的投影。&quot;&quot;&quot;</span></span><br><span class="line">    model = torchvision.models.resnet50(weights=<span class="literal">None</span>)  <span class="comment"># 自监督，不需要 ImageNet 预训练权重</span></span><br><span class="line">    in_features = model.fc.in_features                 <span class="comment"># 2048</span></span><br><span class="line">    model.fc = nn.Linear(in_features, output_dim)      <span class="comment"># 2048 → 1024</span></span><br><span class="line">    <span class="keyword">return</span> model</span><br></pre></td></tr></table></figure>
+
+<p>维度说明：ResNet50 在 <code>layer4</code> 之后、<code>avgpool</code> 之后得到的是 <strong>(N, 2048)</strong> 的全局特征，原来的 <code>fc</code> 是 <code>2048 → 1000</code>（ImageNet 类别数）。这里把 <code>fc</code> 换成 <code>2048 → 1024</code>，于是整个网络的输出就是 <strong><code>(64, 1024)</code></strong>——正好是队列里每一列（一个负样本）的维度 <code>C = 1024</code>。</p>
+<blockquote>
+<p><strong>为什么是 1024 而不是 128？</strong> MoCo 论文里投影头是 128 维，MoCo v2 是 256 维。本讲为了和后面的 <code>C</code> 统一、便于口算，取了 1024。<strong>维度本身不参与算法逻辑</strong>，只要”编码器输出维度 &#x3D; 队列的行数 C”这一条对上就行。这也是初学者最容易踩的坑：把 <code>output_dim</code> 和 <code>C</code> 写成两个不一致的数，后面 <code>torch.matmul(q, queue)</code> 会直接报 shape mismatch。</p>
+</blockquote>
+<blockquote>
+<p><strong>关于 CIFAR-10 的 32×32 输入</strong>：ResNet50 原生是为 224×224 设计的。32×32 走 <code>conv1(k=7,s=2)</code> 变 16×16，<code>maxpool</code> 变 8×8，到 <code>layer4</code> 结束是 1×1，<code>avgpool</code> 后仍是 1×1，<strong>能跑通</strong>，只是感受野利用率低、绝对精度不高。作为”理解 MoCo 流程”的教学实现完全够用；真要复现论文效果，请换 ImageNet 尺寸或 <code>CIFAR-10</code> 专用的 <code>resnet_cifar</code>（把 <code>conv1</code> 换成 3×3&#x2F;s&#x3D;1、去掉 maxpool）。</p>
+</blockquote>
+<h3 id="3-4-超参数：C、K、N、m、T"><a href="#3-4-超参数：C、K、N、m、T" class="headerlink" title="3.4 超参数：C、K、N、m、T"></a>3.4 超参数：C、K、N、m、T</h3><p><img src="/2026/11/27/p5-moco-code-walkthrough/P5_150.png" alt="P5 数据集、模型与超参"></p>
+<p><strong>图 3</strong>：<code>P5_150.png</code>（02:30）。代码页，包含数据集加载、两个编码器的初始化，以及 <code>C</code>、<code>K</code>（队列长度 4096）、<code>N</code>（batch size）等超参数的定义。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">C  = <span class="number">1024</span>   <span class="comment"># 特征维度 = 队列的行数 = 编码器 output_dim</span></span><br><span class="line">Kb = <span class="number">4096</span>   <span class="comment"># 队列能装的负样本个数（论文里是 65536）</span></span><br><span class="line">N  = <span class="number">64</span>     <span class="comment"># batch size，与 DataLoader 保持一致</span></span><br><span class="line">m  = <span class="number">0.99</span>   <span class="comment"># 动量系数</span></span><br><span class="line">T  = <span class="number">0.07</span>   <span class="comment"># 温度系数 τ</span></span><br><span class="line">lr = <span class="number">0.001</span>  <span class="comment"># 学习率</span></span><br><span class="line">device = <span class="string">&quot;cuda&quot;</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">&quot;cpu&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>讲师的解释非常口语化但抓住了要点：</p>
+<blockquote>
+<p>“这个 <code>C</code> 指的是我们所需要的这个队列，也就是说这个内存银行，它的每一个的这个维度的大小；而 <code>K</code> 呢指的是说我的这个内存银行当中、这个队列当中最多可以存储多少个负样本，那这里呢我们取得比较大，我们取 4096 个，这样的一个非常大的一个负样本的一个容量；而 <code>N</code> 呢指的是这里的 batch size。”</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>含义</th>
+<th>取值</th>
+<th>出现在哪个张量里</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>C</code></td>
+<td>特征维度</td>
+<td>1024</td>
+<td><code>q/k</code>: (N, C)；<code>queue</code>: (C, Kb)</td>
+</tr>
+<tr>
+<td><code>Kb</code></td>
+<td>负样本容量</td>
+<td>4096</td>
+<td><code>queue</code>: (C, Kb)；<code>l_neg</code>: (N, Kb)</td>
+</tr>
+<tr>
+<td><code>N</code></td>
+<td>batch size</td>
+<td>64</td>
+<td><code>q/k/l_pos</code>: 第 0 维 &#x3D; 64</td>
+</tr>
+<tr>
+<td><code>m</code></td>
+<td>动量</td>
+<td>0.99</td>
+<td>动量更新公式</td>
+</tr>
+<tr>
+<td><code>T</code></td>
+<td>温度</td>
+<td>0.07</td>
+<td><code>logits / T</code></td>
+</tr>
+</tbody></table>
+<p><strong>m &#x3D; 0.99 意味着什么？</strong> 讲师说”他每次都以 0.99 这个非常大的这个权重来加权自己原先的这个参数，然后只有剩下的 0.01 的这个权重来参考 encoder 这边的一个参数”。换成一个更直观的说法：<code>Fk</code> 每步只向 <code>Fq</code> 挪动 1%，其参数更新的”半衰期”约为 $\ln 0.5 &#x2F; \ln 0.99 \approx 69$ 步，也就是要走过近 70 个 batch，<code>Fk</code> 才有一半的权重来自新参数。这正好保证了队列里存储的、由 <code>Fk</code> 产出的历史特征<strong>前后一致、不过时</strong>。</p>
+<h3 id="3-5-双编码器-Fq-Fk-的初始化"><a href="#3-5-双编码器-Fq-Fk-的初始化" class="headerlink" title="3.5 双编码器 Fq &#x2F; Fk 的初始化"></a>3.5 双编码器 Fq &#x2F; Fk 的初始化</h3><p>讲师原话：”我们需要去初始化两个 encoder 的模型，那么刚开始呢我们给它都初始化成 resnet50 的模型就可以，比如说我们把其中一个模型叫做 <code>Fq</code>，另外一个模型呢叫做 <code>Fk</code>。而最开始的时候呢，这两个模型其实是一样的，所以说在最开始的时候呢，我们把 <code>Fq</code> 的参数直接给复制过来，给到 <code>Fk</code>。”</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Fq = get_resnet50(C).to(device)   <span class="comment"># query 编码器：参与梯度反传</span></span><br><span class="line">Fk = get_resnet50(C).to(device)   <span class="comment"># key（momentum）编码器：不参与反传</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 关键：初始时刻两边参数必须完全一致</span></span><br><span class="line">Fk.load_state_dict(Fq.state_dict())</span><br><span class="line"></span><br><span class="line"><span class="comment"># 双保险：把 Fk 的 requires_grad 关掉（严格说 detach 已经够了，但关掉更省显存）</span></span><br><span class="line"><span class="keyword">for</span> p <span class="keyword">in</span> Fk.parameters():</span><br><span class="line">    p.requires_grad = <span class="literal">False</span></span><br></pre></td></tr></table></figure>
+
+<p>两个必须理解的点：</p>
+<ol>
+<li><strong>为什么初始必须相同？</strong> 若 <code>Fq</code> 和 <code>Fk</code> 随机初始化成两套不同参数，那么同一个 batch 的 <code>q</code> 和 <code>k</code> 天然就不在同一特征空间，”正样本相似度高”这一学习目标从一开始就自相矛盾。所以 MoCo 的做法是：<strong>起点一致，之后靠动量缓慢分叉</strong>。</li>
+<li><strong><code>load_state_dict</code> 而不是 <code>Fk = Fq</code></strong>：若写成 <code>Fk = Fq</code>，两者其实是同一个 <code>nn.Module</code> 对象，参数共享，<code>Fk</code> 的参数会被优化器一起更新，动量就彻底失效了。<strong>必须深拷贝</strong>（<code>load_state_dict</code> 或 <code>copy.deepcopy</code>）。</li>
+</ol>
+<h3 id="3-6-队列初始化与指针"><a href="#3-6-队列初始化与指针" class="headerlink" title="3.6 队列初始化与指针"></a>3.6 队列初始化与指针</h3><p>讲师原话：”我们来初始化我们的这个队列，我们给它初始化成 <code>C 乘 K</code> 的这样的一个维度，然后呢把它放到 GPU 上面去。而对于每个队列呢，我还需要有一个指针来代表我这个队列目前已经操作到了哪一步。”</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 队列：C 行（每个负样本 1024 维）× Kb 列（共 4096 个负样本）</span></span><br><span class="line">queue = torch.randn(C, Kb, device=device)</span><br><span class="line">queue = F.normalize(queue, dim=<span class="number">0</span>)   <span class="comment"># 先归一化，保证和后面入队的 k 同尺度</span></span><br><span class="line">queue_ptr = <span class="number">0</span>                        <span class="comment"># 环形指针：下一次要写入的列号</span></span><br></pre></td></tr></table></figure>
+
+<p>维度必须记牢：</p>
+<ul>
+<li><code>queue.shape == (1024, 4096)</code></li>
+<li>沿 <strong>dim&#x3D;0（行）</strong> 是”一个负样本的 1024 维特征”，所以归一化是 <code>dim=0</code>；</li>
+<li>沿 <strong>dim&#x3D;1（列）</strong> 是”第 j 个负样本”。</li>
+</ul>
+<blockquote>
+<p><strong>易错点</strong>：很多人把 <code>queue</code> 建成 <code>(Kb, C)</code>，然后在 <code>torch.matmul(q, queue)</code> 时才发现形状对不上。记住一个口诀——<strong>“队列和 q 相乘，q 是 (N, C)，那 queue 必须是 (C, Kb)”</strong>，这样 <code>(64,1024) @ (1024,4096) = (64,4096)</code>，正好是”64 张图 × 4096 个负样本”的相似度矩阵。</p>
+</blockquote>
+<blockquote>
+<p><strong><code>queue_ptr</code> 是干嘛的？</strong> 它就是一个”写指针”，指向队列里下一列可以覆盖的位置。因为队列是 F<strong>I</strong>FO 的环形缓冲区，写满 4096 列之后从头覆盖，因此指针需要取模（见 3.10 节末尾）。</p>
+</blockquote>
+<h3 id="3-7-优化器：Adam，只优化-Fq"><a href="#3-7-优化器：Adam，只优化-Fq" class="headerlink" title="3.7 优化器：Adam，只优化 Fq"></a>3.7 优化器：Adam，只优化 Fq</h3><p>讲师原话：”我们需要去定义一个优化器，比如说我们使用 Adam 的这样一个优化器，它的 learning rate 我们取 0.001，而这个优化器呢，它只对 <code>Fq</code> 进行梯度的反向传播，因为我们在 MoCo 的实践当中呢，我们只有 encoder 它会进行梯度反传，而 momentum encoder 它的参数呢是根据我们这个 m 的一个加权重量更新来进行的。”</p>
+<p><img src="/2026/11/27/p5-moco-code-walkthrough/P5_300.png" alt="P5 优化器、数据增强与 loss"></p>
+<p><strong>图 4</strong>：<code>P5_300.png</code>（05:00）。代码页，含优化器设置、数据增强函数，以及 InfoNCE loss 函数的结构（loss 名与 <code>temperature</code> 参数可见）。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">optimizer = torch.optim.Adam(Fq.parameters(), lr=<span class="number">1e-3</span>)</span><br></pre></td></tr></table></figure>
+
+<p>这一行是整份代码里”信息量最密”的一行。<code>Fq.parameters()</code> 而不是 <code>list(Fq.parameters()) + list(Fk.parameters())</code>，这个选择直接决定了动量机制的存在意义：</p>
+<table>
+<thead>
+<tr>
+<th>如果传了</th>
+<th>会发生什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>只传 <code>Fq.parameters()</code>（本讲）</td>
+<td><code>Fk</code> 完全没有梯度来源，只能靠 3.10 的动量公式被”拖动”，MoCo 机制成立 ✅</td>
+</tr>
+<tr>
+<td>传了两个</td>
+<td><code>Fk</code> 收到梯度并被 Adam 更新，等价于两个普通编码器，动量与队列都失去意义 ❌</td>
+</tr>
+</tbody></table>
+<h3 id="3-8-数据增强：加-0-1-的随机噪声"><a href="#3-8-数据增强：加-0-1-的随机噪声" class="headerlink" title="3.8 数据增强：加 0.1 的随机噪声"></a>3.8 数据增强：加 0.1 的随机噪声</h3><p>讲师原话：”我们还需要去定义一个数据增强的一个方法，这里呢为了简便的一个期间呢，我就使用一个非常简单的一个数据增强的一个方式，我们直接在原先的这个图像上呢，加上一点随机的 0.1 的 10% 的加一个劳动（噪声）。在真实使用当中呢，我们会使用 torchvision 他们中的这个数据增强的手段来对原始的这个图像进行一个增强。”</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">augment</span>(<span class="params">x, noise_std=<span class="number">0.1</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;最简数据增强：在 [0,1] 的图像上加标准差 0.1 的高斯噪声。&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> x + noise_std * torch.randn_like(x)</span><br></pre></td></tr></table></figure>
+
+<p>这个”玩具级增强”只是为了让代码能跑、能看懂流程。<strong>增强越强，正样本对越难对齐，特征越有用</strong>——这正是 SimCLR 论文的核心经验（随机裁剪 + 颜色抖动的组合最有效）。工程上应替换为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> torchvision <span class="keyword">import</span> transforms</span><br><span class="line"></span><br><span class="line">strong_aug = transforms.Compose([</span><br><span class="line">    transforms.RandomResizedCrop(<span class="number">224</span>, scale=(<span class="number">0.2</span>, <span class="number">1.0</span>)),  <span class="comment"># 尺度抖动</span></span><br><span class="line">    transforms.RandomHorizontalFlip(),                    <span class="comment"># 水平翻转</span></span><br><span class="line">    transforms.ColorJitter(<span class="number">0.4</span>, <span class="number">0.4</span>, <span class="number">0.4</span>, <span class="number">0.1</span>),           <span class="comment"># 颜色抖动</span></span><br><span class="line">    transforms.RandomGrayscale(p=<span class="number">0.2</span>),                    <span class="comment"># 随机灰度</span></span><br><span class="line">])</span><br></pre></td></tr></table></figure>
+
+<p>同一张图过两遍 <code>strong_aug</code> 得到 <code>xq</code>、<code>xk</code>，就是一对正样本。<strong>注意两次必须独立采样</strong>，若能拿到同一个增强结果，正样本对退化为”自己和自己”，模型会学到一个恒等映射，loss 直接变负无意义。</p>
+<h3 id="3-9-训练循环前向：两路增强-→-双编码器-→-detach"><a href="#3-9-训练循环前向：两路增强-→-双编码器-→-detach" class="headerlink" title="3.9 训练循环前向：两路增强 → 双编码器 → detach"></a>3.9 训练循环前向：两路增强 → 双编码器 → detach</h3><p>讲师原话：”现在呢我们就需要正式的进入网络的一个训练的过程。那么我们每次呢都从这个 DataLoader 当中去取到一批的数据，而对于每一个每一张图像呢，我们都需要给它放到这个 GPU 上面去，然后呢对于每张图像我们会进行两个增强，一个变成 <code>Xq</code>，一个变成 <code>Xk</code>。然后对于 <code>Xq</code> 的这个图像呢，我们要给它送入叫 <code>Fq</code> 的这个 encoder 当中去，而对于 <code>Xk</code> 的这个图像呢，我们要给他送到 momentum encoder 当中去，这个 momentum encoder 呢它是 <code>Fk</code>。”</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(epochs):</span><br><span class="line">    <span class="keyword">for</span> x, _ <span class="keyword">in</span> loader:</span><br><span class="line">        x = x.to(device)          <span class="comment"># (64, 3, 32, 32)</span></span><br><span class="line"></span><br><span class="line">        xq = augment(x)           <span class="comment"># 第一次独立增强 → query 视图</span></span><br><span class="line">        xk = augment(x)           <span class="comment"># 第二次独立增强 → key   视图</span></span><br><span class="line"></span><br><span class="line">        q = Fq(xq)                <span class="comment"># (64, 1024)  query 特征</span></span><br><span class="line">        k = Fk(xk)                <span class="comment"># (64, 1024)  key   特征（即将被 detach）</span></span><br><span class="line">        k = k.detach()            <span class="comment"># ← 核心：切断 key 分支的计算图</span></span><br></pre></td></tr></table></figure>
+
+<p>然后是整份代码里最容易被忽略、但<strong>绝对不能删</strong>的一行：</p>
+<blockquote>
+<p>“我们还需要去做一步，<code>k = k.detach()</code>。这个什么意思呢？就是我现在呢要把 momentum encoder 这个分支的这个参数呢给它冻一下住，我们在这个步骤当中呢，我们不让它这个 momentum encoder 他参与梯度的一个回传，那这个也是 MoCo 它自有的一个设计。”</p>
+</blockquote>
+<p><code>k.detach()</code> 到底做了什么？<strong>它不是”把 Fk 的参数冻结”，而是”把 k 这个张量从计算图上摘下来”</strong>。具体差异：</p>
+<table>
+<thead>
+<tr>
+<th>写法</th>
+<th>梯度会流回 Fk 吗</th>
+<th>效果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>k = Fk(xk)</code></td>
+<td>会（若无 <code>requires_grad=False</code>）</td>
+<td><code>backward()</code> 时 Fk 收到梯度，MoCo 退化</td>
+</tr>
+<tr>
+<td><code>k = k.detach()</code></td>
+<td>不会（计算图在 k 处被剪断）</td>
+<td>只有 Fq 更新；Fk 只能靠动量公式 → MoCo ✅</td>
+</tr>
+<tr>
+<td><code>p.requires_grad=False</code> for Fk</td>
+<td>也不会</td>
+<td>同样有效，但<strong>不省前向显存</strong>的关键在于 detach</td>
+</tr>
+</tbody></table>
+<p>两者都做（本讲代码即如此）是最稳的写法。还要注意一点：<strong><code>k</code> 不能加 <code>torch.no_grad()</code> 包住整个 <code>Fk(xk)</code> 后再拿去算 loss 吗？</strong> 可以，等价写法：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> torch.no_grad():</span><br><span class="line">    k = Fk(xk)       <span class="comment"># 效果等同 Fk(xk).detach()，且更省显存</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="3-10-InfoNCE-loss-函数：三个参数-温度"><a href="#3-10-InfoNCE-loss-函数：三个参数-温度" class="headerlink" title="3.10 InfoNCE loss 函数：三个参数 + 温度"></a>3.10 InfoNCE loss 函数：三个参数 + 温度</h3><p>讲师原话：”我们现在拿到了一个 <code>Q</code>，拿到了一个 <code>K</code>，我们就可以将 <code>Q</code> 和 <code>K</code> 呢放在一块去计算这个 InfoNCE 的 loss，它需要三个参数，分别是 <code>Q</code> 和 <code>K</code> 的值，以及我们的这样的一个设置的内存银行（队列）。那除了 <code>Q</code>、<code>K</code> 和队列这三个参数之外呢，我们还需要定义一个 <code>temperature</code>，比如说我们就定义成 0.07。”</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">info_nce_loss</span>(<span class="params">q, k, queue, T=<span class="number">0.07</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    q:     (N, C)  = (64, 1024)  query 特征</span></span><br><span class="line"><span class="string">    k:     (N, C)  = (64, 1024)  key 特征（与 q 逐行一一配对，是正样本）</span></span><br><span class="line"><span class="string">    queue: (C, Kb) = (1024, 4096) 历史 key 特征池，全部作为负样本</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># ① L2 归一化：不改变形状，只把每个向量缩放到单位球面上</span></span><br><span class="line">    q = F.normalize(q, dim=<span class="number">1</span>)          <span class="comment"># (64, 1024)</span></span><br><span class="line">    k = F.normalize(k, dim=<span class="number">1</span>)          <span class="comment"># (64, 1024)</span></span><br><span class="line">    queue = F.normalize(queue, dim=<span class="number">0</span>)  <span class="comment"># (1024, 4096)，注意是 dim=0</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># ② 正样本相似度：逐样本内积 → (64, 1)</span></span><br><span class="line">    l_pos = torch.bmm(q.unsqueeze(<span class="number">1</span>), k.unsqueeze(<span class="number">2</span>))   <span class="comment"># (64,1,1024) @ (64,1024,1) = (64,1,1)</span></span><br><span class="line">    l_pos = l_pos.squeeze(-<span class="number">1</span>)                           <span class="comment"># (64, 1)</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># ③ 负样本相似度：每个 q 与 4096 个负样本做内积 → (64, 4096)</span></span><br><span class="line">    l_neg = torch.matmul(q, queue)                      <span class="comment"># (64,1024) @ (1024,4096) = (64,4096)</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># ④ 拼成 (64, 4097)：第 0 列是正样本，后面 4096 列是负样本</span></span><br><span class="line">    logits = torch.cat([l_pos, l_neg], dim=<span class="number">1</span>)           <span class="comment"># (64, 4097)</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># ⑤ 除以温度</span></span><br><span class="line">    logits /= T                                         <span class="comment"># 仍是 (64, 4097)</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># ⑥ 标签全 0：每行都希望&quot;第 0 类（正样本）&quot;的概率最大</span></span><br><span class="line">    labels = torch.zeros(logits.size(<span class="number">0</span>), dtype=torch.long, device=q.device)  <span class="comment"># (64,)</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># ⑦ 交叉熵 = InfoNCE</span></span><br><span class="line">    <span class="keyword">return</span> F.cross_entropy(logits, labels)</span><br></pre></td></tr></table></figure>
+
+<p>下面把 ④~⑥ 的”为什么”逐条讲透，这也是讲师花了最多时间解释的部分。</p>
+<h4 id="（1）为什么矩阵乘法就等于余弦相似度"><a href="#（1）为什么矩阵乘法就等于余弦相似度" class="headerlink" title="（1）为什么矩阵乘法就等于余弦相似度"></a>（1）为什么矩阵乘法就等于余弦相似度</h4><p>讲师原话：”为什么说我们使用矩阵乘法就可以得到相似度呢？那么在求这两个向量的 cosine 的时候，它是有两个向量的内积，然后除上两个向量的这个模的一个长度，那么其实呢这个模的这个长度、分母的这个模的这个长度呢，它其实是一个常量，我们不需要关注，所以说我们只需要对两个向量进行一个内积的一个操作，也就是一个矩阵的一个乘法，其实我们就可以间接的表示这两个向量的一个相似度。”</p>
+<p>数学上：</p>
+<div class="math-display">
+$$
+\cos(\theta)=\frac{\langle \mathbf{a},\mathbf{b}\rangle}{\|\mathbf{a}\|\,\|\mathbf{b}\|}
+$$
+</div>
+
+<p>而第 ① 步的 <code>F.normalize(p=2, dim=1)</code> 已经让 $|\mathbf{a}|&#x3D;|\mathbf{b}|&#x3D;1$，于是</p>
+<div class="math-display">
+$$
+\cos(\theta)=\langle \mathbf{a},\mathbf{b}\rangle
+$$
+</div>
+
+<p>所以归一化之后，<strong>内积与余弦相似度完全等价</strong>，相似度范围被压到 $[-1,1]$。这一步是必须的：若不做归一化，ResNet 输出的模长差异会主导相似度——某个模长特别大的样本会和<strong>所有</strong> q 都很”像”，softmax 直接被它支配。</p>
+<h4 id="（2）bmm-与-matmul-的分工"><a href="#（2）bmm-与-matmul-的分工" class="headerlink" title="（2）bmm 与 matmul 的分工"></a>（2）<code>bmm</code> 与 <code>matmul</code> 的分工</h4><p>讲师原话：”我们用 <code>bmm</code> 的这个函数，所谓的 <code>bmm</code> 它指的是 batch 上面的一个矩阵乘法。那么对于 <code>Q</code> 和 <code>K</code> 呢，它本来其实是 64×1024 的，我们现在呢把 <code>Q</code> 给它变成 64×1×1024，然后把 <code>K</code> 呢给它变成 64×1024×1……那么我们调用这个 <code>bmm</code> 算法呢，它就是在保持 batch 的情况下，对后面这两项进行一个矩阵乘法的一个操作。”</p>
+<table>
+<thead>
+<tr>
+<th>调用</th>
+<th>作用范围</th>
+<th>用在本讲哪里</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>torch.bmm(A, B)</code></td>
+<td><strong>批量</strong>矩阵乘（要求 3D：<code>(B,n,m) @ (B,m,p)</code>）</td>
+<td>正样本：64 个独立的”1×1024 与 1024×1”</td>
+</tr>
+<tr>
+<td><code>torch.matmul(A, B)</code></td>
+<td>通用乘法，2D 时退化为普通矩阵乘</td>
+<td>负样本：(64,1024) @ (1024,4096)</td>
+</tr>
+</tbody></table>
+<p><code>l_pos</code> 为什么必须是”批量的 1×1”而不是”整体的 64×64”？因为我们要的是<strong>逐样本配对</strong>：第 i 行的 <code>q_i</code> 只和第 i 行的 <code>k_i</code> 算相似度，得到 64 个标量。如果用 <code>q @ k.T</code> 得到的是 <code>(64, 64)</code> 的全对全相似度矩阵，那第 i 行里还混着”<code>q_i</code> 与其他样本的 <code>k_j</code>“——虽然在 InfoNCE 的语义下它们确实是负样本，但会与队列里的负样本重复计数，本讲的简化实现刻意避开了这个复杂度。</p>
+<h4 id="（3）squeeze-与-cat：为什么是-64×4097"><a href="#（3）squeeze-与-cat：为什么是-64×4097" class="headerlink" title="（3）squeeze 与 cat：为什么是 64×4097"></a>（3）<code>squeeze</code> 与 <code>cat</code>：为什么是 64×4097</h4><p>讲师原话：”由于我们 positive similarity 它是 64×1×1，所以后面两个维度我们并不需要，所以说我们给它做一个 <code>squeeze</code> 的操作，把后面的两项给他压掉。这样的话相当于我们会得到一个 64 乘 4097 的、一个东西。”</p>
+<ul>
+<li><code>l_pos</code>: <code>(64, 1, 1)</code> → <code>squeeze(-1)</code> → <code>(64, 1)</code></li>
+<li><code>l_neg</code>: <code>(64, 4096)</code></li>
+<li><code>torch.cat([l_pos, l_neg], dim=1)</code> → <strong><code>(64, 4097)</code></strong></li>
+</ul>
+<p>于是每一行 &#x3D; <strong>1 个正样本相似度 + 4096 个负样本相似度</strong>。讲师的原话：”一共有 64 行，第 0 位呢代表的就是它正样本的相似度，而后面的这个 4096 个呢，代表的就是它的负样本的一个相似度。”</p>
+<blockquote>
+<p><strong>易错点</strong>：<code>cat</code> 的 <code>dim</code> 必须是 <strong>1</strong>（列方向拼接）。写成 <code>dim=0</code> 会得到 <code>(4160, 1)</code>，后面 <code>cross_entropy</code> 直接报错。</p>
+</blockquote>
+<h4 id="（4）标签为什么全-0"><a href="#（4）标签为什么全-0" class="headerlink" title="（4）标签为什么全 0"></a>（4）标签为什么全 0</h4><p>讲师原话：”我们还需要去创建一个全零的一个 label，这个全零的 label 呢其实就是一个 64，然后全部都是零的一个东西……其中第一位呢代表的是 64 张图像当中正样本它的一个相似度……我们可以把它看成就是一个分类的一个任务，这里的每一列呢代表的就是我分成每一个类的一个概率，那么我们肯定最后希望的是说，我们分类成它正样本的这个概率最大，也就是我们希望第一列的这一个得到的概率是最大的，也就是说我们希望说它尽可能的分成零这一类。”</p>
+<p>把 InfoNCE 重新表述成一个 <strong>4097 分类问题</strong>：</p>
+<ul>
+<li>输入：一行 4097 维的 logits；</li>
+<li>类别：第 0 类是”正样本”，第 1~4096 类是”4096 个负样本”；</li>
+<li>正确答案：<strong>永远是第 0 类</strong>（因为这一行里排第一的就是它自己的正样本）；</li>
+<li>所以 <code>labels = zeros(64)</code>，每个样本的目标类别索引都是 <code>0</code>。</li>
+</ul>
+<h4 id="（5）温度-τ-0-07-的作用"><a href="#（5）温度-τ-0-07-的作用" class="headerlink" title="（5）温度 τ &#x3D; 0.07 的作用"></a>（5）温度 τ &#x3D; 0.07 的作用</h4><p>讲师原话：”这个 <code>temperature</code> 呢指的是说，我在计算 cross entropy 的时候，我们对于这个 logits 和这个 label，它都需要除上这样的一个数，也就是说这个公式当中的这个 τ。”</p>
+<div class="math-display">
+$$
+\mathcal{L}_i=-\log\frac{\exp\!\left(\mathrm{sim}(q_i,k_i)/\tau\right)}{\exp\!\left(\mathrm{sim}(q_i,k_i)/\tau\right)+\sum_{j=1}^{K_b}\exp\!\left(\mathrm{sim}(q_i,\mathrm{queue}_j)/\tau\right)}
+$$
+</div>
+
+<p>$\tau$ 越小，softmax 越”尖锐”：相似度上的微小差距被放大成概率上的巨大差距，模型被迫去区分”很像的负样本”（hard negative），特征更细粒度；$\tau$ 过小则训练不稳定、梯度爆炸。0.07 是 MoCo &#x2F; SimCLR 的经验值（论文用 0.07 或 0.2）。</p>
+<h4 id="（6）为什么用-CrossEntropyLoss-就等于-InfoNCE"><a href="#（6）为什么用-CrossEntropyLoss-就等于-InfoNCE" class="headerlink" title="（6）为什么用 CrossEntropyLoss 就等于 InfoNCE"></a>（6）为什么用 <code>CrossEntropyLoss</code> 就等于 InfoNCE</h4><p>讲师的原话点破了这件事：”那为什么我们这里用 cross entropy loss 呢？我们对比学习当中不是应该用 InfoNCE loss 嘛？其实呢这两个是一样的。”</p>
+<p>推导只需三步：</p>
+<ol>
+<li><code>F.cross_entropy(logits, labels)</code> 内部 &#x3D; <code>log_softmax(logits, dim=1)</code> 再取 <code>labels</code> 位置，再求平均。对第 $i$ 行、目标类别 0：</li>
+</ol>
+<div class="math-display">
+$$
+\ell_i=-\log\frac{\exp(\mathrm{logits}_{i,0})}{\sum_{c=0}^{K_b}\exp(\mathrm{logits}_{i,c})}
+$$
+</div>
+
+<ol start="2">
+<li>把 <code>logits</code> 展开（已做过 <code>/τ</code>）：</li>
+</ol>
+<div class="math-display">
+$$
+\ell_i=-\log\frac{\exp(\mathrm{sim}(q_i,k_i)/\tau)}{\exp(\mathrm{sim}(q_i,k_i)/\tau)+\sum_{j}\exp(\mathrm{sim}(q_i,\mathrm{queue}_j)/\tau)}
+$$
+</div>
+
+<ol start="3">
+<li>这就是 <strong>InfoNCE</strong>（Information Noise-Contrastive Estimation）的定义式，一模一样。</li>
+</ol>
+<p>所以结论：<strong>InfoNCE 不是某个库函数，它就是”正样本排第 0 位 + 负样本排在后面 + 交叉熵”这个组合的别名</strong>。理解了这一点，P3 里那个看起来吓人的公式就落地成三行代码。</p>
+<p><img src="/2026/11/27/p5-moco-code-walkthrough/P5_460.png" alt="P5 归一化与相似度计算"></p>
+<p><strong>图 5</strong>：<code>P5_460.png</code>（07:40）。代码页，展示对 <code>q</code>、<code>k</code>、<code>queue</code> 做 <code>F.normalize</code> 及计算的这一段，讲师在此处讲”Q 和 K 的维度是 64×1024””队列是 1024×4096”。</p>
+<p><img src="/2026/11/27/p5-moco-code-walkthrough/P5_540.png" alt="P5 正负样本相似度与损失构建"></p>
+<p><strong>图 6</strong>：<code>P5_540.png</code>（09:00）。代码页，<code>l_pos</code>（正样本相似度）、<code>l_neg</code>（负样本相似度）与 <code>torch.cat</code> 拼接成 <code>(64, 4097)</code> 的部分。</p>
+<p><img src="/2026/11/27/p5-moco-code-walkthrough/P5_680.png" alt="P5 logits、labels 与 CrossEntropy"></p>
+<p><strong>图 7</strong>：<code>P5_680.png</code>（11:20）。代码页，<code>logits /= T</code>、<code>labels = torch.zeros(...)</code>、<code>F.cross_entropy(logits, labels)</code> 的收尾部分，讲师同步解释”就等价于 InfoNCE”。</p>
+<h3 id="3-11-反传与手写动量更新"><a href="#3-11-反传与手写动量更新" class="headerlink" title="3.11 反传与手写动量更新"></a>3.11 反传与手写动量更新</h3><p>讲师原话：”我们再把 InfoNCE loss 给计算好之后呢，我们就可以做这个梯度的反传。但是呢我们还是需要去注意到我们的 encoder 他是参与梯度反传的，我们 momentum encoder 他其实并没有参与这个梯度的反传……所以说我们需要手动的对 momentum encoder 它这个参数进行一个更新。那么我们可以把 momentum encoder 里面的这个参数全部都给它拿出来……我们让这个 <code>Fk</code> 的一个参数在它自己先前那个参数的基础上，去乘上我们所说的这个 <code>m</code> 这样的一个系数，然后呢再加上 <code>Fq</code> 它这个参数，然后乘上一个 1-0.99，0.01 这个东西。”</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">loss = info_nce_loss(q, k, queue, T)</span><br><span class="line"></span><br><span class="line">optimizer.zero_grad()      <span class="comment"># 只清 Fq 的梯度（Fk 本来就没梯度）</span></span><br><span class="line">loss.backward()            <span class="comment"># 梯度只流到 Fq</span></span><br><span class="line">optimizer.step()           <span class="comment"># 只更新 Fq</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 手写动量更新：θk ← m·θk + (1-m)·θq</span></span><br><span class="line"><span class="keyword">with</span> torch.no_grad():</span><br><span class="line">    <span class="keyword">for</span> param_q, param_k <span class="keyword">in</span> <span class="built_in">zip</span>(Fq.parameters(), Fk.parameters()):</span><br><span class="line">        param_k.data.mul_(m).add_(param_q.detach().data, alpha=<span class="number">1.0</span> - m)</span><br></pre></td></tr></table></figure>
+
+<p>关于 <code>param_k.data</code> 与 <code>param_q.detach()</code>：</p>
+<ul>
+<li><strong>必须加 <code>.data</code> 或用 <code>torch.no_grad()</code></strong>：否则这两步会被记进计算图，PyTorch 会认为”参数 k 是由参数 q 计算出来的”，于是 <code>loss.backward()</code> 时梯度会顺着这条路径反向传播到 <code>Fq</code>，同时也会在 <code>optimizer.step()</code> 之外再次修改参数（更严重的是可能报 “a leaf Variable that requires grad is being used in an in-place operation”）。</li>
+<li><strong>等价写法</strong>：<code>param_k.copy_(m * param_k + (1 - m) * param_q)</code> 或 <code>param_k.lerp_(param_q, 1 - m)</code>（<code>lerp_</code> 是原地线性插值，最简洁）。</li>
+</ul>
+<p><strong>动量更新的物理意义</strong>（讲师原话）：”我每次更新 momentum encoder 的时候，我有 99% 的这个权重参考的是他上一次的这一个参数，而只有 0.01% 的这个权重呢参考的是 encoder 这边梯度反传过来的一个参数。”</p>
+<h3 id="3-12-队列入队与指针环形滚动"><a href="#3-12-队列入队与指针环形滚动" class="headerlink" title="3.12 队列入队与指针环形滚动"></a>3.12 队列入队与指针环形滚动</h3><p>讲师原话：”除此之外呢，我们还需要去做一件事情，我们需要把这一批拿到的这个 <code>Q</code> 和 <code>K</code> 给他放进队列。因为我们这一次虽然说 <code>Q</code> 和 <code>K</code> 它是正样本，但是我们在下一个 batch 当中呢，我们会拿到新的一批数据进来，那这个时候我的 <code>Q</code> 和 <code>K</code> 它对于新的数据来讲就是负样本，就是说我们可以直接的把 <code>K</code> 给它加到这个队列当中去。我们每一次更新队列的时候呢，我会有一个 batch，然后呢我们将这个指针以上加上 batch size，我把这个 <code>K</code> 的值呢给它放进来，然后呢我对这个指针进行一个更新……那么当它这个移到 4096 之后呢，它就会循环的回到前面来。”</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 入队：把本 batch 的 64 个 key 特征写进队列的 [ptr, ptr+64) 列</span></span><br><span class="line">k_norm = F.normalize(k, dim=<span class="number">1</span>)      <span class="comment"># (64, 1024)，与队列同处单位球面</span></span><br><span class="line">bs = k_norm.size(<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> queue_ptr + bs &lt;= Kb:</span><br><span class="line">    queue[:, queue_ptr:queue_ptr + bs] = k_norm.T   <span class="comment"># (1024, 64)</span></span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    <span class="comment"># 环形跨越（Kb=4096 是 64 的整数倍，实际不会走到这里）</span></span><br><span class="line">    tail = Kb - queue_ptr</span><br><span class="line">    queue[:, queue_ptr:] = k_norm[:tail].T</span><br><span class="line">    queue[:, :bs - tail] = k_norm[tail:].T</span><br><span class="line"></span><br><span class="line">queue_ptr = (queue_ptr + bs) % Kb   <span class="comment"># 指针滚动，到 4096 后回到 0</span></span><br></pre></td></tr></table></figure>
+
+<p>三个细节：</p>
+<ol>
+<li><strong>必须 <code>.T</code> 转置</strong>：<code>k_norm</code> 是 <code>(64, 1024)</code>（batch 在前），而 <code>queue</code> 是 <code>(1024, 4096)</code>（特征在前），切片 <code>queue[:, ptr:ptr+64]</code> 的形状是 <code>(1024, 64)</code>，所以要用 <code>k_norm.T</code> 把 <code>(64,1024)</code> 转成 <code>(1024,64)</code>。</li>
+<li><strong>入队的是 <code>k</code> 而不是 <code>q</code></strong>：<code>q</code> 是”查询”，用完即弃；<code>k</code> 是被冻结的 <code>Fk</code> 产出的、稳定的”锚点特征”，只有它进队列才能保证队列里所有特征来自<strong>同一个缓慢演化的编码器</strong>，可比性才成立。这也解释了为什么需要动量编码器——若用 <code>Fq</code> 入队，队列里的旧特征和新特征来自”每步都在跳”的编码器，尺度不一致，相似度计算就失真了。</li>
+<li><strong>指针取模 <code>% Kb</code></strong>：4096 &#x2F; 64 &#x3D; 64，整除，所以本讲里指针永远落在 0、64、128、…、4032，写满一次正好 64 个 batch 完成一轮覆盖。若换成 <code>Kb=1000</code>、<code>bs=64</code>，就一定会发生环形跨越，必须用上面的 <code>else</code> 分支。</li>
+</ol>
+<hr>
+<h2 id="四、完整可运行代码（整合版）"><a href="#四、完整可运行代码（整合版）" class="headerlink" title="四、完整可运行代码（整合版）"></a>四、完整可运行代码（整合版）</h2><p>把上面所有片段按讲师的顺序拼起来，就是一份<strong>可直接 <code>python moco.py</code> 跑通</strong>的简化版 MoCo。给每块都标了维度，建议对照第三节的讲解逐行读。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># -*- coding: utf-8 -*-</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">简化版 MoCo（Momentum Contrast）—— 按 P5《2.4 MoCo 代码详解》还原</span></span><br><span class="line"><span class="string">数据：CIFAR-10   backbone：ResNet50   负样本池：队列（Memory Bank, 4096）</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"><span class="keyword">import</span> torchvision</span><br><span class="line"><span class="keyword">from</span> torchvision <span class="keyword">import</span> datasets, transforms</span><br><span class="line"><span class="keyword">from</span> torch.utils.data <span class="keyword">import</span> DataLoader</span><br><span class="line"></span><br><span class="line"><span class="comment"># ============ 1. 数据加载：CIFAR10 + DataLoader(batch=64) ============</span></span><br><span class="line">transform = transforms.ToTensor()                 <span class="comment"># → (3, 32, 32)，值域 [0,1]</span></span><br><span class="line">train_set = datasets.CIFAR10(root=<span class="string">&quot;./data&quot;</span>, train=<span class="literal">True</span>, download=<span class="literal">True</span>,</span><br><span class="line">                             transform=transform)</span><br><span class="line">loader = DataLoader(train_set, batch_size=<span class="number">64</span>, shuffle=<span class="literal">True</span>,</span><br><span class="line">                    num_workers=<span class="number">2</span>, drop_last=<span class="literal">True</span>)   <span class="comment"># 丢掉不满 64 的尾批</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ============ 2. backbone：ResNet50 + 自定义 output_dim ============</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_resnet50</span>(<span class="params">output_dim=<span class="number">1024</span></span>):</span><br><span class="line">    model = torchvision.models.resnet50(weights=<span class="literal">None</span>)</span><br><span class="line">    model.fc = nn.Linear(model.fc.in_features, output_dim)   <span class="comment"># 2048 → 1024</span></span><br><span class="line">    <span class="keyword">return</span> model</span><br><span class="line"></span><br><span class="line"><span class="comment"># ============ 3. 超参数 ============</span></span><br><span class="line">C  = <span class="number">1024</span>        <span class="comment"># 特征维度（= 队列行数 = 编码器输出维度）</span></span><br><span class="line">Kb = <span class="number">4096</span>        <span class="comment"># 队列容量（能装多少个负样本）</span></span><br><span class="line">N  = <span class="number">64</span>          <span class="comment"># batch size</span></span><br><span class="line">m  = <span class="number">0.99</span>        <span class="comment"># 动量系数</span></span><br><span class="line">T  = <span class="number">0.07</span>        <span class="comment"># 温度系数 τ</span></span><br><span class="line">lr = <span class="number">0.001</span>       <span class="comment"># 学习率</span></span><br><span class="line">epochs = <span class="number">10</span></span><br><span class="line">device = <span class="string">&quot;cuda&quot;</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">&quot;cpu&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ============ 4. 双编码器初始化（Fq 可训练 / Fk 冻结） ============</span></span><br><span class="line">Fq = get_resnet50(C).to(device)</span><br><span class="line">Fk = get_resnet50(C).to(device)</span><br><span class="line">Fk.load_state_dict(Fq.state_dict())      <span class="comment"># 起点必须完全一致（深拷贝）</span></span><br><span class="line"><span class="keyword">for</span> p <span class="keyword">in</span> Fk.parameters():</span><br><span class="line">    p.requires_grad = <span class="literal">False</span>              <span class="comment"># 双保险：Fk 永不接收梯度</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ============ 5. 队列初始化 (C, Kb) 与指针 ============</span></span><br><span class="line">queue = torch.randn(C, Kb, device=device)   <span class="comment"># (1024, 4096)</span></span><br><span class="line">queue = F.normalize(queue, dim=<span class="number">0</span>)           <span class="comment"># 每个负样本单位化（沿行）</span></span><br><span class="line">queue_ptr = <span class="number">0</span>                               <span class="comment"># 下一次写入的列号</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ============ 6. 优化器：只优化 Fq ============</span></span><br><span class="line">optimizer = torch.optim.Adam(Fq.parameters(), lr=lr)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ============ 7. 数据增强（简化版：加 0.1 随机噪声） ============</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">augment</span>(<span class="params">x, noise_std=<span class="number">0.1</span></span>):</span><br><span class="line">    <span class="keyword">return</span> x + noise_std * torch.randn_like(x)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ============ 8. InfoNCE loss ============</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">info_nce_loss</span>(<span class="params">q, k, queue, T=<span class="number">0.07</span></span>):</span><br><span class="line">    q = F.normalize(q, dim=<span class="number">1</span>)                 <span class="comment"># (64, 1024)</span></span><br><span class="line">    k = F.normalize(k, dim=<span class="number">1</span>)                 <span class="comment"># (64, 1024)</span></span><br><span class="line">    queue = F.normalize(queue, dim=<span class="number">0</span>)         <span class="comment"># (1024, 4096)</span></span><br><span class="line"></span><br><span class="line">    l_pos = torch.bmm(q.unsqueeze(<span class="number">1</span>),          <span class="comment"># (64, 1, 1024)</span></span><br><span class="line">                      k.unsqueeze(<span class="number">2</span>))          <span class="comment"># (64, 1024, 1)</span></span><br><span class="line">    l_pos = l_pos.squeeze(-<span class="number">1</span>)                  <span class="comment"># (64, 1)</span></span><br><span class="line"></span><br><span class="line">    l_neg = torch.matmul(q, queue)             <span class="comment"># (64, 1024)@(1024,4096) → (64, 4096)</span></span><br><span class="line"></span><br><span class="line">    logits = torch.cat([l_pos, l_neg], dim=<span class="number">1</span>)  <span class="comment"># (64, 4097)</span></span><br><span class="line">    logits /= T                                <span class="comment"># (64, 4097)</span></span><br><span class="line"></span><br><span class="line">    labels = torch.zeros(logits.size(<span class="number">0</span>), dtype=torch.long, device=q.device)  <span class="comment"># (64,)</span></span><br><span class="line">    <span class="keyword">return</span> F.cross_entropy(logits, labels)     <span class="comment"># ← InfoNCE</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ============ 9. 训练循环 ============</span></span><br><span class="line"><span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(epochs):</span><br><span class="line">    Fq.train(); Fk.<span class="built_in">eval</span>()</span><br><span class="line">    total, cnt = <span class="number">0.0</span>, <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> x, _ <span class="keyword">in</span> loader:                        <span class="comment"># x: (64, 3, 32, 32)</span></span><br><span class="line">        x = x.to(device)</span><br><span class="line"></span><br><span class="line">        xq = augment(x)                        <span class="comment"># (64, 3, 32, 32)</span></span><br><span class="line">        xk = augment(x)                        <span class="comment"># (64, 3, 32, 32)</span></span><br><span class="line"></span><br><span class="line">        q = Fq(xq)                             <span class="comment"># (64, 1024)</span></span><br><span class="line">        <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">            k = Fk(xk)                         <span class="comment"># (64, 1024) 不建图</span></span><br><span class="line">        k = k.detach()                         <span class="comment"># 等价保险</span></span><br><span class="line"></span><br><span class="line">        loss = info_nce_loss(q, k, queue, T)   <span class="comment"># 标量</span></span><br><span class="line"></span><br><span class="line">        optimizer.zero_grad()</span><br><span class="line">        loss.backward()                        <span class="comment"># 梯度只到 Fq</span></span><br><span class="line">        optimizer.step()</span><br><span class="line"></span><br><span class="line">        <span class="comment"># ---- 手写动量更新：θk ← m·θk + (1-m)·θq ----</span></span><br><span class="line">        <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">            <span class="keyword">for</span> param_q, param_k <span class="keyword">in</span> <span class="built_in">zip</span>(Fq.parameters(), Fk.parameters()):</span><br><span class="line">                param_k.data.mul_(m).add_(param_q.detach().data, alpha=<span class="number">1.0</span> - m)</span><br><span class="line"></span><br><span class="line">            <span class="comment"># ---- 入队 + 指针环形滚动 ----</span></span><br><span class="line">            k_norm = F.normalize(k, dim=<span class="number">1</span>)     <span class="comment"># (64, 1024)</span></span><br><span class="line">            bs = k_norm.size(<span class="number">0</span>)</span><br><span class="line">            <span class="keyword">if</span> queue_ptr + bs &lt;= Kb:</span><br><span class="line">                queue[:, queue_ptr:queue_ptr + bs] = k_norm.T   <span class="comment"># (1024, 64)</span></span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                tail = Kb - queue_ptr</span><br><span class="line">                queue[:, queue_ptr:] = k_norm[:tail].T</span><br><span class="line">                queue[:, :bs - tail] = k_norm[tail:].T</span><br><span class="line">            queue_ptr = (queue_ptr + bs) % Kb</span><br><span class="line"></span><br><span class="line">        total += loss.item(); cnt += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;[epoch <span class="subst">&#123;epoch&#125;</span>] loss = <span class="subst">&#123;total / <span class="built_in">max</span>(cnt,<span class="number">1</span>):<span class="number">.4</span>f&#125;</span>  ptr = <span class="subst">&#123;queue_ptr&#125;</span>&quot;</span>)</span><br><span class="line">    torch.save(&#123;<span class="string">&quot;Fq&quot;</span>: Fq.state_dict(), <span class="string">&quot;Fk&quot;</span>: Fk.state_dict()&#125;, <span class="string">f&quot;moco_ep<span class="subst">&#123;epoch&#125;</span>.pth&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p><strong>运行前自检清单</strong>（按报错概率排序）：</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>检查项</th>
+<th>正确做法</th>
+<th>错误后果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>queue</code> 形状</td>
+<td><code>(C, Kb)</code> &#x3D; <code>(1024, 4096)</code></td>
+<td>写成 <code>(Kb, C)</code> → <code>matmul</code> shape error</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>Fk</code> 是否独立对象</td>
+<td><code>load_state_dict</code> &#x2F; <code>deepcopy</code></td>
+<td><code>Fk = Fq</code> → 参数共享，动量失效</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>k</code> 是否 detach</td>
+<td><code>with torch.no_grad()</code> 或 <code>.detach()</code></td>
+<td>Fk 收到梯度，MoCo 退化</td>
+</tr>
+<tr>
+<td>4</td>
+<td>优化器参数范围</td>
+<td><code>Fq.parameters()</code></td>
+<td>传两个 → Fk 被 Adam 更新</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>cat</code> 维度</td>
+<td><code>dim=1</code></td>
+<td>得到 <code>(4160,1)</code>，CE 报错</td>
+</tr>
+<tr>
+<td>6</td>
+<td>入队是否转置</td>
+<td><code>k_norm.T</code></td>
+<td><code>(64,1024)</code> 塞不进 <code>(1024,64)</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>指针是否取模</td>
+<td><code>% Kb</code></td>
+<td>第 65 个 batch 越界</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>drop_last</code></td>
+<td><code>True</code></td>
+<td>尾批与队列切片长度不匹配</td>
+</tr>
+</tbody></table>
+<p><img src="/2026/11/27/p5-moco-code-walkthrough/P5_780.png" alt="P5 训练循环与动量更新"></p>
+<p><strong>图 8</strong>：<code>P5_780.png</code>（13:00）。代码页末段，训练循环内的 <code>optimizer.zero_grad()</code> &#x2F; <code>loss.backward()</code> &#x2F; <code>optimizer.step()</code>，以及遍历 <code>Fq</code>、<code>Fk</code> 参数做动量更新、队列入队与指针更新的收尾代码。</p>
+<hr>
+<h2 id="五、一次前向的完整张量流水账"><a href="#五、一次前向的完整张量流水账" class="headerlink" title="五、一次前向的完整张量流水账"></a>五、一次前向的完整张量流水账</h2><p>把维度从上到下串一遍（N&#x3D;64, C&#x3D;1024, Kb&#x3D;4096），这张表建议背下来，面试画图就靠它：</p>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>代码</th>
+<th>张量形状</th>
+<th>语义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>①</td>
+<td><code>x</code></td>
+<td>(64, 3, 32, 32)</td>
+<td>原始 batch</td>
+</tr>
+<tr>
+<td>②</td>
+<td><code>xq = augment(x)</code></td>
+<td>(64, 3, 32, 32)</td>
+<td>query 视图</td>
+</tr>
+<tr>
+<td>③</td>
+<td><code>xk = augment(x)</code></td>
+<td>(64, 3, 32, 32)</td>
+<td>key 视图（独立采样）</td>
+</tr>
+<tr>
+<td>④</td>
+<td><code>q = Fq(xq)</code></td>
+<td><strong>(64, 1024)</strong></td>
+<td>query 特征</td>
+</tr>
+<tr>
+<td>⑤</td>
+<td><code>k = Fk(xk).detach()</code></td>
+<td><strong>(64, 1024)</strong></td>
+<td>key 特征，无梯度</td>
+</tr>
+<tr>
+<td>⑥</td>
+<td><code>F.normalize(q/k, dim=1)</code></td>
+<td>(64, 1024)</td>
+<td>单位球面</td>
+</tr>
+<tr>
+<td>⑦</td>
+<td><code>torch.bmm(q¹, k²)</code></td>
+<td>(64, 1, 1) → <strong>(64, 1)</strong></td>
+<td>正样本相似度，每图 1 个</td>
+</tr>
+<tr>
+<td>⑧</td>
+<td><code>torch.matmul(q, queue)</code></td>
+<td><strong>(64, 4096)</strong></td>
+<td>每图 × 4096 负样本</td>
+</tr>
+<tr>
+<td>⑨</td>
+<td><code>torch.cat([l_pos,l_neg],1)</code></td>
+<td><strong>(64, 4097)</strong></td>
+<td>1 正 + 4096 负</td>
+</tr>
+<tr>
+<td>⑩</td>
+<td><code>logits /= T</code></td>
+<td>(64, 4097)</td>
+<td>温度缩放</td>
+</tr>
+<tr>
+<td>⑪</td>
+<td><code>labels = zeros(64)</code></td>
+<td>(64,)</td>
+<td>目标永远是第 0 类</td>
+</tr>
+<tr>
+<td>⑫</td>
+<td><code>F.cross_entropy</code></td>
+<td>标量</td>
+<td>&#x3D; InfoNCE</td>
+</tr>
+<tr>
+<td>⑬</td>
+<td><code>queue[:, ptr:ptr+64] = k.T</code></td>
+<td>(1024, 64) 写入</td>
+<td>旧 key 变新负样本</td>
+</tr>
+<tr>
+<td>⑭</td>
+<td><code>queue_ptr = (ptr+64) % 4096</code></td>
+<td>标量</td>
+<td>环形滚动</td>
+</tr>
+</tbody></table>
+<p><strong>关键比例</strong>：正负样本比 &#x3D; <strong>1 : 4096</strong>。这正是 MoCo 相较 SimCLR 的核心优势——一个 batch 只有 64 张图，SimCLR 最多凑出 ~126 个负样本，而 MoCo 手里<strong>恒定握着 4096 个跨 batch 的负样本</strong>，且不增加额外显存（只是一块 <code>1024×4096</code> 的 float32 缓冲，约 16 MB）。</p>
+<hr>
+<h2 id="六、易错点、坑与面试追问"><a href="#六、易错点、坑与面试追问" class="headerlink" title="六、易错点、坑与面试追问"></a>六、易错点、坑与面试追问</h2><h3 id="6-1-五个高频坑"><a href="#6-1-五个高频坑" class="headerlink" title="6.1 五个高频坑"></a>6.1 五个高频坑</h3><ol>
+<li><strong>忘了 <code>k.detach()</code>，loss 还降、但方法是错的</strong>。这是最隐蔽的坑：不 detach 时模型也能训练、loss 也会下降（因为两个编码器都被优化了，任务变得更容易），但你已经不是在跑 MoCo 而是”共享队列的双塔 SimCLR”，负样本一致性优势全无。<strong>验证方法</strong>：训练几个 batch 后打印 <code>Fk</code> 与 <code>Fq</code> 某个参数的差值，若两者的差异为 0 或极大，说明动量更新没生效。</li>
+<li><strong><code>Fk = Fq</code> 写成引用而非拷贝</strong>。Python 对象赋值，<code>Fq is Fk</code> 为 True，此时 <code>optimizer.step()</code> 更新的是同一组参数，打印 <code>id(Fq.fc.weight) == id(Fk.fc.weight)</code> 会发现相同。必须 <code>load_state_dict</code> &#x2F; <code>deepcopy</code>。</li>
+<li><strong>入队忘了 <code>F.normalize</code></strong>。队列里混入未归一化的向量，<code>l_neg</code> 的数值尺度远大于 <code>l_pos</code>，softmax 后负样本概率接近 1，loss 长期居高不下。</li>
+<li><strong><code>queue_ptr</code> 不取模</strong>。4096&#x2F;64 整除时侥幸不报错，一旦改小 <code>Kb</code>（比如为了省显存设成 1000），第 16 个 batch 就会 <code>IndexError</code>。</li>
+<li><strong><code>optimizer.zero_grad()</code> 放在 <code>backward()</code> 之后</strong>。梯度跨 batch 累积，动量编码器的手写更新会把累积的脏梯度动量带进去，训练发散。</li>
+</ol>
+<h3 id="6-2-面试追问与参考答法"><a href="#6-2-面试追问与参考答法" class="headerlink" title="6.2 面试追问与参考答法"></a>6.2 面试追问与参考答法</h3><p><strong>Q1：为什么动量编码器不用优化器更新，而要手写动量？</strong><br>A：三个原因。① 若 <code>Fk</code> 也用梯度更新，则队列里的历史 key 与当前 key 来自”每步都在跳”的编码器，特征尺度不一致，负样本对比失去意义；② 动量更新让 <code>Fk</code> 的演化极其平滑（m&#x3D;0.99，半衰期约 69 步），保证队列内特征在时间上可比；③ 省掉一半的反传与优化器状态，显存与算力都省。</p>
+<p><strong>Q2：<code>k.detach()</code> 和 <code>Fk.requires_grad_(False)</code> 是一回事吗？</strong><br>A：效果上都阻止梯度回传到 <code>Fk</code>，但机制不同。<code>detach()</code> 剪断的是<strong>张量</strong>与计算图的连接，<code>k</code> 之后的所有运算（loss）都不会把梯度传回去；<code>requires_grad=False</code> 关的是<strong>参数</strong>，<code>Fk</code> 的前向仍会构建计算图（因为输入 <code>xk</code> 若 requires_grad 则输出也 requires_grad），只是叶子结点不收梯度，显存开销仍在。要彻底省显存应使用 <code>with torch.no_grad():</code>。</p>
+<p><strong>Q3：队列越长越好吗？</strong><br>A：不是简单的正相关。队列越长，负样本估计越充分，但队列中的特征也越”旧”——由更早版本的 <code>Fk</code> 产出，与当前 <code>q</code> 的特征空间存在偏移。MoCo 论文的消融显示 K 从 256 增到 65536 时性能持续提升但收益递减，且必须<strong>配套越大越小的动量 m</strong>（队列长 → 特征老 → 需要更平滑的 <code>Fk</code>）。工程上 4096~65536 是常见区间。</p>
+<p><strong>Q4：为什么入队的是 <code>k</code> 而不是 <code>q</code>？</strong><br>A：<code>q</code> 来自 <code>Fq</code>，每步都在剧烈变化；<code>k</code> 来自被动量平滑的 <code>Fk</code>，是”稳定锚点”。队列的全部意义是”提供与当前 query 同一特征空间的历史负样本”，只有 <code>k</code> 满足这一点。且 <code>q</code> 参与反传，若入队还需额外 <code>detach</code> 与归一化，徒增风险。</p>
+<p><strong>Q5：温度 τ 调到 0.01 会怎样？</strong><br>A：softmax 极度尖锐，梯度只由最难的负样本主导，容易数值溢出（<code>exp</code> 爆炸）且训练不稳定；τ 太大（如 1.0）则分布过平，模型学不到区分性，容易坍缩到所有样本相似度相近。0.07 是实践中的甜点。</p>
+<p><strong>Q6：MoCo 与 SimCLR 的本质差别用一句话说？</strong><br>A：SimCLR 用”大 batch”造负样本，MoCo 用”队列 + 动量编码器”造负样本——<strong>前者买显存，后者买设计</strong>。</p>
+<hr>
+<h2 id="七、小结"><a href="#七、小结" class="headerlink" title="七、小结"></a>七、小结</h2><p>本节把 P4 的结构图变成了可运行的 130 行代码，核心只有三个”反常识”的设计：</p>
+<ol>
+<li><strong><code>k.detach()</code> 让 key 分支不收梯度</strong>——不是为了省算力，而是为了让 <code>Fk</code> 只能沿动量轨迹缓慢演化，从而与队列中”历史特征”保持一致；</li>
+<li><strong>队列 <code>(C, Kb) = (1024, 4096)</code> 把负样本从 batch 里解放出来</strong>——负样本量从”受显存约束的 126”变成”固定的 4096”，且只花 16 MB 显存；</li>
+<li><strong><code>CrossEntropyLoss(logits, zeros)</code> 就是 InfoNCE</strong>——所谓对比学习损失，本质是一个”4097 类的分类任务，正确答案永远在第 0 类”。</li>
+</ol>
+<p><strong>与前后章节的关系</strong>：</p>
+<ul>
+<li>向前：P3 给了 InfoNCE 的公式，P4 给了队列 + 动量的结构图，本节把两者缝合成代码；</li>
+<li>向后：P8 的 MoCo v3 会<strong>砍掉队列</strong>（改用大 batch）、<strong>把 backbone 换成 ViT</strong>、<strong>引入对称双向损失</strong>（<code>q</code>、<code>k</code> 互换再算一次）。理解了本节的”队列 + 动量”，才能看懂 v3 到底改了什么、为什么改。</li>
+</ul>
+<blockquote>
+<p><strong>一句话记住本节</strong>：MoCo 的实现 &#x3D; SimCLR 的骨架（两增强 + InfoNCE）+ 一个 <code>detach</code> 的 key 编码器 + 一个 <code>(1024,4096)</code> 的环形队列 + 8 行手写动量更新。</p>
+</blockquote>
+<p><em>（内容由AI生成，仅供参考）</em></p>
+<hr>
+<p><em>（内容由AI生成，仅供参考）</em></p>
+
+  </div>
+
+  <footer class="article-reactions">
+    <div class="reaction-group">
+      <button type="button" class="reaction reaction--comment" aria-label="跳转到评论区" data-action="scroll-to-comments">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-message-circle"></use></svg>
+
+      </button>
+      <span class="reaction-label">评论</span>
+      
+    </div>
+    <div class="reaction-group reaction-group--right">
+      
+      <button type="button" class="reaction reaction--share" aria-label="分享" data-action="share">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2 flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-share-2"></use></svg>
+
+      </button>
+      <span class="reaction-label">分享</span>
+    </div>
+  </footer>
+
+  
+
+
+  <nav class="article-actions">
+    
+      <a class="article-action article-action--prev" href="/2026/11/27/p6-masked-image-modeling-beit/">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-left"></use></svg>
+
+        <span class="action-label">上一篇</span>
+        <span class="action-title"></span>
+      </a>
+    
+    
+      <a class="article-action article-action--next" href="/2026/11/27/p4-moco-model/">
+        <span class="action-label">下一篇</span>
+        <span class="action-title"></span>
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-right"></use></svg>
+
+      </a>
+    
+  </nav>
+</article>
+</div>
+
+<button type="button" class="back-to-top" data-action="scroll-to-top" aria-label="返回顶部" hidden>
+  
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-up"></use></svg>
+
+</button>
+
+
+
+      
+
+
+    </section>
+    
+  </main>
+
+  <div class="sidebar-backdrop js-sidebar-close" aria-hidden="true"></div>
+
+  
+<footer class="site-footer">
+  <span class="site-footer__left">© 2026 By lorena</span>
+  
+    <span class="site-footer__right">
+      
+        <span class="site-footer__row"><span class="site-footer__powered-prefix">Powered by Theme</span> <a href="https://github.com/Homulilly/hexo-theme-flatpaper" target="_blank" rel="noopener">FlatPaper</a></span>
+      
+    </span>
+  
+</footer>
+
+  
+<div class="search-panel" aria-hidden="true" data-index-url="/flatpaper-search.json">
+  <div class="search-backdrop js-search-close"></div>
+  <section class="search-dialog" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <span class="tape tape--top-left" aria-hidden="true"></span>
+    <header class="search-head">
+      <h2><span class="green-dot"></span>搜索文章</h2>
+      <button class="icon-button js-search-close" type="button" aria-label="关闭搜索">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+      </button>
+    </header>
+    <label class="search-field">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+      <input id="flatpaper-search" class="search-input" type="search" placeholder="输入关键词，按 Esc 关闭" autocomplete="off">
+    </label>
+    <div class="search-results" data-empty="输入关键词后显示匹配的文章">
+      <p class="search-empty">输入关键词后显示匹配的文章</p>
+    </div>
+  </section>
+</div>
+
+  <script>
+  window.FLATPAPER_I18N = {"language":"zh-CN","common.posts":"文章","common.categories":"分类","common.tags":"标签","common.comments":"评论","common.share":"分享","common.page":"页面","common.archive":"归档","common.post_list":"文章列表","common.search_posts":"搜索文章","common.random_posts":"随机文章","common.reward":"赞赏","common.view_all":"查看全部","pagination.prev":"上一页","pagination.next":"下一页","pagination.post_pager":"文章分页","pagination.archive_pager":"归档分页","index.featured":"精选文章","index.pinned":"置顶","index.read_more":"阅读全文","index.previous_slide":"上一张","index.next_slide":"下一张","index.carousel_pagination":"轮播页码","index.carousel_slide":"第 %d 张","index.latest_posts":"最新文章","index.empty_posts":"还没有文章。创建第一篇文章后，这里会显示最新内容。","archive.title":"归档","archive.post_list":"文章列表","taxonomy.category_count":"%d 篇","taxonomy.empty_categories":"暂时还没有分类。","taxonomy.empty_tags":"暂时还没有标签。","links.label":"友链","links.title":"友情链接","links.empty_data":"暂未加载到友链数据。请确认 source/_data/links.yml 存在并已 hexo clean。","links.rss_label":"%s 的 RSS","friends_feed.label":"朋友圈","friends_feed.title":"友链朋友圈","friends_feed.loading":"正在加载友链动态…","friends_feed.missing_url":"暂未配置 all.json 地址。","friends_feed.load_failed":"友链动态加载失败，请稍后再试。","friends_feed.empty":"暂时没有抓取到友链文章。","friends_feed.load_more":"加载更多","friends_feed.updated_at":"更新于 %s","friends_feed.friend_count":"%d 位友邻","friends_feed.active_count":"%d 位活跃","friends_feed.article_count":"%d 篇文章","friends_feed.unknown_author":"未知站点","friends_feed.date_unknown":"时间未知","guestbook.label":"留言板","guestbook.title":"留言板","guestbook.loading":"正在铺开留言墙…","guestbook.missing_config":"留言墙需要评论系统：请在主题配置中设置 comments: twikoo（并填写 envId）或 comments: artalk（并填写 server）。","guestbook.load_failed":"留言加载失败，请稍后再试。","guestbook.empty":"墙上还空着，来贴第一张留言吧！","guestbook.load_more":"展开更多留言","guestbook.total_count":"共 %d 条留言","guestbook.latest_note":"墙上展示最新 %d 条","guestbook.jump_to_comment":"查看留言","guestbook.sort_time":"查看最新","guestbook.sort_random":"随机排序","guestbook.anonymous":"匿名访客","guestbook.write_hint":"在下方留言，刷新后就会贴到墙上","post.scroll_to_comments":"跳转到评论区","post.previous":"上一篇","post.next":"下一篇","post.no_previous":"没有更早的文章了","post.no_next":"已经是最新的一篇","post.back_to_top":"返回顶部","post.related_posts":"相关文章","post.view_more":"查看更多","not_found.label":"页面走丢了","not_found.title":"找不到这个页面","not_found.text":"这个地址可能已经移动、删除，或者从未存在。","not_found.home":"返回首页","not_found.search":"搜索文章","search.placeholder":"输入关键词，按 Esc 关闭","search.empty":"输入关键词后显示匹配的文章","search.loading":"正在加载搜索索引…","search.load_failed":"搜索索引加载失败，请重新打开搜索重试","search.no_result":"没有找到与 \"%s\" 相关的文章","search.close":"关闭搜索","code.copy":"复制代码","code.collapse":"折叠代码","code.expand":"展开代码","heading.anchor":"链接到此节: %s","head.tag":"标签：%s","head.category":"分类：%s","head.archive":"归档","head.archive_with_date":"归档：%s","head.page_number":"第 %d 页","navigation.primary":"主导航","navigation.mobile":"移动端导航","navigation.brand_home":"FlatPaper 首页","navigation.brand_menu":"打开站点导航","navigation.open_sidebar":"打开侧边栏","navigation.close_sidebar":"关闭侧边栏","navigation.sidebar":"侧边栏","navigation.sidebar_tools":"侧边栏工具","navigation.site_links":"站点链接","navigation.site_info":"站点信息","colors.choose_theme_color":"选择主题色","colors.theme_color":"主题色","colors.toggle_color_mode":"切换颜色模式","colors.green":"绿色","colors.purple":"紫色","colors.pink":"粉色","colors.sakura":"樱花粉","colors.blue":"蓝色","colors.orange":"橙色","colors.black":"黑色","profile.default_bio":"热爱生活，热爱代码，喜欢分享技术与生活中的点滴。","profile.email_copied":"邮箱已复制","welcome.cta":"开始阅读","welcome.title":"欢迎来到 FlatPaper","welcome.text":"一个专注于内容与阅读体验的博客主题。","home_hero.label":"首页开屏","home_hero.enter":"开始阅读","home_hero.note":"今日","home_hero.default_subtitle":"日常记录","home_hero.nav_links":"开屏导航","home_hero.profile_links":"个人链接","home_hero.tools":"开屏工具","home_hero.shuffle_stickers":"打乱贴纸位置","home_hero.link":"链接","home_hero.sticker_image":"贴纸图片","home_hero.visit_confirm":"要访问 %s 吗？","home_hero.visit":"访问","home_hero.cancel":"取消","toc.title":"文章目录","toc.empty":"目录会根据文章标题自动生成。","toc.expand_all":"展开全部目录","toc.collapse_all":"收起全部目录","sidebar.hot_tags":"热门标签","sidebar.latest_posts":"最新文章"};
+  </script>
+  
+<script src="/js/main.js"></script>
+
+  
+  <script src="/js/twojian-ui.js" defer></script>
+  
+</body>
+</html>

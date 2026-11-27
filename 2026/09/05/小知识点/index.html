@@ -37,16 +37,16 @@
 <meta property="article:modified_time" content="2026-11-26T08:01:29.810Z">
 <meta property="article:author" content="lorena">
 <meta property="article:tag" content="ViT">
-<meta property="article:tag" content="CLIP">
 <meta property="article:tag" content="多模态">
 <meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="CLIP">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/image-20260826193956246.png">
 <link rel="canonical" href="https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/">
 
 <link rel="icon" href="/images/favicon.png" type="image/png">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"小知识点","name":"小知识点 | lorena的小博客","description":"VIT把图像分割成一系列图像块，每个图像块看作是一个token，再结合位置编码送入transformer encoder CLIP推理过程：让每个图像类别生成一句描述，然后通过文本编码器把每一个描述压缩成文本向量，然后把要预测的图片通过图像编码器得到对应的图像向量，把图片和文字分别编码成向量，然后把它们放到同一个语义空间里比较相似度，去对应文本向量做点积，看...","url":"https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/","datePublished":"2026-09-05T08:13:24.000Z","dateModified":"2026-11-26T08:01:29.810Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"},"keywords":"ViT, CLIP, 多模态, 深度学习"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"小知识点","name":"小知识点 | lorena的小博客","description":"VIT把图像分割成一系列图像块，每个图像块看作是一个token，再结合位置编码送入transformer encoder CLIP推理过程：让每个图像类别生成一句描述，然后通过文本编码器把每一个描述压缩成文本向量，然后把要预测的图片通过图像编码器得到对应的图像向量，把图片和文字分别编码成向量，然后把它们放到同一个语义空间里比较相似度，去对应文本向量做点积，看...","url":"https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/09/05/%E5%B0%8F%E7%9F%A5%E8%AF%86%E7%82%B9/","datePublished":"2026-09-05T08:13:24.000Z","dateModified":"2026-11-26T08:01:29.810Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"},"keywords":"ViT, 多模态, 深度学习, CLIP"}</script>
 
 <script>
   (function () {
@@ -89,7 +89,119 @@
   
   <link rel="stylesheet" href="/css/twojian-style.css?v=5">
   
-<meta name="generator" content="Hexo 6.3.0"></head>
+<meta name="generator" content="Hexo 6.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
 
 <body
   class="is-post tape-disabled tag-style-tape bg-style-default"
@@ -402,7 +514,7 @@
           
 <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
 
-          <a class="meta-tag-link" href="/tags/ViT/">#ViT</a><a class="meta-tag-link" href="/tags/CLIP/">#CLIP</a><a class="meta-tag-link" href="/tags/%E5%A4%9A%E6%A8%A1%E6%80%81/">#多模态</a><a class="meta-tag-link" href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/">#深度学习</a>
+          <a class="meta-tag-link" href="/tags/ViT/">#ViT</a><a class="meta-tag-link" href="/tags/%E5%A4%9A%E6%A8%A1%E6%80%81/">#多模态</a><a class="meta-tag-link" href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/">#深度学习</a><a class="meta-tag-link" href="/tags/CLIP/">#CLIP</a>
         </span>
       
     </div>

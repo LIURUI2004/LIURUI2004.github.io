@@ -1,0 +1,1117 @@
+<!doctype html>
+
+<html lang="zh-CN" data-fancybox-enabled="1">
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f3e9" data-flatpaper-theme-color>
+
+<title>lorena的小博客</title>
+<meta name="description" content="P8 · 3.2 MoCo v3 自监督骨干网络 —— 学习笔记一、视频信息与定位 项目 内容 稿件 BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程） 分P P8 &#x2F; 第 8 讲 标题 3.2 MoCo v3 自监督骨干网络 时长 4:35（275 秒） UP主 AI应用开发- 关键论文 Chen X, Xie S, He K...">
+<meta property="og:type" content="article">
+<meta property="og:title" content="lorena的小博客">
+<meta property="og:url" content="https://liurui2004.github.io/2026/11/27/p8-moco-v3/">
+<meta property="og:site_name" content="lorena的小博客">
+<meta property="og:description" content="P8 · 3.2 MoCo v3 自监督骨干网络 —— 学习笔记一、视频信息与定位 项目 内容 稿件 BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程） 分P P8 &#x2F; 第 8 讲 标题 3.2 MoCo v3 自监督骨干网络 时长 4:35（275 秒） UP主 AI应用开发- 关键论文 Chen X, Xie S, He K...">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p8-moco-v3/P8_25.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p8-moco-v3/P8_90.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p8-moco-v3/P8_125.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p8-moco-v3/P8_170.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p8-moco-v3/P8_200.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p8-moco-v3/P8_240.png">
+<meta property="article:published_time" content="2026-11-27T05:31:06.899Z">
+<meta property="article:modified_time" content="2026-11-27T05:31:10.511Z">
+<meta property="article:author" content="lorena">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liurui2004.github.io/2026/11/27/p8-moco-v3/P8_25.png">
+<link rel="canonical" href="https://liurui2004.github.io/2026/11/27/p8-moco-v3/">
+
+<link rel="icon" href="/images/favicon.png" type="image/png">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"","name":"lorena的小博客","description":"P8 · 3.2 MoCo v3 自监督骨干网络 —— 学习笔记一、视频信息与定位 项目 内容 稿件 BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程） 分P P8 &#x2F; 第 8 讲 标题 3.2 MoCo v3 自监督骨干网络 时长 4:35（275 秒） UP主 AI应用开发- 关键论文 Chen X, Xie S, He K...","url":"https://liurui2004.github.io/2026/11/27/p8-moco-v3/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/11/27/p8-moco-v3/","datePublished":"2026-11-27T05:31:06.899Z","dateModified":"2026-11-27T05:31:10.511Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"}}</script>
+
+<script>
+  (function () {
+    var accents = { orange: 1, purple: 1, sakura: 1, blue: 1, pink: 1, green: 1, black: 1 };
+    var match = document.cookie.match(/(?:^|;\s*)flatpaper-accent=([^;]+)/);
+    var accent = 'green';
+    if (match) {
+      try { accent = decodeURIComponent(match[1]); } catch (e) {}
+    }
+    if (!accents[accent]) accent = 'green';
+    document.documentElement.setAttribute('data-accent', accent);
+    try {
+      if (localStorage.getItem('flatpaper-mode') === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+      }
+    } catch (e) {}
+  })();
+</script>
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css">
+<script defer src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+
+
+  
+  <link rel="stylesheet" href="/css/twojian-style.css?v=5">
+  
+<meta name="generator" content="Hexo 6.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body
+  class="is-post tape-disabled tag-style-tape bg-style-default"
+  data-default-accent="green"
+  data-code-theme="simple"
+  data-note-style="sticky"
+  data-note-icons="on"
+  data-button-style="circle"
+  data-strong-accent="on"
+>
+  
+    <div class="page-grain"></div>
+  
+  <svg width="0" height="0" style="position:absolute;z-index:-1;" aria-hidden="true">
+    <defs>
+      <filter id="paper-edge" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+  
+  <header class="site-header">
+  
+  <button class="icon-button js-sidebar-toggle sidebar-toggle" type="button" aria-label="打开侧边栏" aria-controls="paper-sidebar-drawer" aria-expanded="false">
+    
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-menu"></use></svg>
+
+  </button>
+
+  <div class="brand">
+    <div class="brand-mark-wrapper">
+      
+        <a class="brand-mark" href="/" aria-label="FlatPaper 首页">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-layout-grid"></use></svg>
+
+        </a>
+      
+    </div>
+    <a class="brand-text" href="/">lorena的小博客</a>
+  </div>
+
+  <nav class="site-nav" aria-label="主导航">
+    
+      
+        <a class="site-nav-link " href="/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+          <span>首页</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/categories/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+          <span>分类</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/tags/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+          <span>标签</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/archives/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+          <span>归档</span>
+        </a>
+      
+    
+  </nav>
+
+  <div class="header-tools">
+    <button class="icon-button js-search-open" type="button" aria-label="搜索文章">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+    </button>
+    <div class="accent-picker">
+      <button class="icon-button accent-toggle" type="button" aria-label="选择主题色" title="选择主题色" aria-haspopup="true" aria-expanded="false" aria-controls="accent-menu">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-palette flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-palette"></use></svg>
+
+      </button>
+      <div class="accent-menu" id="accent-menu" role="menu" aria-label="主题色">
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="橙色" aria-checked="false" data-accent-option="orange">
+          <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="紫色" aria-checked="false" data-accent-option="purple">
+          <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="樱花粉" aria-checked="false" data-accent-option="sakura">
+          <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="蓝色" aria-checked="false" data-accent-option="blue">
+          <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="粉色" aria-checked="false" data-accent-option="pink">
+          <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="绿色" aria-checked="false" data-accent-option="green">
+          <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="黑色" aria-checked="false" data-accent-option="black">
+          <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+    <button class="theme-toggle" type="button" aria-label="切换颜色模式">
+      <span class="theme-icon theme-icon--sun">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-sun"></use></svg>
+</span>
+      <span class="theme-icon theme-icon--moon">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-moon"></use></svg>
+</span>
+    </button>
+  </div>
+</header>
+
+
+  
+  <main class="paper-shell paper-shell--article">
+    
+
+<aside id="paper-sidebar-drawer" class="paper-sidebar paper-sidebar--right" aria-label="侧边栏">
+  <div class="drawer-toolbar" aria-label="侧边栏工具">
+    <div class="drawer-accent-options" role="group" aria-label="主题色">
+      <button type="button" class="accent-option" aria-label="橙色" aria-pressed="false" data-accent-option="orange">
+        <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="紫色" aria-pressed="false" data-accent-option="purple">
+        <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="樱花粉" aria-pressed="false" data-accent-option="sakura">
+        <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="蓝色" aria-pressed="false" data-accent-option="blue">
+        <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="粉色" aria-pressed="false" data-accent-option="pink">
+        <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="绿色" aria-pressed="false" data-accent-option="green">
+        <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="黑色" aria-pressed="false" data-accent-option="black">
+        <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+      </button>
+    </div>
+    <button class="icon-button drawer-close js-sidebar-close" type="button" aria-label="关闭侧边栏">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+    </button>
+  </div>
+
+  <section class="side-card nav-card">
+    <nav class="site-nav-drawer" aria-label="移动端导航">
+      
+        
+          <a class="" href="/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+            <span>首页</span>
+          </a>
+        
+      
+        
+          <a class="" href="/categories/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+            <span>分类</span>
+          </a>
+        
+      
+        
+          <a class="" href="/tags/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+            <span>标签</span>
+          </a>
+        
+      
+        
+          <a class="" href="/archives/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+            <span>归档</span>
+          </a>
+        
+      
+    </nav>
+  </section>
+
+  <section class="side-card profile-card">
+    
+      <div class="avatar avatar--image avatar--circle">
+        <img src="/images/avatar.jpg" alt="lorena" loading="lazy" referrerpolicy="no-referrer">
+      </div>
+    
+    <h3>lorena</h3>
+    <p class="profile-role">isfj 小女孩 · 懒惰但上进</p>
+    <p>目标成为estj的isfj小女孩，持续学习新知识中....</p>
+    
+    <div class="socials">
+      
+        <a href="https://github.com/LIURUI2004" target="_blank" rel="noopener" aria-label="GitHub" data-tooltip="GitHub">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 496 512" fill="currentColor" class="lucide lucide-github flatpaper-icon flatpaper-icon--fa-brands" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-fa-brands-github"></use></svg>
+
+          
+        </a>
+      
+        <a href="mailto:liurui20041008@gmail.com" target="_blank" rel="noopener" aria-label="Email" data-tooltip="Email">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-mail"></use></svg>
+
+          
+        </a>
+      
+        <a href="https://www.xiaohongshu.com/user/profile/66c9fef3000000001d0231f5" target="_blank" rel="noopener" aria-label="小红书" data-tooltip="小红书主页">
+          
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" class="lucide lucide-custom" aria-hidden="true"><path d="M22.405 9.879c.002.016.01.02.07.019h.725a.797.797 0 0 0 .78-.972.794.794 0 0 0-.884-.618.795.795 0 0 0-.692.794c0 .101-.002.666.001.777zm-11.509 4.808c-.203.001-1.353.004-1.685.003a2.528 2.528 0 0 1-.766-.126.025.025 0 0 0-.03.014L7.7 16.127a.025.025 0 0 0 .01.032c.111.06.336.124.495.124.66.01 1.32.002 1.981 0 .01 0 .02-.006.023-.015l.712-1.545a.025.025 0 0 0-.024-.036zM.477 9.91c-.071 0-.076.002-.076.01a.834.834 0 0 0-.01.08c-.027.397-.038.495-.234 3.06-.012.24-.034.389-.135.607-.026.057-.033.042.003.112.046.092.681 1.523.787 1.74.008.015.011.02.017.02.008 0 .033-.026.047-.044.147-.187.268-.391.371-.606.306-.635.44-1.325.486-1.706.014-.11.021-.22.03-.33l.204-2.616.022-.293c.003-.029 0-.033-.03-.034zm7.203 3.757a1.427 1.427 0 0 1-.135-.607c-.004-.084-.031-.39-.235-3.06a.443.443 0 0 0-.01-.082c-.004-.011-.052-.008-.076-.008h-1.48c-.03.001-.034.005-.03.034l.021.293c.076.982.153 1.964.233 2.946.05.4.186 1.085.487 1.706.103.215.223.419.37.606.015.018.037.051.048.049.02-.003.742-1.642.804-1.765.036-.07.03-.055.003-.112zm3.861-.913h-.872a.126.126 0 0 1-.116-.178l1.178-2.625a.025.025 0 0 0-.023-.035l-1.318-.003a.148.148 0 0 1-.135-.21l.876-1.954a.025.025 0 0 0-.023-.035h-1.56c-.01 0-.02.006-.024.015l-.926 2.068c-.085.169-.314.634-.399.938a.534.534 0 0 0-.02.191.46.46 0 0 0 .23.378.981.981 0 0 0 .46.119h.59c.041 0-.688 1.482-.834 1.972a.53.53 0 0 0-.023.172.465.465 0 0 0 .23.398c.15.092.342.12.475.12l1.66-.001c.01 0 .02-.006.023-.015l.575-1.28a.025.025 0 0 0-.024-.035zm-6.93-4.937H3.1a.032.032 0 0 0-.034.033c0 1.048-.01 2.795-.01 6.829 0 .288-.269.262-.28.262h-.74c-.04.001-.044.004-.04.047.001.037.465 1.064.555 1.263.01.02.03.033.051.033.157.003.767.009.938-.014.153-.02.3-.06.438-.132.3-.156.49-.419.595-.765.052-.172.075-.353.075-.533.002-2.33 0-4.66-.007-6.991a.032.032 0 0 0-.032-.032zm11.784 6.896c0-.014-.01-.021-.024-.022h-1.465c-.048-.001-.049-.002-.05-.049v-4.66c0-.072-.005-.07.07-.07h.863c.08 0 .075.004.075-.074V8.393c0-.082.006-.076-.08-.076h-3.5c-.064 0-.075-.006-.075.073v1.445c0 .083-.006.077.08.077h.854c.075 0 .07-.004.07.07v4.624c0 .095.008.084-.085.084-.37 0-1.11-.002-1.304 0-.048.001-.06.03-.06.03l-.697 1.519s-.014.025-.008.036c.006.01.013.008.058.008 1.748.003 3.495.002 5.243.002.03-.001.034-.006.035-.033v-1.539zm4.177-3.43c0 .013-.007.023-.02.024-.346.006-.692.004-1.037.004-.014-.002-.022-.01-.022-.024-.005-.434-.007-.869-.01-1.303 0-.072-.006-.071.07-.07l.733-.003c.041 0 .081.002.12.015.093.025.16.107.165.204.006.431.002 1.153.001 1.153zm2.67.244a1.953 1.953 0 0 0-.883-.222h-.18c-.04-.001-.04-.003-.042-.04V10.21c0-.132-.007-.263-.025-.394a1.823 1.823 0 0 0-.153-.53 1.533 1.533 0 0 0-.677-.71 2.167 2.167 0 0 0-1-.258c-.153-.003-.567 0-.72 0-.07 0-.068.004-.068-.065V7.76c0-.031-.01-.041-.046-.039H17.93s-.016 0-.023.007c-.006.006-.008.012-.008.023v.546c-.008.036-.057.015-.082.022h-.95c-.022.002-.028.008-.03.032v1.481c0 .09-.004.082.082.082h.913c.082 0 .072.128.072.128V11.19s.003.117-.06.117h-1.482c-.068 0-.06.082-.06.082v1.445s-.01.068.064.068h1.457c.082 0 .076-.006.076.079v3.225c0 .088-.007.081.082.081h1.43c.09 0 .082.007.082-.08v-3.27c0-.029.006-.035.033-.035l2.323-.003c.098 0 .191.02.28.061a.46.46 0 0 1 .274.407c.008.395.003.79.003 1.185 0 .259-.107.367-.33.367h-1.218c-.023.002-.029.008-.028.033.184.437.374.871.57 1.303a.045.045 0 0 0 .04.026c.17.005.34.002.51.003.15-.002.517.004.666-.01a2.03 2.03 0 0 0 .408-.075c.59-.18.975-.698.976-1.313v-1.981c0-.128-.01-.254-.034-.38 0 .078-.029-.641-.724-.998z"/></svg>
+          
+        </a>
+      
+      
+        
+        
+        <a href="/atom.xml" aria-label="RSS feed" data-tooltip="RSS feed">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rss flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-rss"></use></svg>
+
+        </a>
+      
+    </div>
+  </section>
+
+  
+
+  
+    <div class="post-sticky-stack">
+      <section class="side-card toc-card">
+        <header class="toc-card__head">
+          <h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table-of-contents flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-table-of-contents"></use></svg>
+文章目录</h2>
+          <button type="button" class="toc-toggle-all" data-action="toggle-toc" aria-pressed="false" aria-label="展开全部目录" title="展开全部目录">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-chevron-down"></use></svg>
+
+          </button>
+        </header>
+        <div class="toc-content">
+          
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E8%A7%86%E9%A2%91%E4%BF%A1%E6%81%AF%E4%B8%8E%E5%AE%9A%E4%BD%8D"><span class="toc-text">一、视频信息与定位</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B3%E4%BA%8E%E7%B4%A0%E6%9D%90%E6%9D%A5%E6%BA%90%E7%9A%84%E8%AF%B4%E6%98%8E"><span class="toc-text">关于素材来源的说明</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%85%88%E5%BB%BA%E7%AB%8B%E4%B8%80%E4%B8%AA%E6%AD%A3%E7%A1%AE%E9%A2%84%E6%9C%9F%EF%BC%9Av1-%E2%86%92-v2-%E2%86%92-v3-%E6%98%AF%E2%80%9D%E5%BE%AE%E8%B0%83%E2%80%9D%EF%BC%8C%E4%B8%8D%E6%98%AF%E2%80%9D%E9%87%8D%E5%81%9A%E2%80%9D"><span class="toc-text">二、先建立一个正确预期：v1 → v2 → v3 是”微调”，不是”重做”</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%85%88%E6%8A%8A-v2-%E8%A1%A5%E5%AE%8C%EF%BC%8Cv3-%E6%89%8D%E6%9C%89%E8%90%BD%E8%84%9A%E7%82%B9"><span class="toc-text">三、先把 v2 补完，v3 才有落脚点</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-v2-%E7%9A%84%E4%B8%A4%E5%A4%84%E6%94%B9%E5%8A%A8%EF%BC%9A%E6%9D%A5%E8%87%AA-SimCLR-%E7%9A%84%E4%B8%A4%E4%B8%AA%E2%80%9D%E4%BE%BF%E5%AE%9C%E5%8F%88%E5%A5%BD%E7%94%A8%E2%80%9D%E7%9A%84%E7%82%B9"><span class="toc-text">3.1 v2 的两处改动：来自 SimCLR 的两个”便宜又好用”的点</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81v3-%E6%94%B9%E5%8A%A8%E4%B8%80%EF%BC%9A%E6%8A%8A-ResNet-%E6%8D%A2%E6%88%90-ViT"><span class="toc-text">四、v3 改动一：把 ResNet 换成 ViT</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E8%AE%B2%E5%B8%88%E6%80%8E%E4%B9%88%E8%AF%B4%E7%9A%84"><span class="toc-text">4.1 讲师怎么说的</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E4%B8%BA%E4%BB%80%E4%B9%88%E6%8D%A2-ViT%EF%BC%9A%E4%B8%89%E5%B1%82%E7%90%86%E7%94%B1"><span class="toc-text">4.2 为什么换 ViT：三层理由</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-%E4%B8%80%E4%B8%AA%E5%BF%85%E9%A1%BB%E8%AE%B0%E4%BD%8F%E7%9A%84%E5%AF%B9%E5%BA%94%E5%85%B3%E7%B3%BB"><span class="toc-text">4.3 一个必须记住的对应关系</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-4-%E6%8D%A2%E6%88%90-ViT-%E5%90%8E%EF%BC%8C%E8%AE%AD%E7%BB%83%E5%8F%98%E9%9A%BE%E4%BA%86%EF%BC%88%E4%BC%8F%E7%AC%94%EF%BC%89"><span class="toc-text">4.4 换成 ViT 后，训练变难了（伏笔）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81v3-%E6%94%B9%E5%8A%A8%E4%BA%8C%EF%BC%9A%E5%88%A0%E6%8E%89-Memory-Bank%EF%BC%8C%E7%94%A8%E5%A4%A7-batch-%E9%A1%B6%E4%B8%8A%E6%9D%A5"><span class="toc-text">五、v3 改动二：删掉 Memory Bank，用大 batch 顶上来</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E8%AE%B2%E5%B8%88%E5%8E%9F%E8%AF%9D%EF%BC%88%E8%BF%99%E6%98%AF%E6%9C%AC%E8%8A%82%E6%9C%80%E6%A0%B8%E5%BF%83%E7%9A%84%E4%B8%80%E6%AE%B5%EF%BC%89"><span class="toc-text">5.1 讲师原话（这是本节最核心的一段）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-%E6%A0%B8%E5%BF%83%E9%80%BB%E8%BE%91%EF%BC%9A%E8%B4%9F%E6%A0%B7%E6%9C%AC%E6%95%B0%E9%87%8F-K-%E4%B8%8E-batch-size-B-%E6%98%AF%E5%90%8C%E4%B8%80%E4%B8%AA%E8%A7%92%E8%89%B2"><span class="toc-text">5.2 核心逻辑：负样本数量 K 与 batch size B 是同一个角色</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-%E4%B8%A4%E7%A7%8D%E8%B4%9F%E6%A0%B7%E6%9C%AC%E7%9A%84%E7%9C%9F%E5%AE%9E%E5%B7%AE%E5%BC%82%EF%BC%88%E4%B8%8D%E8%A6%81%E5%8F%AA%E7%9C%8B%E6%95%B0%E9%87%8F%EF%BC%89"><span class="toc-text">5.3 两种负样本的真实差异（不要只看数量）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-4-%E4%B8%8E%E4%B9%8B%E9%85%8D%E5%A5%97%E7%9A%84%E6%A0%87%E7%AD%BE%E6%9E%84%E9%80%A0%E5%8F%98%E5%8C%96"><span class="toc-text">5.4 与之配套的标签构造变化</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81v3-%E6%94%B9%E5%8A%A8%E4%B8%89%EF%BC%9A%E6%8A%8A%E5%8D%95%E5%90%91%E6%8D%9F%E5%A4%B1%E6%94%B9%E6%88%90%E5%8F%8C%E5%90%91%EF%BC%88%E5%AF%B9%E7%A7%B0%EF%BC%89%E6%8D%9F%E5%A4%B1"><span class="toc-text">六、v3 改动三：把单向损失改成双向（对称）损失</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E8%AE%B2%E5%B8%88%E5%8E%9F%E8%AF%9D"><span class="toc-text">6.1 讲师原话</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E5%85%88%E5%86%99%E6%B8%85%E5%8D%95%E5%90%91%E6%8D%9F%E5%A4%B1%EF%BC%88v1-v2-%E7%9A%84%E5%BD%A2%E6%80%81%EF%BC%89"><span class="toc-text">6.2 先写清单向损失（v1&#x2F;v2 的形态）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E5%86%8D%E7%9C%8B%E5%8F%8C%E5%90%91%E6%8D%9F%E5%A4%B1"><span class="toc-text">6.3 再看双向损失</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-4-%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%AF%B9%E7%A7%B0%EF%BC%9A%E4%B8%89%E4%B8%AA%E7%90%86%E7%94%B1"><span class="toc-text">6.4 为什么要对称：三个理由</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-5-%E6%A2%AF%E5%BA%A6%E8%B5%B0%E5%90%91%EF%BC%88%E8%AE%B2%E5%B8%88%E7%89%B9%E5%88%AB%E5%BC%BA%E8%B0%83%E7%9A%84%E4%B8%80%E5%8F%A5%EF%BC%89"><span class="toc-text">6.5 梯度走向（讲师特别强调的一句）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E7%9C%9F%E6%AD%A3%E7%9A%84%E5%B7%A5%E7%A8%8B%E6%A0%B8%E5%BF%83%EF%BC%9A%E8%AE%AD%E7%BB%83%E7%A8%B3%E5%AE%9A%E6%80%A7"><span class="toc-text">七、真正的工程核心：训练稳定性</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#7-1-%E7%97%87%E7%8A%B6%EF%BC%9Aloss-spike"><span class="toc-text">7.1 症状：loss spike</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-2-%E8%8D%AF%E6%96%B9%E4%B8%80%EF%BC%9A%E5%86%BB%E7%BB%93-patch-embedding%EF%BC%88%E6%9C%80%E6%9C%89%E6%95%88%E3%80%81%E6%9C%80%E5%8F%8D%E7%9B%B4%E8%A7%89%EF%BC%89"><span class="toc-text">7.2 药方一：冻结 patch embedding（最有效、最反直觉）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-3-%E8%8D%AF%E6%96%B9%E4%BA%8C%EF%BC%9A%E6%A2%AF%E5%BA%A6%E8%A3%81%E5%89%AA"><span class="toc-text">7.3 药方二：梯度裁剪</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-4-%E8%8D%AF%E6%96%B9%E4%B8%89%EF%BC%9A%E9%9A%8F%E6%9C%BA%E6%B7%B1%E5%BA%A6-Layer-Scale"><span class="toc-text">7.4 药方三：随机深度 + Layer Scale</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-5-%E8%8D%AF%E6%96%B9%E5%9B%9B%EF%BC%9A%E4%BC%98%E5%8C%96%E5%99%A8%E4%B8%8E%E8%B6%85%E5%8F%82%EF%BC%88%E8%AE%BA%E6%96%87%E9%BB%98%E8%AE%A4%EF%BC%8C%E5%AE%9E%E6%B5%8B%E8%A6%81%E7%85%A7%E6%8A%84%EF%BC%89"><span class="toc-text">7.5 药方四：优化器与超参（论文默认，实测要照抄）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-6-%E7%A8%B3%E5%AE%9A%E6%80%A7%E6%8A%80%E5%B7%A7%E6%80%BB%E8%A1%A8"><span class="toc-text">7.6 稳定性技巧总表</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81v1-v2-v3-%E5%85%A8%E7%BB%B4%E5%BA%A6%E5%AF%B9%E7%85%A7%E8%A1%A8"><span class="toc-text">八、v1 &#x2F; v2 &#x2F; v3 全维度对照表</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%89%E4%BB%A3%E6%BC%94%E8%BF%9B%E7%9A%84%E9%80%BB%E8%BE%91%E5%8E%8B%E7%BC%A9%E6%88%90%E4%B8%89%E5%8F%A5%E8%AF%9D"><span class="toc-text">三代演进的逻辑压缩成三句话</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E6%A0%B8%E5%BF%83%E8%AE%AD%E7%BB%83%E4%BC%AA%E4%BB%A3%E7%A0%81"><span class="toc-text">九、核心训练伪代码</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%8E-P5%EF%BC%88v1-%E7%AE%80%E5%8C%96%E5%AE%9E%E7%8E%B0%EF%BC%89%E5%AF%B9%E7%85%A7%EF%BC%8C%E5%80%BC%E5%BE%97%E6%B3%A8%E6%84%8F%E7%9A%84%E5%9B%9B%E5%A4%84%E4%BB%A3%E7%A0%81%E5%B7%AE%E5%BC%82"><span class="toc-text">与 P5（v1 简化实现）对照，值得注意的四处代码差异</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E6%98%93%E6%B7%B7%E6%B7%86%E7%82%B9%E4%B8%8E%E9%AB%98%E9%A2%91%E8%BF%BD%E9%97%AE"><span class="toc-text">十、易混淆点与高频追问</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%B8%80%E3%80%81%E6%9C%AC%E8%8A%82%E5%9C%A8%E6%95%B4%E9%97%A8%E8%AF%BE%E4%B8%AD%E7%9A%84%E4%BD%8D%E7%BD%AE"><span class="toc-text">十一、本节在整门课中的位置</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%BA%8C%E3%80%81%E6%9C%AC%E8%AE%B2%E4%B8%80%E5%8F%A5%E8%AF%9D%E6%80%BB%E7%BB%93"><span class="toc-text">十二、本讲一句话总结</span></a></li></ol>
+          
+        </div>
+      </section>
+      
+
+
+    </div>
+  
+
+  
+
+</aside>
+
+    <section class="paper-main">
+      
+
+<div class="article-tape-wrap">
+<span class="tape tape--top-right" aria-hidden="true"></span>
+<article class="article-paper">
+  
+  <header class="article-header">
+    
+    <h1></h1>
+    <div class="meta-line meta-line--article">
+      <span class="meta-date">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-calendar"></use></svg>
+2026-11-27</span>
+      
+    </div>
+  </header>
+
+  
+
+
+  <div class="article-content">
+    <h1 id="P8-·-3-2-MoCo-v3-自监督骨干网络-——-学习笔记"><a href="#P8-·-3-2-MoCo-v3-自监督骨干网络-——-学习笔记" class="headerlink" title="P8 · 3.2 MoCo v3 自监督骨干网络 —— 学习笔记"></a>P8 · 3.2 MoCo v3 自监督骨干网络 —— 学习笔记</h1><h2 id="一、视频信息与定位"><a href="#一、视频信息与定位" class="headerlink" title="一、视频信息与定位"></a>一、视频信息与定位</h2><table>
+<thead>
+<tr>
+<th>项目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>稿件</td>
+<td>BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程）</td>
+</tr>
+<tr>
+<td>分P</td>
+<td>P8 &#x2F; 第 8 讲</td>
+</tr>
+<tr>
+<td>标题</td>
+<td>3.2 MoCo v3 自监督骨干网络</td>
+</tr>
+<tr>
+<td>时长</td>
+<td>4:35（275 秒）</td>
+</tr>
+<tr>
+<td>UP主</td>
+<td>AI应用开发-</td>
+</tr>
+<tr>
+<td>关键论文</td>
+<td>Chen X, Xie S, He K. <em>An Empirical Study of Training Self-Supervised Vision Transformers</em>. ICCV 2021（即 MoCo v3）</td>
+</tr>
+<tr>
+<td>本节定位</td>
+<td>第三章的第二讲。上一讲 P7 讲清了 <strong>ViT 这个”容器”</strong>，这一讲讲的是”<strong>怎么往这个容器里灌自监督信号</strong>“。它的位置非常关键：P4&#x2F;P5 讲的 MoCo v1、P6 讲的 BEiT 都以 ResNet 为骨干，而从 P8 开始，<strong>ViT + 自监督</strong>成为默认组合——P9&#x2F;P10 的 DINO 是 ViT + 自蒸馏，P11&#x2F;P12 的 MAE 是 ViT + 掩码重建，第四章 CLIP&#x2F;LLaVA 的视觉塔也全是 ViT。</td>
+</tr>
+</tbody></table>
+<h3 id="关于素材来源的说明"><a href="#关于素材来源的说明" class="headerlink" title="关于素材来源的说明"></a>关于素材来源的说明</h3><p>本节素材由三部分构成，文中逐处标注，便于复核：</p>
+<ol>
+<li><strong>AI 字幕原文（122 条，274.6 秒，与视频时长交叉校验一致）</strong>——本节内容的主要依据，讲师的原话基本完整覆盖了三点改动；</li>
+<li><strong>6 张定点 PPT 截图</strong>（<code>P8_25</code>、<code>P8_90</code>、<code>P8_125</code>、<code>P8_170</code>、<code>P8_200</code>、<code>P8_240</code>）——用于确认页面结构与小节标题；</li>
+<li><strong>MoCo v3 论文与公开实现</strong>——用于补充字幕未展开的公式细节、超参数与稳定性技巧，凡属此类均明确标注「论文补充」。</li>
+</ol>
+<p>需要说明的是：本节的 PPT 页面是<strong>标题式</strong>页面（每页只有”1) 取消内存银行””2) 双向的对比 loss”这类小节标题，细则靠讲师口述），因此笔记中大量内容来自字幕原话而非画面文字。</p>
+<hr>
+<h2 id="二、先建立一个正确预期：v1-→-v2-→-v3-是”微调”，不是”重做”"><a href="#二、先建立一个正确预期：v1-→-v2-→-v3-是”微调”，不是”重做”" class="headerlink" title="二、先建立一个正确预期：v1 → v2 → v3 是”微调”，不是”重做”"></a>二、先建立一个正确预期：v1 → v2 → v3 是”微调”，不是”重做”</h2><p>这一节开场，讲师先给了一个容易被忽略的判断，值得放在最前面：</p>
+<blockquote>
+<p>“虽然说我们的 MoCo 从 V1 到 V2 再到 V3，但它其实每一个版本的改进都非常小，都是很细节方面的东西，它在本质上面呢并没有发生很大的变化。”（00:33–00:44）</p>
+</blockquote>
+<p>这句话是理解整节的钥匙。MoCo 三代共享同一个骨架：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">         ┌──────────────┐</span><br><span class="line">x1 ─────►│   Encoder     │────► q（带梯度）</span><br><span class="line">         └──────────────┘</span><br><span class="line">                ▲ EMA 更新</span><br><span class="line">         ┌──────────────┐</span><br><span class="line">x2 ─────►│ Momentum Enc. │────► k（无梯度）</span><br><span class="line">         └──────────────┘</span><br><span class="line">                │</span><br><span class="line">     ┌──────────┴──────────┐</span><br><span class="line">     │   负样本池（K 个）   │  ← 三代唯一的大分歧点</span><br><span class="line">     └─────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<p>三代的差异，全部落在这个骨架的三个”参数位”上：<strong>骨干用什么</strong>、<strong>负样本从哪来</strong>、<strong>损失算几遍</strong>。下面逐层展开。</p>
+<hr>
+<h2 id="三、先把-v2-补完，v3-才有落脚点"><a href="#三、先把-v2-补完，v3-才有落脚点" class="headerlink" title="三、先把 v2 补完，v3 才有落脚点"></a>三、先把 v2 补完，v3 才有落脚点</h2><h3 id="3-1-v2-的两处改动：来自-SimCLR-的两个”便宜又好用”的点"><a href="#3-1-v2-的两处改动：来自-SimCLR-的两个”便宜又好用”的点" class="headerlink" title="3.1 v2 的两处改动：来自 SimCLR 的两个”便宜又好用”的点"></a>3.1 v2 的两处改动：来自 SimCLR 的两个”便宜又好用”的点</h3><p>讲师原话：</p>
+<blockquote>
+<p>“在 MoCo v2 当中呢，他们就把 SimCLR 里面的两个提点的方式给引入了进来。第一个呢是使用更多的这个数据增强，第二个呢把 SimCLR 当中的我们前面所说的两个映射层给加入了进来。”（00:52–01:05）</p>
+</blockquote>
+<p>这两点分别是：</p>
+<p><strong>（1）更强的数据增强。</strong> SimCLR（P3）证明，对比学习的效果高度依赖增强强度——裁剪、颜色抖动、以及 SimCLR 新引入的 <strong>高斯模糊（Gaussian blur）</strong>。MoCo v1 的增强相对温和，v2 直接把 SimCLR 的增强组合搬过来。原因很直观：对比学习的监督信号是”这两张图是同一张”，如果增强太弱，两张图几乎一样，网络用颜色直方图这种廉价特征就能把正样本配对成功，学不到语义。</p>
+<p><strong>（2）加一层 MLP 投影头（两层映射层）。</strong> 讲师把细节讲得很清楚：</p>
+<blockquote>
+<p>“它在我们每次得到的这个特征之后呢，它会进行一个 MLP，然后呢把经过 MLP 之后的两个这个特征呢去计算对比的 loss。我们在下游任务当中呢，我们只会使用 MLP 之前的这个来做下游的任务。”（01:08–01:20）</p>
+</blockquote>
+<p>也就是说数据流是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">图像 ──► Encoder ──► h（特征，下游用这个）──► MLP 投影头 ──► z（算 loss 用这个）</span><br></pre></td></tr></table></figure>
+
+<p>注意这里的**”用 h 不用 z”**是 SimCLR 提出的经验结论：投影头的作用是给对比损失提供一块”可牺牲的表达空间”，让主干特征保留更多与任务相关的信息，而不是被对比目标”压扁”成只适合算相似度的形态。MoCo v2 引入这一层，几乎零成本地涨点。</p>
+<blockquote>
+<p>一句话记忆：<strong>v1 → v2 &#x3D; 增强变强 + 多一个投影头，主干和队列机制完全没动。</strong></p>
+</blockquote>
+<hr>
+<h2 id="四、v3-改动一：把-ResNet-换成-ViT"><a href="#四、v3-改动一：把-ResNet-换成-ViT" class="headerlink" title="四、v3 改动一：把 ResNet 换成 ViT"></a>四、v3 改动一：把 ResNet 换成 ViT</h2><h3 id="4-1-讲师怎么说的"><a href="#4-1-讲师怎么说的" class="headerlink" title="4.1 讲师怎么说的"></a>4.1 讲师怎么说的</h3><blockquote>
+<p>“MoCo v2 呢它还是基于 ResNet 这种结构，但是 MoCo v3 呢他就开始使用了 ViT 的这种结构。也因此我们现在经常会在开源代码都能看到，它使用 ViT 模型，它可能并不是原版的 ViT，它会叫做 <strong>vision transformer MoCo</strong>。那这个呢其实也就是我们将 ViT 模型和自监督的 MoCo 进行结合的一样的这样的一种网络结构。”（00:12–00:33）</p>
+</blockquote>
+<p><img src="/2026/11/27/p8-moco-v3/P8_25.png" alt="MoCo v3 框架总览（ViT + 对比学习）"></p>
+<p><strong>图 1</strong>：<code>P8_25.png</code>（00:25 附近）。PPT 标题为「MoCo v3」，副标题「基于 ViT 架构的自监督学习」，画面右侧缩略给出上一讲 MoCo v1 的原始结构（双编码器 + 队列），用于做前后对照。这是本节的总览页。</p>
+<h3 id="4-2-为什么换-ViT：三层理由"><a href="#4-2-为什么换-ViT：三层理由" class="headerlink" title="4.2 为什么换 ViT：三层理由"></a>4.2 为什么换 ViT：三层理由</h3><p>讲师只说是”换成 ViT”，没有展开动机，这里补全（<strong>论文补充</strong>）：</p>
+<ol>
+<li><strong>容量可扩展性。</strong> ResNet 的规模被”深度 + 宽度”卡住，继续加深会遇到优化困难和收益饱和；ViT 的参数与层数、宽度呈干净的线性关系（P7 已算过：86M &#x2F; 307M &#x2F; 632M），能顺着 NLP 的 scaling law 一路放大。对比学习恰好是”数据越多越受益”的方法，两者天然匹配。</li>
+<li><strong>没有 BatchNorm 的”偷懒通道”。</strong> 这是 MoCo v3 论文真正的出发点。ResNet 里有 BN，BN 在训练时会<strong>在 batch 内部泄漏样本间信息</strong>——对 q 分支尤其严重：同一 batch 里的正样本和负样本在 BN 层就已经互相”看见”了，对比任务因此变得太容易，学到的特征虚高。ViT 用 LayerNorm，只依赖单个样本自身，这个泄漏通道被彻底切断。<strong>代价是：没有 BN 也失去了它带来的数值稳定性</strong>，这正是第七节要处理的麻烦。</li>
+<li><strong>架构统一。</strong> 换掉骨干后，MoCo 的公式一个字都不用改：<code>q = f_q(x1)</code>、<code>k = f_k(x2)</code>、<code>f_k ← EMA(f_q)</code>，$f$ 是 ViT 还是 ResNet 只是实现细节。这也是讲师强调”本质没变”的原因。</li>
+</ol>
+<h3 id="4-3-一个必须记住的对应关系"><a href="#4-3-一个必须记住的对应关系" class="headerlink" title="4.3 一个必须记住的对应关系"></a>4.3 一个必须记住的对应关系</h3><table>
+<thead>
+<tr>
+<th>MoCo 概念</th>
+<th>ViT 里对应什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Encoder $f_q$</td>
+<td>完整 ViT-B&#x2F;16（PatchEmbed + 12 层 Encoder），输出取 <code>[CLS]</code> 位</td>
+</tr>
+<tr>
+<td>Momentum Encoder $f_k$</td>
+<td>结构相同、参数由 $f_q$ 的 EMA 得到，<strong>不参与反向传播</strong></td>
+</tr>
+<tr>
+<td>输出维度 $C$</td>
+<td>768（ViT-B），投影头后 256（MoCo v3 默认）</td>
+</tr>
+<tr>
+<td>队列 &#x2F; 负样本</td>
+<td>v3 中取消，改用 batch 内样本</td>
+</tr>
+</tbody></table>
+<p>对照 P7 的知识：ViT 的 <code>[CLS]</code> 位向量（768 维）就是这里的 <code>q</code> 和 <code>k</code> 的来源。P7 讲的”CLS Token 把整张图的摘要托付给一个位置”，在这里落地为”对比学习的锚点”。</p>
+<h3 id="4-4-换成-ViT-后，训练变难了（伏笔）"><a href="#4-4-换成-ViT-后，训练变难了（伏笔）" class="headerlink" title="4.4 换成 ViT 后，训练变难了（伏笔）"></a>4.4 换成 ViT 后，训练变难了（伏笔）</h3><p>字幕没有展开，但要在心里留一条线：<strong>ResNet + BN 的 MoCo v1&#x2F;v2 训得很稳，ViT + LN 的 MoCo v3 则频繁出现 loss 尖刺（loss spike）甚至直接发散</strong>。原因有三：</p>
+<ul>
+<li>没有 BN，激活值的尺度不受约束，深层容易数值爆炸；</li>
+<li>自监督目标本身比监督目标更”不稳”——目标函数随特征一同移动，是一个移动靶；</li>
+<li>大 batch（4096）下，优化器步长很大，小的扰动被放大。</li>
+</ul>
+<p>这条伏笔在第七节收拢，那里的三个技巧就是专门治这个病的。</p>
+<hr>
+<h2 id="五、v3-改动二：删掉-Memory-Bank，用大-batch-顶上来"><a href="#五、v3-改动二：删掉-Memory-Bank，用大-batch-顶上来" class="headerlink" title="五、v3 改动二：删掉 Memory Bank，用大 batch 顶上来"></a>五、v3 改动二：删掉 Memory Bank，用大 batch 顶上来</h2><h3 id="5-1-讲师原话（这是本节最核心的一段）"><a href="#5-1-讲师原话（这是本节最核心的一段）" class="headerlink" title="5.1 讲师原话（这是本节最核心的一段）"></a>5.1 讲师原话（这是本节最核心的一段）</h3><blockquote>
+<p>“首先呢是他不再使用内存银行的这种设计了……作者发现只要我的 batch size 足够大，那里面的负样本它就可以有很多。所以说他直接就选了一个很大的 batch，比如说我直接选 4096 那么大的一个 batch。那之前我们在讲解 MoCo 的代码的时候呢，我们在这个 memory bank 其实设的也是 4096 的这样的一个大小。那如果说我现在直接把 batch 取成 4096，那我就不需要使用这个内存银行，我同样可以获得一个非常大的负样本。”（01:36–02:09）</p>
+</blockquote>
+<p><img src="/2026/11/27/p8-moco-v3/P8_90.png" alt="取消内存银行，由大 batch 代替"></p>
+<p><strong>图 2</strong>：<code>P8_90.png</code>（01:30 附近）。PPT 副标题直接写着「MoCo v3: 1) 取消内存银行，由大 batch 代替」——这是三点改动中的第一点，页面为小节标题式，细则由讲师口述。</p>
+<h3 id="5-2-核心逻辑：负样本数量-K-与-batch-size-B-是同一个角色"><a href="#5-2-核心逻辑：负样本数量-K-与-batch-size-B-是同一个角色" class="headerlink" title="5.2 核心逻辑：负样本数量 K 与 batch size B 是同一个角色"></a>5.2 核心逻辑：负样本数量 K 与 batch size B 是同一个角色</h3><p>MoCo v1 的设计动机是”显存装不下大 batch，那我就用一条队列把历史上算过的 key 存起来当负样本”。也就是说：<strong>队列是对大 batch 的一次”显存借用”</strong>。</p>
+<p>v3 的观察是反向的：既然队列的作用只是”凑够足够多的负样本”，那么在硬件允许时，直接买（而不是借）——把 batch 开大，batch 内就是天然的负样本池：</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>负样本来源</th>
+<th>默认数量</th>
+<th>显存占用</th>
+<th>样本”新鲜度”</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>v1&#x2F;v2 队列</td>
+<td>过去若干 step 的 key 缓存</td>
+<td>65536（v1）&#x2F; 4096（简化版代码）</td>
+<td>稳态，不随 batch 增长</td>
+<td>陈旧（可差几十上百 step）</td>
+</tr>
+<tr>
+<td>v3 大 batch</td>
+<td>当前 step 同 batch 内的 key</td>
+<td>4096（每卡 1024 × 4 卡）</td>
+<td>随 batch 线性增长</td>
+<td>最新鲜，与 q 同一步</td>
+</tr>
+</tbody></table>
+<h3 id="5-3-两种负样本的真实差异（不要只看数量）"><a href="#5-3-两种负样本的真实差异（不要只看数量）" class="headerlink" title="5.3 两种负样本的真实差异（不要只看数量）"></a>5.3 两种负样本的真实差异（不要只看数量）</h3><p>很多人以为”队列 4096 &#x3D; batch 4096，所以等价”，其实不然，严格比较要分三点（<strong>论文补充 + 原理推演</strong>）：</p>
+<ol>
+<li><strong>一致性（consistency）。</strong> 队列里的 key 是<strong>旧参数</strong>算出来的，与当前 <code>k</code> 的分布有偏移，属于”过时负样本”；batch 内的 key 全部由同一个 momentum encoder 在当前步算出，分布完全一致。<strong>这正是 MoCo v1 引入动量编码器要缓解的问题</strong>——用大 batch 时，这个问题从源头消失了，所以 v3 里动量系数可以放松（默认 0.99 甚至不依赖长队列）。</li>
+<li><strong>新鲜度 vs 多样性。</strong> 队列能以很小的显存代价堆到几十万负样本；batch 4096 只能有 4096 个。所以<strong>在同等显存下，队列的负样本数量上限更高</strong>——这是 v1&#x2F;v2 在 ResNet 时代仍然占优的原因。</li>
+<li><strong>通信成本。</strong> batch 4096 意味着必须跨卡同步，每步都要做 all-gather；队列则可以在单卡内维护。<strong>所以 MoCo v3 是”用通信换简洁”</strong>。</li>
+</ol>
+<p>由此可以理解讲师那句”本质没变”——<strong>队列的删除不是理念进步，而是硬件条件变化后的工程取舍</strong>。如果只有单卡 24G，MoCo v3 的大 batch 方案根本跑不起来。</p>
+<h3 id="5-4-与之配套的标签构造变化"><a href="#5-4-与之配套的标签构造变化" class="headerlink" title="5.4 与之配套的标签构造变化"></a>5.4 与之配套的标签构造变化</h3><p>队列方案里，loss 的 logits 是 <code>[B, K+1]</code>（1 个正样本 + K 个队列负样本），标签恒为 0（正样本在 index 0）。参考 P5 代码里那句 <code>labels = torch.zeros(logits.shape[0], dtype=torch.long)</code>。</p>
+<p>去掉队列后变成标准的 batch 内对比：<code>[B, B]</code> 的相似度矩阵，正样本落在对角线上，标签是 <code>arange(B)</code>。这是 P5 与 P8 在代码层面最直观的差别。</p>
+<p><img src="/2026/11/27/p8-moco-v3/P8_125.png" alt="大 batch 与队列方案对比"></p>
+<p><strong>图 3</strong>：<code>P8_125.png</code>（02:05 附近）。PPT 副标题「MoCo v3: 1) 取消内存银行，由大 batch 代替」，同一小节的延续页，讲师在此处对比两种负样本来源的得失。</p>
+<hr>
+<h2 id="六、v3-改动三：把单向损失改成双向（对称）损失"><a href="#六、v3-改动三：把单向损失改成双向（对称）损失" class="headerlink" title="六、v3 改动三：把单向损失改成双向（对称）损失"></a>六、v3 改动三：把单向损失改成双向（对称）损失</h2><h3 id="6-1-讲师原话"><a href="#6-1-讲师原话" class="headerlink" title="6.1 讲师原话"></a>6.1 讲师原话</h3><blockquote>
+<p>“第二个优化呢是在 loss 这边，MoCo v3 呢它开始采用一种双向的一个 loss……我们有一个 query，还有一个 key……我给他写成 X1……这个 key 呢我们现在只是考虑它的正样本，不考虑他那么多负样本，我们给他写成 X2。那么 X1 和 X2 呢是经过数据增强之后得到的图像，所以说他们是一对正样本。”（02:12–02:40）</p>
+</blockquote>
+<blockquote>
+<p>“既然这两张图像都是通过增强之后得到的，那么他们并没有贵贱之分，所以我也可以把这里的 X2 当做 Q，而 X1 当做 K 也是 OK 的。”（02:58–03:11）</p>
+</blockquote>
+<h3 id="6-2-先写清单向损失（v1-v2-的形态）"><a href="#6-2-先写清单向损失（v1-v2-的形态）" class="headerlink" title="6.2 先写清单向损失（v1&#x2F;v2 的形态）"></a>6.2 先写清单向损失（v1&#x2F;v2 的形态）</h3><p>给一个 batch，$x_1, x_2$ 是同一张图两种增强视图。v1&#x2F;v2 只算”以 $q_1$ 为锚点”的那一半：</p>
+<div class="math-display">
+$$
+\mathcal{L}_{q_1} = -\log \frac{\exp\left(q_1 \cdot k_2^{+} / \tau\right)}{\exp\left(q_1 \cdot k_2^{+} / \tau\right) + \sum_{i=1}^{K} \exp\left(q_1 \cdot k_i^{-} / \tau\right)}
+$$
+</div>
+
+<ul>
+<li>$q_1 &#x3D; f_q(x_1)$，带梯度；</li>
+<li>$k_2^{+} &#x3D; f_k(x_2)$，由动量编码器给出，<strong>无梯度</strong>；</li>
+<li>$k_i^{-}$：v1&#x2F;v2 是队列里的历史 key，v3 是 batch 内的其他 key；</li>
+<li>$\tau$：温度系数，MoCo 系列默认 0.2（video P3 已讲温度的作用）。</li>
+</ul>
+<h3 id="6-3-再看双向损失"><a href="#6-3-再看双向损失" class="headerlink" title="6.3 再看双向损失"></a>6.3 再看双向损失</h3><div class="math-display">
+$$
+\mathcal{L} = \underbrace{\mathcal{L}\left(q_1, k_2\right)}_{\text{方向 A}} + \underbrace{\mathcal{L}\left(q_2, k_1\right)}_{\text{方向 B}}
+$$
+</div>
+
+<p>统一写成：</p>
+<div class="math-display">
+$$
+\mathcal{L}\left(q, k^{+}\right) = -\log \frac{\exp\left(q \cdot k^{+} / \tau\right)}{\sum_{j=1}^{B} \exp\left(q \cdot k_j / \tau\right)}
+$$
+</div>
+
+<p>其中分母遍历当前 batch 全部 $B$ 个 key（含正样本自身），$k_j &#x3D; f_k(x_2^{(j)})$。</p>
+<p>对应关系（必须记牢，否则写代码会错位）：</p>
+<table>
+<thead>
+<tr>
+<th>方向</th>
+<th>送进 Encoder（带梯度）</th>
+<th>送进 Momentum Encoder（无梯度）</th>
+<th>得到</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A</td>
+<td>$x_1$</td>
+<td>$x_2$</td>
+<td>$q_1$ 对 $k_2$</td>
+</tr>
+<tr>
+<td>B</td>
+<td>$x_2$</td>
+<td>$x_1$</td>
+<td>$q_2$ 对 $k_1$</td>
+</tr>
+</tbody></table>
+<p>注意方向 B 里，<strong>$x_2$ 走的是带梯度的 encoder，$x_1$ 走的是动量 encoder</strong>——不是把 $q_1$、$k_2$ 简单互换，而是<strong>重新跑一遍前向</strong>。这是”双向”最容易写错的地方。</p>
+<p><img src="/2026/11/27/p8-moco-v3/P8_170.png" alt="双向对比 loss 与 v1 架构对照"></p>
+<p><strong>图 4</strong>：<code>P8_170.png</code>（02:50 附近）。PPT 副标题「MoCo v3: 2) 双向的对比 loss」，画面上半部分是 MoCo v1 的单向结构，下半部分是 v3 的双向结构，直观对比”算一遍”和”算两遍”的差别。</p>
+<p><img src="/2026/11/27/p8-moco-v3/P8_200.png" alt="双向 loss 的输入与损失合成"></p>
+<p><strong>图 5</strong>：<code>P8_200.png</code>（03:20 附近）。同一小节延续页，展示 $(x_1,x_2)$ 经两路编码器得到 $(q_1,k_1)$、$(q_2,k_2)$ 后，两组正样本相似度如何合成最终损失。</p>
+<h3 id="6-4-为什么要对称：三个理由"><a href="#6-4-为什么要对称：三个理由" class="headerlink" title="6.4 为什么要对称：三个理由"></a>6.4 为什么要对称：三个理由</h3><ol>
+<li><strong>两张增强图地位对等。</strong> 讲师的原话就是”没有贵贱之分”。既然增强是随机采样，凭什么让 $x_1$ 当 query、$x_2$ 只能当 key？对称之后，对增强分布的期望被利用得更充分——每个 batch 实际上产生了 $2B$ 个”锚点样本”而非 $B$ 个，<strong>等于免费把有效 batch 翻倍</strong>。</li>
+<li><strong>梯度更均衡。</strong> 单向损失下，encoder 只在”$x_1$ 作输入”这一种角色上收梯度；双向之后，两类视图都既当锚点又当目标，主干学到的表示不会偏向某种增强模式。</li>
+<li><strong>与 SimCLR 收敛到同一形态。</strong> 有意思的是，SimCLR（P3）的 NT-Xent 本来就是对称的——它没有队列，天然就要对 $2N$ 个视图两两算。MoCo v1 为了省算力（队列方案下算两遍不划算）才只算一半。<strong>v3 取消队列后，算两遍的边际成本很低，于是把对称性”还”了回来</strong>。所以严格说，这不是新发明，而是”条件允许后回归最优形态”。</li>
+</ol>
+<h3 id="6-5-梯度走向（讲师特别强调的一句）"><a href="#6-5-梯度走向（讲师特别强调的一句）" class="headerlink" title="6.5 梯度走向（讲师特别强调的一句）"></a>6.5 梯度走向（讲师特别强调的一句）</h3><blockquote>
+<p>“和 V1 一样，我们作为 query 的 encoder，他是直接参与这个梯度的反向传播的，也就是这个 BP，而这个 momentum encoder 呢，它的梯度呢是通过动量的更新公式来进行一个优化的。”（04:21–04:35）</p>
+</blockquote>
+<div class="math-display">
+$$
+\theta_k \leftarrow m\,\theta_k + (1-m)\,\theta_q, \qquad m = 0.99
+$$
+</div>
+
+<p>这一句对应 P5 代码里训练循环末尾那行 EMA 更新。<strong>两个方向共用同一个 $f_q$ 和同一个 $f_k$</strong>：方向 A 与方向 B 的梯度都累加到 $f_q$ 上，然后每步一次 EMA 同步到 $f_k$。不要理解成”两个 encoder 各训一次”。</p>
+<hr>
+<h2 id="七、真正的工程核心：训练稳定性"><a href="#七、真正的工程核心：训练稳定性" class="headerlink" title="七、真正的工程核心：训练稳定性"></a>七、真正的工程核心：训练稳定性</h2><p>本节视频只有 4 分 35 秒，讲师把大部分时间给了三点改动，稳定性部分讲得很轻。但 MoCo v3 论文的标题就是 <em>An Empirical Study of Training <strong>Self-Supervised</strong> Vision Transformers</em>——它的主要贡献其实<strong>就是这张”怎么把 ViT 自监督训稳”的药方</strong>。这里按论文补齐（标注为论文补充，非视频画面）。</p>
+<p><img src="/2026/11/27/p8-moco-v3/P8_240.png" alt="训练稳定性技巧"></p>
+<p><strong>图 6</strong>：<code>P8_240.png</code>（04:00 附近）。本节收尾的稳定性小节页，对应论文中”避免训练崩溃”的一组技巧。</p>
+<h3 id="7-1-症状：loss-spike"><a href="#7-1-症状：loss-spike" class="headerlink" title="7.1 症状：loss spike"></a>7.1 症状：loss spike</h3><p>现象是：训练前期一切正常，某个 step 突然 loss 跳升，之后特征坍缩（所有图像输出几乎相同向量），线性探测精度永久掉下去。论文的观察是——<strong>崩溃往往发生在训练早期，且与 patch projection 层（即 ViT 最前面那个 stride&#x3D;16 的卷积）的梯度异常直接相关</strong>。</p>
+<h3 id="7-2-药方一：冻结-patch-embedding（最有效、最反直觉）"><a href="#7-2-药方一：冻结-patch-embedding（最有效、最反直觉）" class="headerlink" title="7.2 药方一：冻结 patch embedding（最有效、最反直觉）"></a>7.2 药方一：冻结 patch embedding（最有效、最反直觉）</h3><p>做法：训练最开始若干 epoch（论文用 10 epoch 左右，占总训练 300 epoch 的 3%），把 PatchEmbed 那一层的参数<strong>冻结</strong>，不接收梯度，也不被优化器更新；之后解冻、正常训练。</p>
+<p>为什么有效：PatchEmbed 是整座网络的入口，它的输出要经过 12 层 Transformer 放大。这一层在初始阶段梯度噪声极大，一旦它的权重被推向一个坏方向，后面所有层都在学”垃圾输入”。<strong>冻结它相当于给入口装了一个稳压器</strong>，让主干先用固定的”词表”把注意力与 MLP 学起来，等梯度尺度稳定后再放开。</p>
+<p>代价：几乎为零。这一层只有 $16\times16\times3\times768 \approx 590K$ 参数（占 ViT-B 的 0.7%），冻结它不影响容量。</p>
+<blockquote>
+<p>这一条与 P7 结尾那句伏笔正好对上：<strong>“ViT 没有 BN，自监督训 ViT 会崩，这正是冻结 patch embedding 要解决的问题。”</strong></p>
+</blockquote>
+<h3 id="7-3-药方二：梯度裁剪"><a href="#7-3-药方二：梯度裁剪" class="headerlink" title="7.3 药方二：梯度裁剪"></a>7.3 药方二：梯度裁剪</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=<span class="number">1.0</span>)  <span class="comment"># 或按比例裁剪</span></span><br></pre></td></tr></table></figure>
+
+<p>大 batch 下单步梯度的 L2 范数可能突增两个数量级，裁剪把步长钳住。论文中给出的做法是按”梯度范数 &#x2F; 参数范数”的比例裁剪（ratio clip），比固定阈值更自适应。</p>
+<h3 id="7-4-药方三：随机深度-Layer-Scale"><a href="#7-4-药方三：随机深度-Layer-Scale" class="headerlink" title="7.4 药方三：随机深度 + Layer Scale"></a>7.4 药方三：随机深度 + Layer Scale</h3><ul>
+<li><strong>Stochastic Depth（DropPath）</strong>：训练时随机整层跳过（对 ViT-B 用 0.1 左右），减少层间共适应，等效于集成。</li>
+<li><strong>LayerScale</strong>：在每个残差分支出口乘一个小的可学习缩放（初值约 $10^{-4}$~$10^{-6}$），让初始状态下每层几乎”不发言”，深层网络因此不会一上来就把信号炸掉。这一招在 DeiT &#x2F; CaiT 里被证明极有效，MoCo v3 也用。</li>
+</ul>
+<h3 id="7-5-药方四：优化器与超参（论文默认，实测要照抄）"><a href="#7-5-药方四：优化器与超参（论文默认，实测要照抄）" class="headerlink" title="7.5 药方四：优化器与超参（论文默认，实测要照抄）"></a>7.5 药方四：优化器与超参（论文默认，实测要照抄）</h3><table>
+<thead>
+<tr>
+<th>项</th>
+<th>取值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>优化器</td>
+<td>AdamW（$\beta_2&#x3D;0.95$）</td>
+<td>不用 SGD。$\beta_2$ 调低是 ViT 训练的常见做法，防止二阶矩估计滞后</td>
+</tr>
+<tr>
+<td>基础学习率</td>
+<td>$1.5\times10^{-4}$，按 batch 线性缩放（<code>lr = 1.5e-4 * batch/256</code>）</td>
+<td>batch 4096 → 约 $2.4\times10^{-3}$</td>
+</tr>
+<tr>
+<td>权重衰减</td>
+<td>0.1</td>
+<td>配合 AdamW 的解耦衰减</td>
+</tr>
+<tr>
+<td>warmup</td>
+<td>前 10 epoch 线性升温</td>
+<td>大 batch 训练必需</td>
+</tr>
+<tr>
+<td>温度 $\tau$</td>
+<td>0.2</td>
+<td>与 v1&#x2F;v2 一致</td>
+</tr>
+<tr>
+<td>动量 $m$</td>
+<td>0.99</td>
+<td>从 0.99 起，按余弦升到 1（论文细节）</td>
+</tr>
+<tr>
+<td>训练轮数</td>
+<td>300 epoch（ViT-B&#x2F;16）</td>
+<td>自监督比监督更吃训练时长</td>
+</tr>
+<tr>
+<td>投影头</td>
+<td>3 层 MLP + BN，输出 256 维</td>
+<td>比 v2 的两层更深</td>
+</tr>
+</tbody></table>
+<p><code>β2=0.95</code>、warmup、LayerScale 这三条合起来，就是”ViT 自监督能训起来”的最低配置。<strong>缺任何一条，都有较大概率在 50 epoch 内崩掉。</strong></p>
+<h3 id="7-6-稳定性技巧总表"><a href="#7-6-稳定性技巧总表" class="headerlink" title="7.6 稳定性技巧总表"></a>7.6 稳定性技巧总表</h3><table>
+<thead>
+<tr>
+<th>技巧</th>
+<th>具体动作</th>
+<th>治什么病</th>
+<th>代价</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>冻结 patch projection</td>
+<td>前 ~10 epoch 不更新 PatchEmbed</td>
+<td>loss spike &#x2F; 早期崩溃</td>
+<td>几乎为零</td>
+</tr>
+<tr>
+<td>梯度裁剪</td>
+<td>ratio clip &#x2F; max_norm</td>
+<td>单步梯度爆炸</td>
+<td>几乎为零</td>
+</tr>
+<tr>
+<td>LayerScale</td>
+<td>残差分支出口乘小初值缩放</td>
+<td>深层激活尺度失控</td>
+<td>少量参数</td>
+</tr>
+<tr>
+<td>Stochastic Depth</td>
+<td>随机跳过整层（p≈0.1）</td>
+<td>层间共适应、过拟合</td>
+<td>训练变慢</td>
+</tr>
+<tr>
+<td>AdamW + β2&#x3D;0.95</td>
+<td>替代 SGD</td>
+<td>二阶矩估计失准</td>
+<td>无</td>
+</tr>
+<tr>
+<td>LR warmup</td>
+<td>前 10 epoch 线性升温</td>
+<td>大 batch 初期震荡</td>
+<td>训练变长</td>
+</tr>
+<tr>
+<td>只在最后一层加 BN</td>
+<td>投影头用 BN，主干用 LN</td>
+<td>输出尺度不稳</td>
+<td>无</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="八、v1-v2-v3-全维度对照表"><a href="#八、v1-v2-v3-全维度对照表" class="headerlink" title="八、v1 &#x2F; v2 &#x2F; v3 全维度对照表"></a>八、v1 &#x2F; v2 &#x2F; v3 全维度对照表</h2><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>MoCo v1（2020）</th>
+<th>MoCo v2（2020）</th>
+<th>MoCo v3（2021）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>论文</td>
+<td>He et al., CVPR 2020</td>
+<td>Chen et al., arXiv 2020</td>
+<td>Chen et al., ICCV 2021</td>
+</tr>
+<tr>
+<td>Backbone</td>
+<td>ResNet-50</td>
+<td>ResNet-50</td>
+<td><strong>ViT-B &#x2F; ViT-L</strong></td>
+</tr>
+<tr>
+<td>归一化</td>
+<td>BatchNorm</td>
+<td>BatchNorm</td>
+<td><strong>LayerNorm</strong>（无 BN）</td>
+</tr>
+<tr>
+<td>负样本来源</td>
+<td>队列（memory bank）</td>
+<td>队列</td>
+<td><strong>batch 内样本</strong></td>
+</tr>
+<tr>
+<td>队列长度</td>
+<td>65536</td>
+<td>65536</td>
+<td>无（batch 4096 代替）</td>
+</tr>
+<tr>
+<td>动量 $m$</td>
+<td>0.999</td>
+<td>0.999</td>
+<td>0.99（余弦升至 1）</td>
+</tr>
+<tr>
+<td>投影头</td>
+<td>单层线性（或直接输出）</td>
+<td><strong>2 层 MLP</strong></td>
+<td><strong>3 层 MLP + BN，out 256</strong></td>
+</tr>
+<tr>
+<td>数据增强</td>
+<td>基础（裁剪 + 翻转 + 抖动）</td>
+<td><strong>+ 模糊等 SimCLR 增强</strong></td>
+<td>同 v2（+ 更强）</td>
+</tr>
+<tr>
+<td>损失</td>
+<td>单向 InfoNCE</td>
+<td>单向 InfoNCE</td>
+<td><strong>对称双向 InfoNCE</strong></td>
+</tr>
+<tr>
+<td>每步前向次数</td>
+<td>1 次 q + 1 次 k</td>
+<td>1 + 1</td>
+<td><strong>2 + 2</strong>（两个方向）</td>
+</tr>
+<tr>
+<td>优化器</td>
+<td>SGD</td>
+<td>SGD</td>
+<td><strong>AdamW</strong></td>
+</tr>
+<tr>
+<td>稳定性处理</td>
+<td>BN 兜底，无需特殊处理</td>
+<td>BN 兜底</td>
+<td><strong>冻结 patch embed、梯度裁剪、LayerScale 等</strong></td>
+</tr>
+<tr>
+<td>典型线性探测精度（IN-1k，ViT-B&#x2F;16 口径）</td>
+<td>60.6（ResNet-50）</td>
+<td>71.1</td>
+<td><strong>76.7</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>精度一行的数据摘自 MoCo v3 论文的复现表（<strong>论文补充</strong>，非本节视频画面）。注意 v1 是 ResNet-50 的数字，与 v3 的 ViT-B&#x2F;16 不是同一骨干，仅作演进方向的示意，不要当成严格对照。</p>
+</blockquote>
+<h3 id="三代演进的逻辑压缩成三句话"><a href="#三代演进的逻辑压缩成三句话" class="headerlink" title="三代演进的逻辑压缩成三句话"></a>三代演进的逻辑压缩成三句话</h3><ol>
+<li><strong>v1 → v2</strong>：不动骨架，只补”增强 + 投影头”两个来自 SimCLR 的便宜提点；</li>
+<li><strong>v2 → v3</strong>：换骨干（ResNet → ViT），队列不再必要（大 batch 顶上），损失改成对称（条件允许后回归最优）；</li>
+<li><strong>贯穿始终</strong>：<code>q/k 双编码器 + 动量 EMA</code> 的骨架从未改变——这正是讲师说的”本质没有发生很大的变化”。</li>
+</ol>
+<hr>
+<h2 id="九、核心训练伪代码"><a href="#九、核心训练伪代码" class="headerlink" title="九、核心训练伪代码"></a>九、核心训练伪代码</h2><p>下面给出 MoCo v3 一个训练 step 的伪代码，把本节所有要点串起来（<strong>Python 风格伪代码，非逐行可运行代码</strong>；可直接运行的 ViT 实现见 P7 笔记第八节）。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ============ 初始化 ============</span></span><br><span class="line">encoder_q = ViT(img_size=<span class="number">224</span>, patch=<span class="number">16</span>, dim=<span class="number">768</span>, depth=<span class="number">12</span>, heads=<span class="number">12</span>)  <span class="comment"># 带梯度</span></span><br><span class="line">encoder_k = copy.deepcopy(encoder_q)                                   <span class="comment"># 无梯度</span></span><br><span class="line"><span class="keyword">for</span> p <span class="keyword">in</span> encoder_k.parameters():</span><br><span class="line">    p.requires_grad = <span class="literal">False</span>                     <span class="comment"># 动量编码器只由 EMA 更新</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 冻结 patch projection（稳定性技巧一）</span></span><br><span class="line"><span class="keyword">for</span> p <span class="keyword">in</span> encoder_q.patch_embed.parameters():</span><br><span class="line">    p.requires_grad = <span class="literal">False</span></span><br><span class="line"></span><br><span class="line">optimizer = AdamW([p <span class="keyword">for</span> p <span class="keyword">in</span> encoder_q.parameters() <span class="keyword">if</span> p.requires_grad],</span><br><span class="line">                  lr=<span class="number">1.5e-4</span> * batch_size / <span class="number">256</span>, weight_decay=<span class="number">0.1</span>, betas=(<span class="number">0.9</span>, <span class="number">0.95</span>))</span><br><span class="line"></span><br><span class="line">m = <span class="number">0.99</span>          <span class="comment"># 动量</span></span><br><span class="line">tau = <span class="number">0.2</span>         <span class="comment"># 温度</span></span><br><span class="line">B = <span class="number">4096</span>          <span class="comment"># 大 batch：负样本池就是它</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ============ 每个训练 step ============</span></span><br><span class="line"><span class="keyword">for</span> x <span class="keyword">in</span> loader:                                  <span class="comment"># x: [B, 3, 224, 224]</span></span><br><span class="line">    x1, x2 = two_strong_augment(x)                <span class="comment"># 两次独立增强 → 一对正样本视图</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># ---- 方向 A：x1 走 encoder(q)，x2 走 momentum encoder(k) ----</span></span><br><span class="line">    q1 = proj(encoder_q(x1))                      <span class="comment"># [B, 256]，有梯度</span></span><br><span class="line">    <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">        k2 = proj(encoder_k(x2))                  <span class="comment"># [B, 256]，无梯度</span></span><br><span class="line">        k2 = F.normalize(k2, dim=<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># ---- 方向 B：角色对调，重新前向（不是交换 q1/k2！）----</span></span><br><span class="line">    q2 = proj(encoder_q(x2))                      <span class="comment"># [B, 256]，有梯度</span></span><br><span class="line">    <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">        k1 = proj(encoder_k(x1))                  <span class="comment"># [B, 256]，无梯度</span></span><br><span class="line">        k1 = F.normalize(k1, dim=<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># ---- 双向对称 InfoNCE ----</span></span><br><span class="line">    q1 = F.normalize(q1, dim=<span class="number">1</span>); q2 = F.normalize(q2, dim=<span class="number">1</span>)</span><br><span class="line">    logits_a = q1 @ k2.T / tau                    <span class="comment"># [B, B]，正样本在对角线</span></span><br><span class="line">    logits_b = q2 @ k1.T / tau                    <span class="comment"># [B, B]</span></span><br><span class="line">    labels   = torch.arange(B, device=x.device)   <span class="comment"># v3 无队列，标签是行号</span></span><br><span class="line">    loss = <span class="number">0.5</span> * (F.cross_entropy(logits_a, labels) +</span><br><span class="line">                  F.cross_entropy(logits_b, labels))   <span class="comment"># 论文用均值，等价于求和后缩放</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># ---- 反向 + 裁剪 + 更新 ----</span></span><br><span class="line">    optimizer.zero_grad()</span><br><span class="line">    loss.backward()</span><br><span class="line">    torch.nn.utils.clip_grad_norm_(encoder_q.parameters(), max_norm=<span class="number">1.0</span>)  <span class="comment"># 技巧二</span></span><br><span class="line">    optimizer.step()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># ---- 动量更新（不参与 BP，只有这一条路径能改 encoder_k）----</span></span><br><span class="line">    <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">        <span class="keyword">for</span> pq, pk <span class="keyword">in</span> <span class="built_in">zip</span>(encoder_q.parameters(), encoder_k.parameters()):</span><br><span class="line">            pk.data = m * pk.data + (<span class="number">1</span> - m) * pq.data</span><br></pre></td></tr></table></figure>
+
+<h3 id="与-P5（v1-简化实现）对照，值得注意的四处代码差异"><a href="#与-P5（v1-简化实现）对照，值得注意的四处代码差异" class="headerlink" title="与 P5（v1 简化实现）对照，值得注意的四处代码差异"></a>与 P5（v1 简化实现）对照，值得注意的四处代码差异</h3><table>
+<thead>
+<tr>
+<th>位置</th>
+<th>P5（MoCo v1 简化版）</th>
+<th>P8（MoCo v3）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>骨干</td>
+<td><code>resnet50(num_classes=dim)</code></td>
+<td><code>ViT(dim=768, depth=12, heads=12)</code></td>
+</tr>
+<tr>
+<td>负样本</td>
+<td><code>queue = torch.randn(dim, K=4096)</code>，每步 <code>enqueue_dequeue</code></td>
+<td>无队列，直接 <code>q @ k.T</code></td>
+</tr>
+<tr>
+<td>logits 形状</td>
+<td><code>[B, 1 + K]</code>，<code>labels = zeros(B)</code></td>
+<td><code>[B, B]</code>，<code>labels = arange(B)</code></td>
+</tr>
+<tr>
+<td>损失次数</td>
+<td>1 次 <code>cross_entropy</code></td>
+<td>2 次相加（双向）</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>若把队列留着又想对称，就要算 4 次前向（$q_1$ 对队列、$q_2$ 对队列……），成本翻倍、收益甚微。<strong>这就是”删队列”与”改双向”在工程上互为前提的原因。</strong></p>
+</blockquote>
+<hr>
+<h2 id="十、易混淆点与高频追问"><a href="#十、易混淆点与高频追问" class="headerlink" title="十、易混淆点与高频追问"></a>十、易混淆点与高频追问</h2><p><strong>Q1：v3 到底还算不算 MoCo？没有队列了，”动量”还在吗？</strong><br>在。MoCo 的招牌是<strong>动量编码器</strong>（EMA 提供一致而稳定的 key），不是队列。队列只是”当年没有大 batch”的权宜之计。所以删掉队列不改变方法内核，v3 论文标题里用的也是 MoCo。</p>
+<p><strong>Q2：既然 v3 需要 4096 的大 batch，那它在单卡上还能用吗？</strong><br>能，但等价性打折扣。单卡 batch 若只有 256，负样本就从 4096 掉到 256，效果会明显下降——<strong>负样本数量是对比学习的命门</strong>（P3 已讲）。这也是为什么 v3 的复现门槛比 v1&#x2F;v2 高：它把”显存”换成了”效果”。</p>
+<p><strong>Q3：双向损失 &#x3D; 把 loss 乘 2 吗？</strong><br>不是。乘 2 只改梯度尺度；双向改的是<strong>参与计算的视图组合</strong>——方向 B 里 $x_2$ 走进了带梯度的 encoder，这会让主干在”$x_2$ 这种增强”上也收到锚点梯度，是质的区别。</p>
+<p><strong>Q4：为什么 MoCo v3 的精度表里，ViT-L 反而不如 ViT-B 稳？</strong><br><strong>论文补充</strong>：ViT 越大，自监督越容易崩，需要的稳定性干预越多（冻结时间更长、更强的 LayerScale）。论文中确实观察到这个规模不稳定性，这也是后续 DINO、MAE 继续改进训练配方的原因之一。</p>
+<p><strong>Q5：v3 里的 BN 真的完全没有了吗？</strong><br>主干（ViT）里没有 BN，但<strong>投影头（3 层 MLP）里仍然有 BN</strong>。这是一个刻意的折中：主干的样本独立性要保住（否则对比任务作弊），而输出层的尺度需要稳定（否则 loss 数值不稳）。</p>
+<hr>
+<h2 id="十一、本节在整门课中的位置"><a href="#十一、本节在整门课中的位置" class="headerlink" title="十一、本节在整门课中的位置"></a>十一、本节在整门课中的位置</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">P4/P5  MoCo v1（ResNet + 队列）</span><br><span class="line">   │        └─ 建立&quot;双编码器 + 动量 EMA&quot;骨架</span><br><span class="line">   ▼</span><br><span class="line">P8     MoCo v3（ViT + 大 batch + 双向 loss）   ← 本节</span><br><span class="line">   │        └─ 把骨架搬到 ViT 上，并给出&quot;怎么训稳&quot;的药方</span><br><span class="line">   ├──► P9/P10  DINO = ViT + 自蒸馏（把动量编码器思想推向&quot;教师-学生&quot;）</span><br><span class="line">   ├──► P11/P12 MAE = ViT + 掩码重建（放弃对比，只用重建）</span><br><span class="line">   └──► 第四章 CLIP/LLaVA：ViT 做视觉塔，自监督预训练提供初始化</span><br></pre></td></tr></table></figure>
+
+<p>三点衔接提示：</p>
+<ol>
+<li><strong>为什么 DINO 也继承了”动量编码器”？</strong> 因为 EMA 提供的 key 不需要梯度、分布一致，是自监督里最便宜的”稳定目标”。MoCo v3 把这套配方的适用边界从 CNN 推到了 ViT，DINO 直接沿用并加上了 centering&#x2F;sharpening。</li>
+<li><strong>为什么 MAE 放弃了对比学习？</strong> 对比学习在 ViT 上要 300 epoch 才到 76.7（ViT-B），而 MAE 用掩码重建 1600 epoch 能到 83+，且训练更稳。<strong>MoCo v3 的价值因此更多是”证明了 ViT + 自监督可行”，而不是终点。</strong></li>
+<li><strong>本章的三条线（对比 &#x2F; 自蒸馏 &#x2F; 重建）现在都齐了</strong>，它们共同的底座都是 P7 的 ViT——这也回答了 P7 结尾提出的问题：后面三个模型全是”ViT + 某一种自监督范式”。</li>
+</ol>
+<hr>
+<h2 id="十二、本讲一句话总结"><a href="#十二、本讲一句话总结" class="headerlink" title="十二、本讲一句话总结"></a>十二、本讲一句话总结</h2><p><strong>MoCo v3 &#x3D; MoCo v1 的骨架（双编码器 + 动量 EMA）＋ ViT 骨干 ＋ 删掉队列改成 4096 大 batch（负样本从”借来的历史”变成”同一步的新鲜样本”）＋ 对称双向 InfoNCE（$\mathcal{L}(q_1,k_2)+\mathcal{L}(q_2,k_1)$，每个 step 算两遍前向）——配套的”冻结 patch projection、梯度裁剪、LayerScale、AdamW(β2&#x3D;0.95)、10 epoch warmup”才是它真正的贡献：<strong>它第一次说明了在无 BN 的 ViT 上做自监督，靠的不是更强的目标函数，而是一套数值稳定性的工程纪律</strong>。三代演进一句话记住：v2 补增强和投影头，v3 换骨干、去队列、改双向，本质骨架从未改变。</strong><br><em>（内容由AI生成，仅供参考）</em></p>
+<hr>
+<p><em>（内容由AI生成，仅供参考）</em></p>
+
+  </div>
+
+  <footer class="article-reactions">
+    <div class="reaction-group">
+      <button type="button" class="reaction reaction--comment" aria-label="跳转到评论区" data-action="scroll-to-comments">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-message-circle"></use></svg>
+
+      </button>
+      <span class="reaction-label">评论</span>
+      
+    </div>
+    <div class="reaction-group reaction-group--right">
+      
+      <button type="button" class="reaction reaction--share" aria-label="分享" data-action="share">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2 flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-share-2"></use></svg>
+
+      </button>
+      <span class="reaction-label">分享</span>
+    </div>
+  </footer>
+
+  
+
+
+  <nav class="article-actions">
+    
+      <a class="article-action article-action--prev" href="/2026/11/27/multimodal-tutorial-roadmap/">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-left"></use></svg>
+
+        <span class="action-label">上一篇</span>
+        <span class="action-title"></span>
+      </a>
+    
+    
+      <a class="article-action article-action--next" href="/2026/11/27/p7-vision-transformer/">
+        <span class="action-label">下一篇</span>
+        <span class="action-title"></span>
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-right"></use></svg>
+
+      </a>
+    
+  </nav>
+</article>
+</div>
+
+<button type="button" class="back-to-top" data-action="scroll-to-top" aria-label="返回顶部" hidden>
+  
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-up"></use></svg>
+
+</button>
+
+
+
+      
+
+
+    </section>
+    
+  </main>
+
+  <div class="sidebar-backdrop js-sidebar-close" aria-hidden="true"></div>
+
+  
+<footer class="site-footer">
+  <span class="site-footer__left">© 2026 By lorena</span>
+  
+    <span class="site-footer__right">
+      
+        <span class="site-footer__row"><span class="site-footer__powered-prefix">Powered by Theme</span> <a href="https://github.com/Homulilly/hexo-theme-flatpaper" target="_blank" rel="noopener">FlatPaper</a></span>
+      
+    </span>
+  
+</footer>
+
+  
+<div class="search-panel" aria-hidden="true" data-index-url="/flatpaper-search.json">
+  <div class="search-backdrop js-search-close"></div>
+  <section class="search-dialog" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <span class="tape tape--top-left" aria-hidden="true"></span>
+    <header class="search-head">
+      <h2><span class="green-dot"></span>搜索文章</h2>
+      <button class="icon-button js-search-close" type="button" aria-label="关闭搜索">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+      </button>
+    </header>
+    <label class="search-field">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+      <input id="flatpaper-search" class="search-input" type="search" placeholder="输入关键词，按 Esc 关闭" autocomplete="off">
+    </label>
+    <div class="search-results" data-empty="输入关键词后显示匹配的文章">
+      <p class="search-empty">输入关键词后显示匹配的文章</p>
+    </div>
+  </section>
+</div>
+
+  <script>
+  window.FLATPAPER_I18N = {"language":"zh-CN","common.posts":"文章","common.categories":"分类","common.tags":"标签","common.comments":"评论","common.share":"分享","common.page":"页面","common.archive":"归档","common.post_list":"文章列表","common.search_posts":"搜索文章","common.random_posts":"随机文章","common.reward":"赞赏","common.view_all":"查看全部","pagination.prev":"上一页","pagination.next":"下一页","pagination.post_pager":"文章分页","pagination.archive_pager":"归档分页","index.featured":"精选文章","index.pinned":"置顶","index.read_more":"阅读全文","index.previous_slide":"上一张","index.next_slide":"下一张","index.carousel_pagination":"轮播页码","index.carousel_slide":"第 %d 张","index.latest_posts":"最新文章","index.empty_posts":"还没有文章。创建第一篇文章后，这里会显示最新内容。","archive.title":"归档","archive.post_list":"文章列表","taxonomy.category_count":"%d 篇","taxonomy.empty_categories":"暂时还没有分类。","taxonomy.empty_tags":"暂时还没有标签。","links.label":"友链","links.title":"友情链接","links.empty_data":"暂未加载到友链数据。请确认 source/_data/links.yml 存在并已 hexo clean。","links.rss_label":"%s 的 RSS","friends_feed.label":"朋友圈","friends_feed.title":"友链朋友圈","friends_feed.loading":"正在加载友链动态…","friends_feed.missing_url":"暂未配置 all.json 地址。","friends_feed.load_failed":"友链动态加载失败，请稍后再试。","friends_feed.empty":"暂时没有抓取到友链文章。","friends_feed.load_more":"加载更多","friends_feed.updated_at":"更新于 %s","friends_feed.friend_count":"%d 位友邻","friends_feed.active_count":"%d 位活跃","friends_feed.article_count":"%d 篇文章","friends_feed.unknown_author":"未知站点","friends_feed.date_unknown":"时间未知","guestbook.label":"留言板","guestbook.title":"留言板","guestbook.loading":"正在铺开留言墙…","guestbook.missing_config":"留言墙需要评论系统：请在主题配置中设置 comments: twikoo（并填写 envId）或 comments: artalk（并填写 server）。","guestbook.load_failed":"留言加载失败，请稍后再试。","guestbook.empty":"墙上还空着，来贴第一张留言吧！","guestbook.load_more":"展开更多留言","guestbook.total_count":"共 %d 条留言","guestbook.latest_note":"墙上展示最新 %d 条","guestbook.jump_to_comment":"查看留言","guestbook.sort_time":"查看最新","guestbook.sort_random":"随机排序","guestbook.anonymous":"匿名访客","guestbook.write_hint":"在下方留言，刷新后就会贴到墙上","post.scroll_to_comments":"跳转到评论区","post.previous":"上一篇","post.next":"下一篇","post.no_previous":"没有更早的文章了","post.no_next":"已经是最新的一篇","post.back_to_top":"返回顶部","post.related_posts":"相关文章","post.view_more":"查看更多","not_found.label":"页面走丢了","not_found.title":"找不到这个页面","not_found.text":"这个地址可能已经移动、删除，或者从未存在。","not_found.home":"返回首页","not_found.search":"搜索文章","search.placeholder":"输入关键词，按 Esc 关闭","search.empty":"输入关键词后显示匹配的文章","search.loading":"正在加载搜索索引…","search.load_failed":"搜索索引加载失败，请重新打开搜索重试","search.no_result":"没有找到与 \"%s\" 相关的文章","search.close":"关闭搜索","code.copy":"复制代码","code.collapse":"折叠代码","code.expand":"展开代码","heading.anchor":"链接到此节: %s","head.tag":"标签：%s","head.category":"分类：%s","head.archive":"归档","head.archive_with_date":"归档：%s","head.page_number":"第 %d 页","navigation.primary":"主导航","navigation.mobile":"移动端导航","navigation.brand_home":"FlatPaper 首页","navigation.brand_menu":"打开站点导航","navigation.open_sidebar":"打开侧边栏","navigation.close_sidebar":"关闭侧边栏","navigation.sidebar":"侧边栏","navigation.sidebar_tools":"侧边栏工具","navigation.site_links":"站点链接","navigation.site_info":"站点信息","colors.choose_theme_color":"选择主题色","colors.theme_color":"主题色","colors.toggle_color_mode":"切换颜色模式","colors.green":"绿色","colors.purple":"紫色","colors.pink":"粉色","colors.sakura":"樱花粉","colors.blue":"蓝色","colors.orange":"橙色","colors.black":"黑色","profile.default_bio":"热爱生活，热爱代码，喜欢分享技术与生活中的点滴。","profile.email_copied":"邮箱已复制","welcome.cta":"开始阅读","welcome.title":"欢迎来到 FlatPaper","welcome.text":"一个专注于内容与阅读体验的博客主题。","home_hero.label":"首页开屏","home_hero.enter":"开始阅读","home_hero.note":"今日","home_hero.default_subtitle":"日常记录","home_hero.nav_links":"开屏导航","home_hero.profile_links":"个人链接","home_hero.tools":"开屏工具","home_hero.shuffle_stickers":"打乱贴纸位置","home_hero.link":"链接","home_hero.sticker_image":"贴纸图片","home_hero.visit_confirm":"要访问 %s 吗？","home_hero.visit":"访问","home_hero.cancel":"取消","toc.title":"文章目录","toc.empty":"目录会根据文章标题自动生成。","toc.expand_all":"展开全部目录","toc.collapse_all":"收起全部目录","sidebar.hot_tags":"热门标签","sidebar.latest_posts":"最新文章"};
+  </script>
+  
+<script src="/js/main.js"></script>
+
+  
+  <script src="/js/twojian-ui.js" defer></script>
+  
+</body>
+</html>

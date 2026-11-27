@@ -1,0 +1,1297 @@
+<!doctype html>
+
+<html lang="zh-CN" data-fancybox-enabled="1">
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f3e9" data-flatpaper-theme-color>
+
+<title>lorena的小博客</title>
+<meta name="description" content="P7 · 3.1 ViT 与其变种 —— 学习笔记一、视频信息与定位 项目 内容 稿件 BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程） 分P P7 &#x2F; 第 7 讲 标题 3.1 ViT 与其变种 时长 8:25（505 秒） UP主 AI应用开发- 关键论文 Dosovitskiy A, Beyer L, Kolesniko...">
+<meta property="og:type" content="article">
+<meta property="og:title" content="lorena的小博客">
+<meta property="og:url" content="https://liurui2004.github.io/2026/11/27/p7-vision-transformer/">
+<meta property="og:site_name" content="lorena的小博客">
+<meta property="og:description" content="P7 · 3.1 ViT 与其变种 —— 学习笔记一、视频信息与定位 项目 内容 稿件 BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程） 分P P7 &#x2F; 第 7 讲 标题 3.1 ViT 与其变种 时长 8:25（505 秒） UP主 AI应用开发- 关键论文 Dosovitskiy A, Beyer L, Kolesniko...">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p7-vision-transformer/P7_40.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p7-vision-transformer/P7_130.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p7-vision-transformer/P7_235.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p7-vision-transformer/P7_300.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p7-vision-transformer/P7_400.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/27/p7-vision-transformer/P7_460.png">
+<meta property="article:published_time" content="2026-11-27T05:31:02.870Z">
+<meta property="article:modified_time" content="2026-11-27T05:31:06.827Z">
+<meta property="article:author" content="lorena">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liurui2004.github.io/2026/11/27/p7-vision-transformer/P7_40.png">
+<link rel="canonical" href="https://liurui2004.github.io/2026/11/27/p7-vision-transformer/">
+
+<link rel="icon" href="/images/favicon.png" type="image/png">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"","name":"lorena的小博客","description":"P7 · 3.1 ViT 与其变种 —— 学习笔记一、视频信息与定位 项目 内容 稿件 BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程） 分P P7 &#x2F; 第 7 讲 标题 3.1 ViT 与其变种 时长 8:25（505 秒） UP主 AI应用开发- 关键论文 Dosovitskiy A, Beyer L, Kolesniko...","url":"https://liurui2004.github.io/2026/11/27/p7-vision-transformer/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/11/27/p7-vision-transformer/","datePublished":"2026-11-27T05:31:02.870Z","dateModified":"2026-11-27T05:31:06.827Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"}}</script>
+
+<script>
+  (function () {
+    var accents = { orange: 1, purple: 1, sakura: 1, blue: 1, pink: 1, green: 1, black: 1 };
+    var match = document.cookie.match(/(?:^|;\s*)flatpaper-accent=([^;]+)/);
+    var accent = 'green';
+    if (match) {
+      try { accent = decodeURIComponent(match[1]); } catch (e) {}
+    }
+    if (!accents[accent]) accent = 'green';
+    document.documentElement.setAttribute('data-accent', accent);
+    try {
+      if (localStorage.getItem('flatpaper-mode') === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+      }
+    } catch (e) {}
+  })();
+</script>
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css">
+<script defer src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+
+
+  
+  <link rel="stylesheet" href="/css/twojian-style.css?v=5">
+  
+<meta name="generator" content="Hexo 6.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body
+  class="is-post tape-disabled tag-style-tape bg-style-default"
+  data-default-accent="green"
+  data-code-theme="simple"
+  data-note-style="sticky"
+  data-note-icons="on"
+  data-button-style="circle"
+  data-strong-accent="on"
+>
+  
+    <div class="page-grain"></div>
+  
+  <svg width="0" height="0" style="position:absolute;z-index:-1;" aria-hidden="true">
+    <defs>
+      <filter id="paper-edge" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+  
+  <header class="site-header">
+  
+  <button class="icon-button js-sidebar-toggle sidebar-toggle" type="button" aria-label="打开侧边栏" aria-controls="paper-sidebar-drawer" aria-expanded="false">
+    
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-menu"></use></svg>
+
+  </button>
+
+  <div class="brand">
+    <div class="brand-mark-wrapper">
+      
+        <a class="brand-mark" href="/" aria-label="FlatPaper 首页">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-layout-grid"></use></svg>
+
+        </a>
+      
+    </div>
+    <a class="brand-text" href="/">lorena的小博客</a>
+  </div>
+
+  <nav class="site-nav" aria-label="主导航">
+    
+      
+        <a class="site-nav-link " href="/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+          <span>首页</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/categories/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+          <span>分类</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/tags/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+          <span>标签</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/archives/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+          <span>归档</span>
+        </a>
+      
+    
+  </nav>
+
+  <div class="header-tools">
+    <button class="icon-button js-search-open" type="button" aria-label="搜索文章">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+    </button>
+    <div class="accent-picker">
+      <button class="icon-button accent-toggle" type="button" aria-label="选择主题色" title="选择主题色" aria-haspopup="true" aria-expanded="false" aria-controls="accent-menu">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-palette flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-palette"></use></svg>
+
+      </button>
+      <div class="accent-menu" id="accent-menu" role="menu" aria-label="主题色">
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="橙色" aria-checked="false" data-accent-option="orange">
+          <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="紫色" aria-checked="false" data-accent-option="purple">
+          <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="樱花粉" aria-checked="false" data-accent-option="sakura">
+          <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="蓝色" aria-checked="false" data-accent-option="blue">
+          <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="粉色" aria-checked="false" data-accent-option="pink">
+          <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="绿色" aria-checked="false" data-accent-option="green">
+          <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="黑色" aria-checked="false" data-accent-option="black">
+          <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+    <button class="theme-toggle" type="button" aria-label="切换颜色模式">
+      <span class="theme-icon theme-icon--sun">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-sun"></use></svg>
+</span>
+      <span class="theme-icon theme-icon--moon">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-moon"></use></svg>
+</span>
+    </button>
+  </div>
+</header>
+
+
+  
+  <main class="paper-shell paper-shell--article">
+    
+
+<aside id="paper-sidebar-drawer" class="paper-sidebar paper-sidebar--right" aria-label="侧边栏">
+  <div class="drawer-toolbar" aria-label="侧边栏工具">
+    <div class="drawer-accent-options" role="group" aria-label="主题色">
+      <button type="button" class="accent-option" aria-label="橙色" aria-pressed="false" data-accent-option="orange">
+        <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="紫色" aria-pressed="false" data-accent-option="purple">
+        <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="樱花粉" aria-pressed="false" data-accent-option="sakura">
+        <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="蓝色" aria-pressed="false" data-accent-option="blue">
+        <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="粉色" aria-pressed="false" data-accent-option="pink">
+        <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="绿色" aria-pressed="false" data-accent-option="green">
+        <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="黑色" aria-pressed="false" data-accent-option="black">
+        <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+      </button>
+    </div>
+    <button class="icon-button drawer-close js-sidebar-close" type="button" aria-label="关闭侧边栏">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+    </button>
+  </div>
+
+  <section class="side-card nav-card">
+    <nav class="site-nav-drawer" aria-label="移动端导航">
+      
+        
+          <a class="" href="/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+            <span>首页</span>
+          </a>
+        
+      
+        
+          <a class="" href="/categories/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+            <span>分类</span>
+          </a>
+        
+      
+        
+          <a class="" href="/tags/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+            <span>标签</span>
+          </a>
+        
+      
+        
+          <a class="" href="/archives/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+            <span>归档</span>
+          </a>
+        
+      
+    </nav>
+  </section>
+
+  <section class="side-card profile-card">
+    
+      <div class="avatar avatar--image avatar--circle">
+        <img src="/images/avatar.jpg" alt="lorena" loading="lazy" referrerpolicy="no-referrer">
+      </div>
+    
+    <h3>lorena</h3>
+    <p class="profile-role">isfj 小女孩 · 懒惰但上进</p>
+    <p>目标成为estj的isfj小女孩，持续学习新知识中....</p>
+    
+    <div class="socials">
+      
+        <a href="https://github.com/LIURUI2004" target="_blank" rel="noopener" aria-label="GitHub" data-tooltip="GitHub">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 496 512" fill="currentColor" class="lucide lucide-github flatpaper-icon flatpaper-icon--fa-brands" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-fa-brands-github"></use></svg>
+
+          
+        </a>
+      
+        <a href="mailto:liurui20041008@gmail.com" target="_blank" rel="noopener" aria-label="Email" data-tooltip="Email">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-mail"></use></svg>
+
+          
+        </a>
+      
+        <a href="https://www.xiaohongshu.com/user/profile/66c9fef3000000001d0231f5" target="_blank" rel="noopener" aria-label="小红书" data-tooltip="小红书主页">
+          
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" class="lucide lucide-custom" aria-hidden="true"><path d="M22.405 9.879c.002.016.01.02.07.019h.725a.797.797 0 0 0 .78-.972.794.794 0 0 0-.884-.618.795.795 0 0 0-.692.794c0 .101-.002.666.001.777zm-11.509 4.808c-.203.001-1.353.004-1.685.003a2.528 2.528 0 0 1-.766-.126.025.025 0 0 0-.03.014L7.7 16.127a.025.025 0 0 0 .01.032c.111.06.336.124.495.124.66.01 1.32.002 1.981 0 .01 0 .02-.006.023-.015l.712-1.545a.025.025 0 0 0-.024-.036zM.477 9.91c-.071 0-.076.002-.076.01a.834.834 0 0 0-.01.08c-.027.397-.038.495-.234 3.06-.012.24-.034.389-.135.607-.026.057-.033.042.003.112.046.092.681 1.523.787 1.74.008.015.011.02.017.02.008 0 .033-.026.047-.044.147-.187.268-.391.371-.606.306-.635.44-1.325.486-1.706.014-.11.021-.22.03-.33l.204-2.616.022-.293c.003-.029 0-.033-.03-.034zm7.203 3.757a1.427 1.427 0 0 1-.135-.607c-.004-.084-.031-.39-.235-3.06a.443.443 0 0 0-.01-.082c-.004-.011-.052-.008-.076-.008h-1.48c-.03.001-.034.005-.03.034l.021.293c.076.982.153 1.964.233 2.946.05.4.186 1.085.487 1.706.103.215.223.419.37.606.015.018.037.051.048.049.02-.003.742-1.642.804-1.765.036-.07.03-.055.003-.112zm3.861-.913h-.872a.126.126 0 0 1-.116-.178l1.178-2.625a.025.025 0 0 0-.023-.035l-1.318-.003a.148.148 0 0 1-.135-.21l.876-1.954a.025.025 0 0 0-.023-.035h-1.56c-.01 0-.02.006-.024.015l-.926 2.068c-.085.169-.314.634-.399.938a.534.534 0 0 0-.02.191.46.46 0 0 0 .23.378.981.981 0 0 0 .46.119h.59c.041 0-.688 1.482-.834 1.972a.53.53 0 0 0-.023.172.465.465 0 0 0 .23.398c.15.092.342.12.475.12l1.66-.001c.01 0 .02-.006.023-.015l.575-1.28a.025.025 0 0 0-.024-.035zm-6.93-4.937H3.1a.032.032 0 0 0-.034.033c0 1.048-.01 2.795-.01 6.829 0 .288-.269.262-.28.262h-.74c-.04.001-.044.004-.04.047.001.037.465 1.064.555 1.263.01.02.03.033.051.033.157.003.767.009.938-.014.153-.02.3-.06.438-.132.3-.156.49-.419.595-.765.052-.172.075-.353.075-.533.002-2.33 0-4.66-.007-6.991a.032.032 0 0 0-.032-.032zm11.784 6.896c0-.014-.01-.021-.024-.022h-1.465c-.048-.001-.049-.002-.05-.049v-4.66c0-.072-.005-.07.07-.07h.863c.08 0 .075.004.075-.074V8.393c0-.082.006-.076-.08-.076h-3.5c-.064 0-.075-.006-.075.073v1.445c0 .083-.006.077.08.077h.854c.075 0 .07-.004.07.07v4.624c0 .095.008.084-.085.084-.37 0-1.11-.002-1.304 0-.048.001-.06.03-.06.03l-.697 1.519s-.014.025-.008.036c.006.01.013.008.058.008 1.748.003 3.495.002 5.243.002.03-.001.034-.006.035-.033v-1.539zm4.177-3.43c0 .013-.007.023-.02.024-.346.006-.692.004-1.037.004-.014-.002-.022-.01-.022-.024-.005-.434-.007-.869-.01-1.303 0-.072-.006-.071.07-.07l.733-.003c.041 0 .081.002.12.015.093.025.16.107.165.204.006.431.002 1.153.001 1.153zm2.67.244a1.953 1.953 0 0 0-.883-.222h-.18c-.04-.001-.04-.003-.042-.04V10.21c0-.132-.007-.263-.025-.394a1.823 1.823 0 0 0-.153-.53 1.533 1.533 0 0 0-.677-.71 2.167 2.167 0 0 0-1-.258c-.153-.003-.567 0-.72 0-.07 0-.068.004-.068-.065V7.76c0-.031-.01-.041-.046-.039H17.93s-.016 0-.023.007c-.006.006-.008.012-.008.023v.546c-.008.036-.057.015-.082.022h-.95c-.022.002-.028.008-.03.032v1.481c0 .09-.004.082.082.082h.913c.082 0 .072.128.072.128V11.19s.003.117-.06.117h-1.482c-.068 0-.06.082-.06.082v1.445s-.01.068.064.068h1.457c.082 0 .076-.006.076.079v3.225c0 .088-.007.081.082.081h1.43c.09 0 .082.007.082-.08v-3.27c0-.029.006-.035.033-.035l2.323-.003c.098 0 .191.02.28.061a.46.46 0 0 1 .274.407c.008.395.003.79.003 1.185 0 .259-.107.367-.33.367h-1.218c-.023.002-.029.008-.028.033.184.437.374.871.57 1.303a.045.045 0 0 0 .04.026c.17.005.34.002.51.003.15-.002.517.004.666-.01a2.03 2.03 0 0 0 .408-.075c.59-.18.975-.698.976-1.313v-1.981c0-.128-.01-.254-.034-.38 0 .078-.029-.641-.724-.998z"/></svg>
+          
+        </a>
+      
+      
+        
+        
+        <a href="/atom.xml" aria-label="RSS feed" data-tooltip="RSS feed">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rss flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-rss"></use></svg>
+
+        </a>
+      
+    </div>
+  </section>
+
+  
+
+  
+    <div class="post-sticky-stack">
+      <section class="side-card toc-card">
+        <header class="toc-card__head">
+          <h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table-of-contents flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-table-of-contents"></use></svg>
+文章目录</h2>
+          <button type="button" class="toc-toggle-all" data-action="toggle-toc" aria-pressed="false" aria-label="展开全部目录" title="展开全部目录">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-chevron-down"></use></svg>
+
+          </button>
+        </header>
+        <div class="toc-content">
+          
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E8%A7%86%E9%A2%91%E4%BF%A1%E6%81%AF%E4%B8%8E%E5%AE%9A%E4%BD%8D"><span class="toc-text">一、视频信息与定位</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B3%E4%BA%8E%E7%B4%A0%E6%9D%90%E6%9D%A5%E6%BA%90%E7%9A%84%E9%87%8D%E8%A6%81%E8%AF%B4%E6%98%8E"><span class="toc-text">关于素材来源的重要说明</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AE%B2%E6%8E%88%E8%84%89%E7%BB%9C%EF%BC%88%E4%BE%9D-B%E7%AB%99-AI-%E6%80%BB%E7%BB%93%E5%A4%A7%E7%BA%B2%E7%9A%84%E6%97%B6%E9%97%B4%E7%82%B9%EF%BC%89"><span class="toc-text">讲授脉络（依 B站 AI 总结大纲的时间点）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%85%88%E8%A7%A3%E5%86%B3%E4%B8%80%E4%B8%AA%E5%89%8D%E7%BD%AE%E7%96%91%E9%97%AE%EF%BC%9ACV-%E7%9A%84%E5%A4%A9%E4%B8%8B%E5%8E%9F%E6%9C%AC%E6%98%AF-CNN-%E7%9A%84"><span class="toc-text">二、先解决一个前置疑问：CV 的天下原本是 CNN 的</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81ViT-%E7%9A%84%E5%AE%8C%E6%95%B4%E6%B5%81%E7%A8%8B%EF%BC%9A%E5%85%AD%E6%AD%A5%E8%B5%B0%E5%AE%8C%E4%B8%80%E5%BC%A0%E5%9B%BE"><span class="toc-text">三、ViT 的完整流程：六步走完一张图</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E4%BB%8E-224%C3%97224-patch16-%E6%8E%A8%E5%AF%BC%E5%BA%8F%E5%88%97%E9%95%BF%E5%BA%A6%E4%B8%8E%E7%BB%B4%E5%BA%A6%EF%BC%88%E8%BF%99%E4%B8%80%E6%AD%A5%E5%BF%85%E9%A1%BB%E8%87%AA%E5%B7%B1%E4%BC%9A%E7%AE%97%EF%BC%89"><span class="toc-text">四、从 224×224 &#x2F; patch16 推导序列长度与维度（这一步必须自己会算）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E5%BA%8F%E5%88%97%E9%95%BF%E5%BA%A6-N"><span class="toc-text">4.1 序列长度 $N$</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E9%80%90%E5%B1%82%E7%BB%B4%E5%BA%A6"><span class="toc-text">4.2 逐层维度</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-%E5%8F%82%E6%95%B0%E9%87%8F%E6%89%8B%E7%AE%97%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E6%98%AF-86M"><span class="toc-text">4.3 参数量手算：为什么是 86M</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-4-%E8%AE%A1%E7%AE%97%E9%87%8F%EF%BC%88FLOPs%EF%BC%89%EF%BC%9A-N-%E7%9A%84%E4%BA%8C%E6%AC%A1%E9%A1%B9%E6%89%8D%E6%98%AF%E7%9C%9F%E6%88%90%E6%9C%AC"><span class="toc-text">4.4 计算量（FLOPs）：$N$ 的二次项才是真成本</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E4%B8%89%E4%B8%AA%E5%85%B3%E9%94%AE%E7%BB%84%E4%BB%B6%EF%BC%8C%E9%80%90%E4%B8%AA%E6%8B%86%E5%BC%80%E7%9C%8B"><span class="toc-text">五、三个关键组件，逐个拆开看</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-Patch-Embedding%EF%BC%9A%E6%9C%AC%E8%B4%A8%E6%98%AF%E4%B8%80%E4%B8%AA-stride-kernel-%E7%9A%84%E5%8D%B7%E7%A7%AF"><span class="toc-text">5.1 Patch Embedding：本质是一个 stride &#x3D; kernel 的卷积</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-Position-Embedding%EF%BC%9ATransformer-%E6%9C%AC%E8%BA%AB%E4%B8%8D%E7%9F%A5%E9%81%93%E2%80%9D%E8%B0%81%E5%9C%A8%E8%B0%81%E6%97%81%E8%BE%B9%E2%80%9D"><span class="toc-text">5.2 Position Embedding：Transformer 本身不知道”谁在谁旁边”</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-CLS-Token%EF%BC%9A%E6%8A%8A%E2%80%9D%E6%95%B4%E5%BC%A0%E5%9B%BE%E7%9A%84%E6%91%98%E8%A6%81%E2%80%9D%E6%89%98%E4%BB%98%E7%BB%99%E4%B8%80%E4%B8%AA%E4%BD%8D%E7%BD%AE"><span class="toc-text">5.3 [CLS] Token：把”整张图的摘要”托付给一个位置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-4-Transformer-Encoder-%E5%86%85%E9%83%A8%EF%BC%9APre-LN-%E4%B8%8E%E4%B8%A4%E5%A4%84%E6%AE%8B%E5%B7%AE"><span class="toc-text">5.4 Transformer Encoder 内部：Pre-LN 与两处残差</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E6%A8%A1%E5%9E%8B%E8%A7%84%E6%A8%A1%E4%B8%8E%E5%8F%82%E6%95%B0%E5%AF%B9%E7%85%A7%E8%A1%A8%EF%BC%88%E6%9C%AC%E8%8A%82%E5%90%8E%E5%8D%8A%E6%AE%B5%E7%9A%84%E9%87%8D%E7%82%B9%EF%BC%89"><span class="toc-text">六、模型规模与参数对照表（本节后半段的重点）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E4%B8%89%E6%A1%A3%E4%B8%BB%E5%8A%9B%E8%A7%84%E6%A8%A1%EF%BC%88%E8%AE%BA%E6%96%87%E8%A1%A8-1-%E5%8E%9F%E6%96%87%E6%95%B0%E5%80%BC%EF%BC%89"><span class="toc-text">6.1 三档主力规模（论文表 1 原文数值）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E6%9B%B4%E7%BB%86%E7%9A%84%E9%85%8D%E7%BD%AE%E4%B8%8E%E7%AE%97%E5%8A%9B%EF%BC%88%E8%AE%BA%E6%96%87%E8%A1%A8-2-%E5%8E%9F%E6%96%87%E6%95%B0%E5%80%BC%EF%BC%89"><span class="toc-text">6.2 更细的配置与算力（论文表 2 原文数值）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E2%80%9C%E5%AE%9E%E8%B7%B5%E9%87%8C%E5%88%B0%E5%BA%95%E8%AF%A5%E9%80%89%E5%93%AA%E4%B8%AA%E2%80%9D%E2%80%94%E2%80%94%E8%BF%99%E4%B8%80%E8%8A%82%E6%9C%80%E5%AE%9E%E7%94%A8%E7%9A%84%E4%B8%80%E5%8F%A5%E8%AF%9D"><span class="toc-text">6.3 “实践里到底该选哪个”——这一节最实用的一句话</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E2%80%9D%E5%8F%98%E7%A7%8D%E2%80%9D%E5%88%B0%E5%BA%95%E6%8C%87%E4%BB%80%E4%B9%88%EF%BC%9A%E5%9B%9B%E4%B8%AA%E6%96%B9%E5%90%91%E7%9A%84%E6%BC%94%E5%8C%96"><span class="toc-text">七、”变种”到底指什么：四个方向的演化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%96%B9%E5%90%91%E4%B8%80%EF%BC%9A%E8%A7%84%E6%A8%A1%E4%B8%8E%E5%88%86%E8%BE%A8%E7%8E%87%E5%8F%98%E7%A7%8D%EF%BC%88%E6%9C%AC%E8%8A%82%E4%B8%BB%E4%BD%93%EF%BC%89"><span class="toc-text">方向一：规模与分辨率变种（本节主体）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%96%B9%E5%90%91%E4%BA%8C%EF%BC%9A%E6%95%B0%E6%8D%AE%E6%95%88%E7%8E%87%E5%8F%98%E7%A7%8D"><span class="toc-text">方向二：数据效率变种</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%96%B9%E5%90%91%E4%B8%89%EF%BC%9A%E7%BB%93%E6%9E%84%E6%95%88%E7%8E%87%E5%8F%98%E7%A7%8D%EF%BC%88%E7%A0%8D-O-N-2-%EF%BC%89"><span class="toc-text">方向三：结构效率变种（砍 $O(N^2)$）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%96%B9%E5%90%91%E5%9B%9B%EF%BC%9A%E9%A2%84%E8%AE%AD%E7%BB%83%E6%96%B9%E5%BC%8F%E5%8F%98%E7%A7%8D%EF%BC%88%E7%AC%AC%E4%B8%89%E7%AB%A0%E5%90%8E%E5%8D%8A%E7%A8%8B%E7%9A%84%E4%B8%BB%E7%BA%BF%EF%BC%89"><span class="toc-text">方向四：预训练方式变种（第三章后半程的主线）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E6%9C%80%E5%B0%8F%E5%8F%AF%E8%BF%90%E8%A1%8C%E7%9A%84-ViT-%E5%AE%9E%E7%8E%B0%EF%BC%88%E5%B8%A6%E6%B3%A8%E9%87%8A%EF%BC%89"><span class="toc-text">八、最小可运行的 ViT 实现（带注释）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E6%98%93%E6%B7%B7%E6%B7%86%E7%82%B9%E4%B8%8E%E9%AB%98%E9%A2%91%E8%BF%BD%E9%97%AE"><span class="toc-text">九、易混淆点与高频追问</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E6%9C%AC%E8%8A%82%E5%9C%A8%E6%95%B4%E9%97%A8%E8%AF%BE%E4%B8%AD%E7%9A%84%E4%BD%8D%E7%BD%AE%E4%B8%8E%E8%A1%94%E6%8E%A5"><span class="toc-text">十、本节在整门课中的位置与衔接</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%B8%80%E3%80%81%E6%9C%AC%E8%AE%B2%E4%B8%80%E5%8F%A5%E8%AF%9D%E6%80%BB%E7%BB%93"><span class="toc-text">十一、本讲一句话总结</span></a></li></ol>
+          
+        </div>
+      </section>
+      
+
+
+    </div>
+  
+
+  
+
+</aside>
+
+    <section class="paper-main">
+      
+
+<div class="article-tape-wrap">
+<span class="tape tape--top-right" aria-hidden="true"></span>
+<article class="article-paper">
+  
+  <header class="article-header">
+    
+    <h1></h1>
+    <div class="meta-line meta-line--article">
+      <span class="meta-date">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-calendar"></use></svg>
+2026-11-27</span>
+      
+    </div>
+  </header>
+
+  
+
+
+  <div class="article-content">
+    <h1 id="P7-·-3-1-ViT-与其变种-——-学习笔记"><a href="#P7-·-3-1-ViT-与其变种-——-学习笔记" class="headerlink" title="P7 · 3.1 ViT 与其变种 —— 学习笔记"></a>P7 · 3.1 ViT 与其变种 —— 学习笔记</h1><h2 id="一、视频信息与定位"><a href="#一、视频信息与定位" class="headerlink" title="一、视频信息与定位"></a>一、视频信息与定位</h2><table>
+<thead>
+<tr>
+<th>项目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>稿件</td>
+<td>BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程）</td>
+</tr>
+<tr>
+<td>分P</td>
+<td>P7 &#x2F; 第 7 讲</td>
+</tr>
+<tr>
+<td>标题</td>
+<td>3.1 ViT 与其变种</td>
+</tr>
+<tr>
+<td>时长</td>
+<td>8:25（505 秒）</td>
+</tr>
+<tr>
+<td>UP主</td>
+<td>AI应用开发-</td>
+</tr>
+<tr>
+<td>关键论文</td>
+<td>Dosovitskiy A, Beyer L, Kolesnikov A, et al. <em>An Image is Worth 16×16 Words: Transformers for Image Recognition at Scale</em>. ICLR 2021（论文题目原文出现在本分P 的 PPT 页脚，见下图 1）</td>
+</tr>
+<tr>
+<td>本节定位</td>
+<td><strong>第三章「视觉大模型」的开篇</strong>。第二章（P2–P6）讲的是”如何不用标签把表征学出来”的三条技术路线（前置任务、对比学习、掩码重建），而第三章开始讲”<strong>用什么样的网络结构来承载这些表征</strong>“。ViT 就是这一章的地基：P8 的 MoCo v3 是”ViT + 对比学习”，P9 的 DINO 是”ViT + 自蒸馏”，P11 的 MAE 是”ViT + 掩码重建”。<strong>后面三个模型全是”ViT + 某一种自监督范式”，所以 ViT 必须先吃透。</strong></td>
+</tr>
+</tbody></table>
+<h3 id="关于素材来源的重要说明"><a href="#关于素材来源的重要说明" class="headerlink" title="关于素材来源的重要说明"></a>关于素材来源的重要说明</h3><p>本分P 的 AI 字幕<strong>不可用</strong>（B站接口返回 <code>lan: null</code>，该分P 当前没有字幕资源）。因此本笔记的内容来源为三类，均在文中逐处标注：</p>
+<ol>
+<li><strong>PPT 画面原文</strong>（6 张定点截图，经逐张转录，架构模块名、表格数值均直接来自画面）；</li>
+<li><strong>B站官方 AI 视频总结及其大纲时间点</strong>（作为讲授顺序的骨架）；</li>
+<li><strong>ViT 论文原文的公式与推导</strong>（补全画面里讲师口头带过但 PPT 上没展开的数学细节）。</li>
+</ol>
+<p>凡是第 3 类的补充，均会明确写”论文&#x2F;推导补充”，不会伪装成讲师原话。</p>
+<h3 id="讲授脉络（依-B站-AI-总结大纲的时间点）"><a href="#讲授脉络（依-B站-AI-总结大纲的时间点）" class="headerlink" title="讲授脉络（依 B站 AI 总结大纲的时间点）"></a>讲授脉络（依 B站 AI 总结大纲的时间点）</h3><table>
+<thead>
+<tr>
+<th>时间点</th>
+<th>大纲条目（原文）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>00:37</td>
+<td>ViT 通过图像分块与位置编码构建视觉特征输入</td>
+</tr>
+<tr>
+<td>02:08</td>
+<td>模块包含多头注意力与 MLP 层实现特征交互更新</td>
+</tr>
+<tr>
+<td>03:51</td>
+<td>Class Token 提取用于分类，其余 Patch 特征被舍弃</td>
+</tr>
+<tr>
+<td>04:14</td>
+<td>ViT 不同规模模型参数量与结构差异显著</td>
+</tr>
+<tr>
+<td>05:07</td>
+<td>实验常用 ViT Base 适配显卡限制，避免过度追求大模型</td>
+</tr>
+<tr>
+<td>07:37</td>
+<td>ViT-G 达 20 亿参数，成为 CV 领域大型模型基准参考</td>
+</tr>
+</tbody></table>
+<p>可以看出这一节的教学节奏是**”一张架构图讲到底，再讲一张参数表”<strong>：前 4 分钟只讲架构（分块 → 位置编码 → Encoder → CLS token 分类），后 4 分钟全部在讲规模（Base &#x2F; Large &#x2F; Huge &#x2F; Giant 的参数量、层数、头数，以及”实践里该选哪个”）。这也正是本节标题”ViT <strong>与其变种</strong>“的含义：变种的第一层含义就是</strong>规模变种**（B&#x2F;L&#x2F;H&#x2F;G、patch 8&#x2F;16&#x2F;32），第二层含义才是结构变种（DeiT、Swin、MAE 等）。</p>
+<hr>
+<h2 id="二、先解决一个前置疑问：CV-的天下原本是-CNN-的"><a href="#二、先解决一个前置疑问：CV-的天下原本是-CNN-的" class="headerlink" title="二、先解决一个前置疑问：CV 的天下原本是 CNN 的"></a>二、先解决一个前置疑问：CV 的天下原本是 CNN 的</h2><p>要理解 ViT 为什么值得单开一节，得先回到 2020 年之前的常识：<strong>图像任务默认用 CNN</strong>。</p>
+<p>CNN 有两条与图像天然契合的”归纳偏置（inductive bias）”：</p>
+<table>
+<thead>
+<tr>
+<th>归纳偏置</th>
+<th>含义</th>
+<th>在 CNN 里的体现</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>局部性</strong>（locality）</td>
+<td>相邻像素才相关，远处像素关系弱</td>
+<td>3×3 &#x2F; 7×7 的小卷积核</td>
+</tr>
+<tr>
+<td><strong>平移等变性</strong>（translation equivariance）</td>
+<td>物体左移一格，特征图也左移一格</td>
+<td>权重共享 + 滑窗</td>
+</tr>
+</tbody></table>
+<p>这两条让 CNN 在数据有限时极其高效——它不需要从数据里学”相邻像素应该相关”这件事，因为架构里已经写死了。</p>
+<p>而 Transformer 恰恰相反：<strong>它没有任何局部性假设</strong>。自注意力让序列里任意两个位置直接交互，位置信息只能靠额外的位置编码注入。在 NLP 里这是优势（词序关系复杂、长距离依赖多），放到图像上就是”把先验丢了”。</p>
+<p>ViT 论文的赌注是：<strong>当数据量足够大时，归纳偏置反而是束缚</strong>。手工写死的局部性会限制模型去发现长距离、全局性的规律；而只要给它 JFT-300M 这个量级（3 亿张图）的预训练数据，让 Transformer 从零学出”哪里该看、哪里该连”，效果就能反超最好的 CNN。</p>
+<p><strong>代价</strong>是算力：自注意力的复杂度是 $O(N^2)$，$N$ 是序列长度。图像如果按像素当 token，224×224 &#x3D; 50176 个 token，$N^2 \approx 2.5\times10^9$，完全不可行。所以 ViT 的第一个工程决策就是——<strong>不按像素切，按 patch 切</strong>。这就是下一节的全部起点。</p>
+<hr>
+<h2 id="三、ViT-的完整流程：六步走完一张图"><a href="#三、ViT-的完整流程：六步走完一张图" class="headerlink" title="三、ViT 的完整流程：六步走完一张图"></a>三、ViT 的完整流程：六步走完一张图</h2><p><img src="/2026/11/27/p7-vision-transformer/P7_40.png" alt="ViT 架构总图"></p>
+<p><strong>图 1</strong>：<code>P7_40.png</code>（00:40）。PPT 页标题为 “Vision Transformer (ViT)”，页脚标注论文出处 <em>An image is worth 16x16 words: Transformers for image recognition at scale</em>，Dosovitskiy et al., ICLR 2021。画面从右到左分别是：右侧的 Transformer Encoder 展开图（标注 <code>Norm</code> &#x2F; <code>Multi-Head Attention</code> &#x2F; <code>Norm</code> &#x2F; <code>MLP</code> 以及两处 Add &amp; Norm 残差支路，外层标注 <code>L x</code>），中间的 <code>Patch + Position Embedding</code>（注明 <em>Extra learnable [class] embedding</em>），左侧的 <code>Linear Projection of Flattened Patches</code> 与输入图像，最右端是 <code>MLP Head</code> 与分类输出 <code>Class (Bird, Ball, Car)</code>。</p>
+<p>ViT 论文标题里的 “16×16 words” 就是整篇文章的题眼：<strong>把 16×16 的图像块当成 NLP 里的一个”词”</strong>。于是”做图像分类”被改写成”读一句话做分类”，Transformer 那套成熟的东西可以原封不动搬过来。</p>
+<p>完整流程拆成六步（以 224×224 输入、16×16 patch、$D&#x3D;768$ 的 ViT-Base 为例）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">① 切块        x: (224, 224, 3)</span><br><span class="line">                 │  按 16×16 网格切，得 14×14 = 196 个 patch</span><br><span class="line">                 ▼</span><br><span class="line">             196 个 (16, 16, 3) 的小图</span><br><span class="line">                 │  每个展平成 16×16×3 = 768 维向量</span><br><span class="line">                 ▼</span><br><span class="line">② 线性投影     &#123;p_1, ..., p_196&#125;,  p_i ∈ R^768</span><br><span class="line">                 │  E ∈ R^&#123;768×768&#125;（可学习），逐 patch 做线性映射</span><br><span class="line">                 ▼</span><br><span class="line">             patch embedding: (196, 768)</span><br><span class="line">                 │</span><br><span class="line">③ 拼 [CLS]    在前面插入一个可学习的分类 token</span><br><span class="line">                 ▼</span><br><span class="line">             (197, 768)</span><br><span class="line">                 │</span><br><span class="line">④ 加位置编码   + 可学习的 1D position embedding, (197, 768)</span><br><span class="line">                 ▼</span><br><span class="line">             序列 z_0 ∈ R^&#123;197×768&#125;</span><br><span class="line">                 │</span><br><span class="line">⑤ Encoder×L   L=12 层，每层 = LN → MHSA → 残差 → LN → MLP → 残差</span><br><span class="line">                 ▼</span><br><span class="line">             序列 z_L ∈ R^&#123;197×768&#125;</span><br><span class="line">                 │  只取第 0 个位置（CLS 位）的输出，197 个里丢掉 196 个</span><br><span class="line">                 ▼</span><br><span class="line">⑥ 分类头      z_L[0] ∈ R^768 → LN → Linear(768, num_classes)</span><br><span class="line">                 ▼</span><br><span class="line">             类别 logits</span><br></pre></td></tr></table></figure>
+
+<p>对照 NLP 的 BERT，两者是同构的——这也是本节最好记的一张对照表：</p>
+<table>
+<thead>
+<tr>
+<th>环节</th>
+<th>BERT（NLP）</th>
+<th>ViT（CV）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>输入单元</td>
+<td>一个词（subword）</td>
+<td>一个 patch（16×16 像素块）</td>
+</tr>
+<tr>
+<td>词表 &#x2F; 嵌入</td>
+<td>Embedding 矩阵（30522 × 768）</td>
+<td>线性投影矩阵 $E$（768 × 768）</td>
+</tr>
+<tr>
+<td>序列长度</td>
+<td>句长，如 128</td>
+<td>196（14×14）</td>
+</tr>
+<tr>
+<td>起始 token</td>
+<td><code>[CLS]</code></td>
+<td><code>[CLS]</code>（画面写作 “Extra learnable [class] embedding”）</td>
+</tr>
+<tr>
+<td>位置信息</td>
+<td>可学习 position embedding</td>
+<td>可学习 position embedding</td>
+</tr>
+<tr>
+<td>主干</td>
+<td>Transformer Encoder × 12</td>
+<td>Transformer Encoder × 12</td>
+</tr>
+<tr>
+<td>输出用法</td>
+<td>取 <code>[CLS]</code> 做句分类</td>
+<td>取 <code>[CLS]</code> 做图分类</td>
+</tr>
+</tbody></table>
+<p><strong>一句话抓住本质</strong>：ViT &#x3D; 把图像”分词”，然后用一个标准 Transformer Encoder 处理，最后拿 <code>[CLS]</code> 位做分类。它没有为视觉设计任何新的模块，全部创新都在”如何把图像变成序列”以及”如何大规模预训练”上。</p>
+<hr>
+<h2 id="四、从-224×224-patch16-推导序列长度与维度（这一步必须自己会算）"><a href="#四、从-224×224-patch16-推导序列长度与维度（这一步必须自己会算）" class="headerlink" title="四、从 224×224 &#x2F; patch16 推导序列长度与维度（这一步必须自己会算）"></a>四、从 224×224 &#x2F; patch16 推导序列长度与维度（这一步必须自己会算）</h2><p>这一节是面试和读代码时最常被卡住的地方。下面把每一步的数字都拆开算，不只是给结论。</p>
+<h3 id="4-1-序列长度-N"><a href="#4-1-序列长度-N" class="headerlink" title="4.1 序列长度 $N$"></a>4.1 序列长度 $N$</h3><div class="math-display">
+$$
+\text{grid} = \frac{224}{16} = 14 \quad\Rightarrow\quad \text{patch 数} = 14 \times 14 = 196
+$$
+</div>
+
+<div class="math-display">
+$$
+N = 196 + 1 = 197 \quad(\text{196 个 patch} + \text{1 个 [CLS]})
+$$
+</div>
+
+<p><strong>易错点</strong>：很多人会把”196”和”197”混着说。准确表述是：<strong>patch 数 196，序列长度 197</strong>。代码里 <code>pos_embed</code> 的形状是 <code>(1, 197, 768)</code>，<code>num_patches = 196</code>，两者差 1 就是 <code>[CLS]</code>。</p>
+<p>如果换成别的 patch 大小（输入仍是 224）：</p>
+<table>
+<thead>
+<tr>
+<th>patch 大小</th>
+<th>grid</th>
+<th>patch 数</th>
+<th>序列长度 $N$</th>
+<th>patch 展平维度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>8×8</td>
+<td>28×28</td>
+<td>784</td>
+<td>785</td>
+<td>8×8×3 &#x3D; 192</td>
+</tr>
+<tr>
+<td>16×16</td>
+<td>14×14</td>
+<td>196</td>
+<td><strong>197</strong></td>
+<td>16×16×3 &#x3D; <strong>768</strong></td>
+</tr>
+<tr>
+<td>32×32</td>
+<td>7×7</td>
+<td>49</td>
+<td>50</td>
+<td>32×32×3 &#x3D; 3072</td>
+</tr>
+</tbody></table>
+<p><strong>注意最后两列的巧妙之处</strong>：patch&#x3D;16 时展平维度恰好是 768，正好等于 ViT-Base 的隐藏维度 $D$，投影矩阵 $E$ 是方阵；patch&#x3D;32 时展平维度 3072，投影矩阵是 $3072 \times 768$ 的”降维”矩阵，参数反而更多（2.36M vs 0.59M）。所以 patch 越大<strong>不一定</strong>越省参数，但一定大幅省算力（见 4.4）。</p>
+<h3 id="4-2-逐层维度"><a href="#4-2-逐层维度" class="headerlink" title="4.2 逐层维度"></a>4.2 逐层维度</h3><p>每一层 Transformer Block 内部（$D&#x3D;768$，头数 $h&#x3D;12$）：</p>
+<div class="math-display">
+$$
+d_{\text{head}} = \frac{D}{h} = \frac{768}{12} = 64
+$$
+</div>
+
+<table>
+<thead>
+<tr>
+<th>张量</th>
+<th>形状</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>输入序列</td>
+<td>$N \times D &#x3D; 197 \times 768$</td>
+<td>197 个 token，每个 768 维</td>
+</tr>
+<tr>
+<td>$W_q, W_k, W_v$ 各自</td>
+<td>$768 \times 768$</td>
+<td>总投影成 $197 \times 768$，再切成 12 头 × 64 维</td>
+</tr>
+<tr>
+<td>单头 $Q,K,V$</td>
+<td>$197 \times 64$</td>
+<td>每个头独立做注意力</td>
+</tr>
+<tr>
+<td>注意力打分矩阵</td>
+<td>$197 \times 197$</td>
+<td><strong>这就是 $O(N^2)$ 的来源</strong>，197² ≈ 3.88 万个元素</td>
+</tr>
+<tr>
+<td>多头拼接</td>
+<td>$197 \times 768$</td>
+<td>12 头 × 64 维再拼回</td>
+</tr>
+<tr>
+<td>$W_o$ 输出投影</td>
+<td>$768 \times 768$</td>
+<td></td>
+</tr>
+<tr>
+<td>MLP 第一层</td>
+<td>$768 \to 3072$</td>
+<td>4 倍扩张，ReLU&#x2F;GELU</td>
+</tr>
+<tr>
+<td>MLP 第二层</td>
+<td>$3072 \to 768$</td>
+<td>投影回原维度</td>
+</tr>
+</tbody></table>
+<h3 id="4-3-参数量手算：为什么是-86M"><a href="#4-3-参数量手算：为什么是-86M" class="headerlink" title="4.3 参数量手算：为什么是 86M"></a>4.3 参数量手算：为什么是 86M</h3><p>这是本节最值得动手推一遍的地方。<strong>单层参数量</strong>：</p>
+<div class="math-display">
+$$
+\underbrace{4D^2}_{\text{MHSA：}W_q,W_k,W_v,W_o} + \underbrace{8D^2}_{\text{MLP：}D{\times}4D + 4D{\times}D} = 12D^2
+$$
+</div>
+
+<p>代入 $D&#x3D;768$：</p>
+<div class="math-display">
+$$
+12 \times 768^2 = 12 \times 589{,}824 = 7{,}077{,}888 \approx 7.08\text{M}
+$$
+</div>
+
+<p>12 层：$12 \times 7.08\text{M} &#x3D; 84.93\text{M}$。再加上头部：</p>
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>参数量</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>12 × Block</td>
+<td>84.93 M</td>
+<td>$12 \times 12D^2$</td>
+</tr>
+<tr>
+<td>Patch Embedding 投影</td>
+<td>0.59 M</td>
+<td>$768 \times 768$（&#x3D; $3\times16\times16 \times 768$，此处两者相等）</td>
+</tr>
+<tr>
+<td><code>[CLS]</code> token</td>
+<td>768</td>
+<td></td>
+</tr>
+<tr>
+<td>Position Embedding</td>
+<td>0.15 M</td>
+<td>$197 \times 768 &#x3D; 151{,}296$</td>
+</tr>
+<tr>
+<td>两个 LayerNorm（每层）</td>
+<td>≈ 0.002 M</td>
+<td>可忽略</td>
+</tr>
+<tr>
+<td>最终 LN + 分类头</td>
+<td>≈ 0.77 M</td>
+<td>$768 \times 1000$</td>
+</tr>
+<tr>
+<td><strong>合计</strong></td>
+<td><strong>≈ 86.4 M</strong></td>
+<td>与论文表中 ViT-Base 的 <strong>86M</strong> 吻合</td>
+</tr>
+</tbody></table>
+<p><strong>这个手算的意义</strong>：从此看到任何一个 Transformer 的隐藏维度 $D$ 和层数 $L$，都能心算出参数量 $\approx 12LD^2$。比如 ViT-Large：$12 \times 24 \times 1024^2 &#x3D; 12 \times 24 \times 1{,}048{,}576 \approx 302\text{M}$，正好对上论文的 307M；ViT-Huge：$12 \times 32 \times 1280^2 \approx 629\text{M}$，对上 632M。<strong>参数量几乎完全由 $L$ 和 $D$ 决定，patch 大小和分辨率几乎不影响参数量</strong> —— 这也解释了一个常见疑惑：为什么 B&#x2F;16 和 B&#x2F;32 参数量都是 86M 左右。</p>
+<h3 id="4-4-计算量（FLOPs）：-N-的二次项才是真成本"><a href="#4-4-计算量（FLOPs）：-N-的二次项才是真成本" class="headerlink" title="4.4 计算量（FLOPs）：$N$ 的二次项才是真成本"></a>4.4 计算量（FLOPs）：$N$ 的二次项才是真成本</h3><p>每层 FLOPs 约：</p>
+<div class="math-display">
+$$
+\underbrace{4ND^2}_{\text{QKV+O 投影}} + \underbrace{2N^2D}_{\text{注意力矩阵乘}} + \underbrace{16ND^2}_{\text{MLP（}2\times N\times D \times 4D \times 2\text{）}}
+$$
+</div>
+
+<p>代 $N&#x3D;197$、$D&#x3D;768$：QKV 约 0.46G，注意力约 0.06G，MLP 约 1.86G，单层 ≈ 2.4 GFLOPs，12 层 ≈ <strong>17.6 GFLOPs</strong>——与论文表里 B&#x2F;16 在 224² 下的 17.6 GFLOPs 完全一致，这说明上面的公式抓对了。</p>
+<p>关键结论：<strong>当 $N$ 只有 197 时，二次项（0.06G）远小于线性项（2.3G），所以 ViT-B 还挺轻</strong>。但如果把分辨率提到 384²，$N$ 变成 $(384&#x2F;16)^2+1 &#x3D; 577$，二次项涨 8.6 倍；若 patch 缩到 8，$N&#x3D;785$，二次项涨 16 倍。<strong>“ViT 贵”贵在这里，后面 Swin 的窗口注意力、MAE 的只算可见 patch，都是为了砍这个 $N^2$</strong>。</p>
+<hr>
+<h2 id="五、三个关键组件，逐个拆开看"><a href="#五、三个关键组件，逐个拆开看" class="headerlink" title="五、三个关键组件，逐个拆开看"></a>五、三个关键组件，逐个拆开看</h2><p><img src="/2026/11/27/p7-vision-transformer/P7_130.png" alt="Patch Embedding + Position Embedding + CLS Token"></p>
+<p><strong>图 2</strong>：<code>P7_130.png</code>（02:10 附近）。PPT 在总图基础上把注意力集中在中间这一段，明确标出三件事的组合顺序：<code>Embedded Images → Linear Projection</code>，然后 <code>+ [CLS] (Class Token)</code>，再 <code>+ Position Embeddings</code>，之后才进 <code>Transformer Encoder</code>，最后 <code>MLP Head → Class</code>。右下角的 Encoder 展开图标出 <code>Norm / Multi-Head Attention / MLP</code>。</p>
+<h3 id="5-1-Patch-Embedding：本质是一个-stride-kernel-的卷积"><a href="#5-1-Patch-Embedding：本质是一个-stride-kernel-的卷积" class="headerlink" title="5.1 Patch Embedding：本质是一个 stride &#x3D; kernel 的卷积"></a>5.1 Patch Embedding：本质是一个 stride &#x3D; kernel 的卷积</h3><p>“切块 + 展平 + 线性投影”这三步，用一个 <code>Conv2d(kernel_size=16, stride=16)</code> 就能一次性完成，而且<strong>数学上完全等价</strong>：</p>
+<ul>
+<li>卷积核在 16×16 的窗口上滑动，窗口不重叠（stride&#x3D;16），正好覆盖一个 patch；</li>
+<li>每个输出通道是输入窗口的加权和 —— 这就是那一次线性投影；</li>
+<li>输出特征图大小 $\frac{224}{16} \times \frac{224}{16} &#x3D; 14 \times 14$，通道数 &#x3D; $D$。</li>
+</ul>
+<p>所以工程实现里没人真的去 <code>reshape</code> 切 patch，全部写成一个卷积层。这是读 ViT 源码时的第一个”恍然大悟点”。</p>
+<h3 id="5-2-Position-Embedding：Transformer-本身不知道”谁在谁旁边”"><a href="#5-2-Position-Embedding：Transformer-本身不知道”谁在谁旁边”" class="headerlink" title="5.2 Position Embedding：Transformer 本身不知道”谁在谁旁边”"></a>5.2 Position Embedding：Transformer 本身不知道”谁在谁旁边”</h3><p>自注意力是<strong>置换不变</strong>的：把 197 个 token 打乱顺序，输出只是跟着打乱，注意力本身察觉不到。但图像显然有空间结构——“左上角的天空”和”右下角的草地”必须区分开。所以必须在输入处注入位置信息。</p>
+<p>ViT 用的是<strong>可学习的一维位置编码</strong>（<code>nn.Parameter(torch.zeros(1, 197, 768))</code>），而不是 Transformer 原版的 sin-cos 编码，也不是二维编码。论文做过消融，几种方案差别不大，一维可学习最省事。</p>
+<p>三个必须知道的工程细节：</p>
+<ol>
+<li><strong>为什么一维就够</strong>：patch 序列是按行优先（row-major）展开的，一维索引与二维坐标之间存在确定的对应关系，模型能从索引里把二维位置”解码”出来，不需要显式给 $(x, y)$。</li>
+<li><strong>位置编码是可学习的参数，不是函数</strong>：它属于模型权重，会参与训练、会被存进 checkpoint。这也是为什么加载预训练权重时 <code>pos_embed</code> 常常是形状不匹配的重灾区。</li>
+<li><strong>换分辨率必须插值</strong>：微调时把 224 提到 384，patch 数从 196 变成 $(384&#x2F;16)^2&#x3D;576$，位置编码表只有 197 行，装不下。标准做法是对 <code>pos_embed</code> 做<strong>双线性插值</strong>（先 reshape 成 14×14 的二维网格 → 插值到 24×24 → 展平回 577 行）。这一步在几乎所有 ViT 微调代码里都能看到。</li>
+</ol>
+<h3 id="5-3-CLS-Token：把”整张图的摘要”托付给一个位置"><a href="#5-3-CLS-Token：把”整张图的摘要”托付给一个位置" class="headerlink" title="5.3 [CLS] Token：把”整张图的摘要”托付给一个位置"></a>5.3 <code>[CLS]</code> Token：把”整张图的摘要”托付给一个位置</h3><p><code>[CLS]</code> 是借自 BERT 的做法：在 196 个 patch 前面插一个<strong>可学习的空 token</strong>，它不代表任何图像区域，唯一作用是通过自注意力”收集”全局信息，最后用它的输出做分类。</p>
+<p>为什么不用更直觉的”对 196 个 patch 输出取平均”（Global Average Pooling）？</p>
+<ul>
+<li>从机制上看，<code>[CLS]</code> 是一个<strong>可学习的聚合器</strong>：它自己会学”该关注哪些 patch、按什么权重汇总”，比固定的平均池化更灵活；</li>
+<li>从论文消融看，两者效果接近，但 <code>[CLS]</code> 与 BERT 完全同构，迁移代码零成本，所以成了默认方案；</li>
+<li>从工程上看，<code>[CLS]</code> 还带来一个好处：<strong>分类只依赖一个位置</strong>，下游接线性探测（P21 会讲）时直接取 <code>x[:, 0]</code> 即可。</li>
+</ul>
+<p><strong>图 2 页面上的一个细节值得强调</strong>：画面写的是 “Class Token 提取用于分类，其余 Patch 特征被舍弃”。这一点在<strong>分类任务</strong>里成立，但在<strong>多模态任务里就不成立</strong>了——后面 P16 的 CLIP、P20 的 LLaVA，都不会只取 <code>[CLS]</code>，而是把 <strong>196 个 patch 的全部输出</strong>都喂给后续模块（因为要做区域级对齐、要保留空间结构）。所以”只用 CLS”是分类头的用法，不是 ViT 的用法。</p>
+<h3 id="5-4-Transformer-Encoder-内部：Pre-LN-与两处残差"><a href="#5-4-Transformer-Encoder-内部：Pre-LN-与两处残差" class="headerlink" title="5.4 Transformer Encoder 内部：Pre-LN 与两处残差"></a>5.4 Transformer Encoder 内部：Pre-LN 与两处残差</h3><p><img src="/2026/11/27/p7-vision-transformer/P7_235.png" alt="Transformer Encoder 内部结构"></p>
+<p><strong>图 3</strong>：<code>P7_235.png</code>（03:55 附近）。PPT 把 Encoder 展开成一个循环模块，标注 <code>Embeded Patches → Norm → Multi-Head Attention → Norm → MLP</code>，两处 <code>Add</code> 残差支路（图 1 中写作 Add &amp; Norm），外层 <code>L x</code> 表示重复 L 层。</p>
+<p>一层 Block 的计算（Pre-LN 形式，也是 ViT 论文与所有现代实现采用的形式）：</p>
+<div class="math-display">
+$$
+z' = z + \text{MHSA}(\text{LN}(z)), \qquad z_{\text{out}} = z' + \text{MLP}(\text{LN}(z'))
+$$
+</div>
+
+<p>四个要点：</p>
+<ol>
+<li><strong>LN 放在子模块之前（Pre-LN）</strong>：原版 Transformer 是 Post-LN（<code>LN(x + Sublayer(x))</code>），深层时梯度不稳、必须靠学习率 warmup 硬压。Pre-LN 让残差主路保持”干净”的恒等通路，梯度可以直接回传，深层也能训——这正是 ViT 能堆到 32 层（Huge）甚至更深的前提。</li>
+<li><strong>LayerNorm 而不是 BatchNorm</strong>：LN 在<strong>单个样本内部</strong>沿特征维归一化，与 batch 大小无关；BN 依赖 batch 统计量，在序列任务上既不好用、又和”变长序列 + 大 batch 分布式训练”冲突。这一点在 P8 会变成一个关键话题：<strong>ViT 没有 BN，所以失去了 BN 带来的训练稳定性红利</strong>，自监督训练 ViT 极不稳定。</li>
+<li><strong>GELU 而非 ReLU</strong>：与 BERT 一致，MLP 里用 GELU。</li>
+<li><strong>MLP 是逐 token 独立作用的</strong>：<code>token_mixing</code>（注意力，跨位置）和 <code>channel_mixing</code>（MLP，跨特征维）交替进行，这是 Transformer 的经典分工，ViT 完全继承。</li>
+</ol>
+<hr>
+<h2 id="六、模型规模与参数对照表（本节后半段的重点）"><a href="#六、模型规模与参数对照表（本节后半段的重点）" class="headerlink" title="六、模型规模与参数对照表（本节后半段的重点）"></a>六、模型规模与参数对照表（本节后半段的重点）</h2><p><img src="/2026/11/27/p7-vision-transformer/P7_300.png" alt="ViT 参数设置与架构细节表"></p>
+<p><strong>图 4</strong>：<code>P7_300.png</code>（05:00 附近）。PPT 并排放了两张论文原表：左表 <em>Model configuration</em>（ViT-Base &#x2F; Large &#x2F; Huge 的 Layers、Hidden size D、MLP size、Heads、Params），右表 <em>Model architecture details</em>（Ti&#x2F;16、S&#x2F;32、B&#x2F;32 等更细的配置，含 Params 与 GFLOPs）。</p>
+<h3 id="6-1-三档主力规模（论文表-1-原文数值）"><a href="#6-1-三档主力规模（论文表-1-原文数值）" class="headerlink" title="6.1 三档主力规模（论文表 1 原文数值）"></a>6.1 三档主力规模（论文表 1 原文数值）</h3><table>
+<thead>
+<tr>
+<th>模型</th>
+<th>Layers $L$</th>
+<th>Hidden size $D$</th>
+<th>MLP size</th>
+<th>Heads $h$</th>
+<th>Params</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>ViT-Base</strong></td>
+<td>12</td>
+<td>768</td>
+<td>3072</td>
+<td>12</td>
+<td><strong>86M</strong></td>
+</tr>
+<tr>
+<td><strong>ViT-Large</strong></td>
+<td>24</td>
+<td>1024</td>
+<td>4096</td>
+<td>16</td>
+<td><strong>307M</strong></td>
+</tr>
+<tr>
+<td><strong>ViT-Huge</strong></td>
+<td>32</td>
+<td>1280</td>
+<td>5120</td>
+<td>16</td>
+<td><strong>632M</strong></td>
+</tr>
+</tbody></table>
+<p>读这张表的三个规律：</p>
+<ol>
+<li><strong>MLP size &#x3D; 4 × D</strong>（3072 &#x3D; 4×768，4096 &#x3D; 4×1024，5120 &#x3D; 4×1280）。这是 Transformer 的”4 倍扩张”惯例，从 BERT 一路继承下来，几乎所有 LLM 也遵守。</li>
+<li><strong>$D&#x2F;h$ &#x3D; 64 恒定</strong>（768&#x2F;12、1024&#x2F;16、1280&#x2F;16 都是 64）。头数增长跟着维度走，单头维度保持不变。</li>
+<li><strong>参数 $\approx 12LD^2$</strong>，前面已验算：B → 85M，L → 302M，H → 629M，与表中 86&#x2F;307&#x2F;632M 一一对应。</li>
+</ol>
+<h3 id="6-2-更细的配置与算力（论文表-2-原文数值）"><a href="#6-2-更细的配置与算力（论文表-2-原文数值）" class="headerlink" title="6.2 更细的配置与算力（论文表 2 原文数值）"></a>6.2 更细的配置与算力（论文表 2 原文数值）</h3><table>
+<thead>
+<tr>
+<th>模型</th>
+<th>Width $W$</th>
+<th>Layers $D$</th>
+<th>MLP</th>
+<th>Heads</th>
+<th>Params</th>
+<th>GFLOPs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Ti&#x2F;16</td>
+<td>192</td>
+<td>12</td>
+<td>768</td>
+<td>3</td>
+<td>5.5M</td>
+<td>1.3（224²）</td>
+</tr>
+<tr>
+<td>S&#x2F;32</td>
+<td>384</td>
+<td>12</td>
+<td>1536</td>
+<td>6</td>
+<td>22M</td>
+<td>2.3（224²）</td>
+</tr>
+<tr>
+<td>B&#x2F;32</td>
+<td>768</td>
+<td>12</td>
+<td>3072</td>
+<td>12</td>
+<td>87M</td>
+<td>8.7（224²）</td>
+</tr>
+<tr>
+<td>B&#x2F;16</td>
+<td>768</td>
+<td>12</td>
+<td>3072</td>
+<td>12</td>
+<td>86M</td>
+<td>17.6（224²）</td>
+</tr>
+<tr>
+<td>L&#x2F;16</td>
+<td>1024</td>
+<td>24</td>
+<td>4096</td>
+<td>16</td>
+<td>303M</td>
+<td>61.6（224²）</td>
+</tr>
+</tbody></table>
+<p><em>（注：GFLOPs 一列在不同 PPT 版本&#x2F;不同前向次数统计下会有出入，上表按论文表 2 的数值给出；截图右侧另有一列标注为 <code>35.1</code>、<code>122.9</code>、<code>382.8</code> 的数值，对应的是 384² 分辨率或不同计次口径，读表时注意看表头。核心结论不受影响。）</em></p>
+<p><strong>B&#x2F;16 与 B&#x2F;32 的对比是全表最有信息量的一行</strong>：参数量 86M vs 87M（几乎一样），但 GFLOPs 是 17.6 vs 8.7（<strong>正好 2 倍</strong>，不是 4 倍，因为 $N^2$ 项还很小，主导的是线性的 $ND^2$ 项，而 $N$ 从 197 降到 50，约 4 倍，但 patch 展平维度从 768 变 3072 抵消了一部分）。这说明：<strong>patch 越大越省算力但不省参数，patch 越小精度越好但算力飙升</strong>。</p>
+<p><img src="/2026/11/27/p7-vision-transformer/P7_400.png" alt="ViT 各配置参数量、层数、头数对比表"></p>
+<p><strong>图 5</strong>：<code>P7_400.png</code>（06:40 附近）。画面在表 2 上高亮了 <code>B/32</code> 一行（W&#x3D;768, D&#x3D;12, MLP&#x3D;3072, H&#x3D;12, P&#x3D;87M, GFLOPs(224²)&#x3D;8.7），配合讲”为什么实践里最常用的是 Base”。</p>
+<p><img src="/2026/11/27/p7-vision-transformer/P7_460.png" alt="ViT 架构细节表续"></p>
+<p><strong>图 6</strong>：<code>P7_460.png</code>（07:40 附近）。画面继续展示表 2 后续行，新增 <code>S/32</code>（P&#x3D;22M）、<code>B/16</code>（P&#x3D;86M、GFLOPs 35.1）、<code>L/16</code>（P&#x3D;303M、GFLOPs 122.9），并给出 384² 输入下 L&#x2F;16 的 382.8 GFLOPs。</p>
+<h3 id="6-3-“实践里到底该选哪个”——这一节最实用的一句话"><a href="#6-3-“实践里到底该选哪个”——这一节最实用的一句话" class="headerlink" title="6.3 “实践里到底该选哪个”——这一节最实用的一句话"></a>6.3 “实践里到底该选哪个”——这一节最实用的一句话</h3><p>按大纲时间点 05:07 的表述，讲师的观点是：<strong>实验常用 ViT-Base，因为它能塞进单卡&#x2F;少卡显存，不必盲目追求大模型</strong>。这是很务实的建议，展开成三条工程判断：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>推荐</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>单卡（如 24G）做实验、跑通流程</td>
+<td><strong>ViT-B&#x2F;16</strong></td>
+<td>86M 参数、17.6 GFLOPs，batch 32 可在单卡跑；预训练权重最丰富（ImageNet-21k、CLIP、DINO、MAE 都有 B&#x2F;16 版本）</td>
+</tr>
+<tr>
+<td>追求精度、有多卡</td>
+<td>ViT-L&#x2F;14 或 L&#x2F;16</td>
+<td>307M，通常配 224 或 336 分辨率；CLIP 的 L&#x2F;14 是最常用的多模态视觉编码器之一</td>
+</tr>
+<tr>
+<td>刷 SOTA、有大规模算力</td>
+<td>ViT-H&#x2F;14、ViT-G</td>
+<td>632M 起，G 版约 18~20 亿参数（大纲 07:37 提到”ViT-G 达 20 亿参数”），需要 JFT 级数据才训得动</td>
+</tr>
+<tr>
+<td>数据只有 ImageNet-1k 级别</td>
+<td><strong>别用原生 ViT</strong>，改用 DeiT 或 CNN</td>
+<td>原生 ViT 在小数据上不如 ResNet，这是论文明确承认的短板</td>
+</tr>
+</tbody></table>
+<p><strong>顺便解释”为什么大家嘴里的 ViT 常常不是原版 ViT”</strong>：这一点会在 P8 立刻派上用场——MoCo v3 里的骨干、CLIP 里的图像塔、MAE 里的 encoder，都是”ViT 结构 + 某种预训练方式”的产物，社区里统称 ViT，但权重分布和行为差别很大。选型时<strong>看 checkpoint 是怎么预训练的，比看结构是 B 还是 L 更重要</strong>。</p>
+<hr>
+<h2 id="七、”变种”到底指什么：四个方向的演化"><a href="#七、”变种”到底指什么：四个方向的演化" class="headerlink" title="七、”变种”到底指什么：四个方向的演化"></a>七、”变种”到底指什么：四个方向的演化</h2><p>标题写”ViT 与其变种”，但这一节只有 8 分钟，讲师把重心放在了架构与规模上，变种主要在后面的分P 展开。这里按”演化方向”做一张全景图，方便把后面几讲挂上去：</p>
+<h3 id="方向一：规模与分辨率变种（本节主体）"><a href="#方向一：规模与分辨率变种（本节主体）" class="headerlink" title="方向一：规模与分辨率变种（本节主体）"></a>方向一：<strong>规模与分辨率变种</strong>（本节主体）</h3><p>B &#x2F; L &#x2F; H &#x2F; G 四档 × patch 8 &#x2F; 14 &#x2F; 16 &#x2F; 32，以及 224 &#x2F; 384 &#x2F; 512 的分辨率组合。命名规则统一写成 <code>ViT-&#123;规模&#125;/&#123;patch&#125;</code>，如 <code>ViT-B/16</code>。</p>
+<h3 id="方向二：数据效率变种"><a href="#方向二：数据效率变种" class="headerlink" title="方向二：数据效率变种"></a>方向二：<strong>数据效率变种</strong></h3><p>原生 ViT 的软肋是”必须大数据预训练”。<strong>DeiT</strong>（Data-efficient Image Transformer）用<strong>蒸馏</strong>解决：引入一个 teacher（通常是 RegNet）和一个额外的 <code>distillation token</code>，让 ViT 在 ImageNet-1k 上从零训练也能到 80%+ top-1。这是”没有 3 亿张图也想用 ViT”的标准答案。</p>
+<h3 id="方向三：结构效率变种（砍-O-N-2-）"><a href="#方向三：结构效率变种（砍-O-N-2-）" class="headerlink" title="方向三：结构效率变种（砍 $O(N^2)$）"></a>方向三：<strong>结构效率变种</strong>（砍 $O(N^2)$）</h3><table>
+<thead>
+<tr>
+<th>模型</th>
+<th>核心改动</th>
+<th>解决的痛点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Swin Transformer</strong></td>
+<td>窗口内注意力 + 层级化下采样 + 移位窗口</td>
+<td>把全局 $O(N^2)$ 变成窗口内线性，还能出多尺度特征图（接检测&#x2F;分割）</td>
+</tr>
+<tr>
+<td><strong>PVT &#x2F; CvT &#x2F; Twins</strong></td>
+<td>金字塔结构 &#x2F; 卷积嵌入</td>
+<td>同上，面向下游密集预测</td>
+</tr>
+<tr>
+<td><strong>Hybrid（R50 + ViT）</strong></td>
+<td>先用 CNN 提特征图，再把特征图当 token</td>
+<td>借用 CNN 的局部性，减少序列长度（论文表 2 里有 R50+ViT-B&#x2F;16 一行）</td>
+</tr>
+</tbody></table>
+<h3 id="方向四：预训练方式变种（第三章后半程的主线）"><a href="#方向四：预训练方式变种（第三章后半程的主线）" class="headerlink" title="方向四：预训练方式变种（第三章后半程的主线）"></a>方向四：<strong>预训练方式变种</strong>（第三章后半程的主线）</h3><table>
+<thead>
+<tr>
+<th>模型</th>
+<th>预训练范式</th>
+<th>对应分P</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>MoCo v3</strong></td>
+<td>ViT + 对比学习（动量编码器 + 双向损失）</td>
+<td><strong>P8（下一讲）</strong></td>
+</tr>
+<tr>
+<td><strong>DINO</strong></td>
+<td>ViT + 自蒸馏（无负样本）</td>
+<td>P9 &#x2F; P10</td>
+</tr>
+<tr>
+<td><strong>MAE</strong></td>
+<td>ViT + 掩码重建（只编码可见 patch，省一半算力以上）</td>
+<td>P11 &#x2F; P12</td>
+</tr>
+<tr>
+<td><strong>BEiT</strong></td>
+<td>ViT + 掩码重建（token 分类）</td>
+<td>P6 已学</td>
+</tr>
+</tbody></table>
+<p><strong>一句话总结变种逻辑</strong>：<strong>结构上的变种在解决”ViT 太贵”，预训练上的变种在解决”ViT 没标签怎么训”，规模上的变种在解决”要不要为了 1 个点精度多花 10 倍算力”</strong>。</p>
+<hr>
+<h2 id="八、最小可运行的-ViT-实现（带注释）"><a href="#八、最小可运行的-ViT-实现（带注释）" class="headerlink" title="八、最小可运行的 ViT 实现（带注释）"></a>八、最小可运行的 ViT 实现（带注释）</h2><p>下面这份代码是”能真正跑起来、能打印出 86M 参数量”的最小实现，刻意只保留 ViT 的必要构件：<strong>PatchEmbed + 多头注意力调用 + MLP block + Pre-LN 残差 + CLS 分类</strong>。省略了 drop path、混合精度、位置编码插值等工程细节（这些在实际项目里由 timm 提供）。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 依赖：torch &gt;= 1.9（需要 nn.MultiheadAttention 的 batch_first 参数）</span></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">PatchEmbed</span>(nn.Module):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;切 patch + 线性投影，用 stride=kernel 的卷积一步完成（与 reshape+Linear 等价）&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, img_size=<span class="number">224</span>, patch_size=<span class="number">16</span>, in_chans=<span class="number">3</span>, embed_dim=<span class="number">768</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="keyword">assert</span> img_size % patch_size == <span class="number">0</span>, <span class="string">&quot;图像尺寸必须能被 patch 大小整除&quot;</span></span><br><span class="line">        <span class="variable language_">self</span>.grid_size = img_size // patch_size          <span class="comment"># 224 // 16 = 14</span></span><br><span class="line">        <span class="variable language_">self</span>.num_patches = <span class="variable language_">self</span>.grid_size ** <span class="number">2</span>           <span class="comment"># 14*14 = 196</span></span><br><span class="line">        <span class="comment"># 关键：kernel_size = stride = patch_size，窗口不重叠</span></span><br><span class="line">        <span class="comment"># 输出 (B, embed_dim, 14, 14)，等效于对每个 patch 做一次 768 维线性投影</span></span><br><span class="line">        <span class="variable language_">self</span>.proj = nn.Conv2d(in_chans, embed_dim,</span><br><span class="line">                              kernel_size=patch_size, stride=patch_size)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        x = <span class="variable language_">self</span>.proj(x)                 <span class="comment"># (B, 768, 14, 14)</span></span><br><span class="line">        x = x.flatten(<span class="number">2</span>)                 <span class="comment"># (B, 768, 196)</span></span><br><span class="line">        x = x.transpose(<span class="number">1</span>, <span class="number">2</span>)            <span class="comment"># (B, 196, 768)  -&gt; 每个 token 一个 768 维向量</span></span><br><span class="line">        <span class="keyword">return</span> x</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MLP</span>(nn.Module):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Transformer block 里的逐 token 前馈网络：768 -&gt; 3072 -&gt; 768&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, dim, hidden_dim, drop=<span class="number">0.0</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.fc1 = nn.Linear(dim, hidden_dim)</span><br><span class="line">        <span class="variable language_">self</span>.act = nn.GELU()</span><br><span class="line">        <span class="variable language_">self</span>.fc2 = nn.Linear(hidden_dim, dim)</span><br><span class="line">        <span class="variable language_">self</span>.drop = nn.Dropout(drop)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        x = <span class="variable language_">self</span>.fc1(x)                  <span class="comment"># (B, 197, 3072)</span></span><br><span class="line">        x = <span class="variable language_">self</span>.act(x)</span><br><span class="line">        x = <span class="variable language_">self</span>.drop(x)</span><br><span class="line">        x = <span class="variable language_">self</span>.fc2(x)                  <span class="comment"># (B, 197, 768)</span></span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.drop(x)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Block</span>(nn.Module):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Pre-LN Transformer block: x = x + MHSA(LN(x)); x = x + MLP(LN(x))&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, dim=<span class="number">768</span>, num_heads=<span class="number">12</span>, mlp_ratio=<span class="number">4.0</span>, drop=<span class="number">0.0</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.norm1 = nn.LayerNorm(dim)</span><br><span class="line">        <span class="comment"># batch_first=True：输入形状 (B, N, D)，与我们的 token 排布一致</span></span><br><span class="line">        <span class="variable language_">self</span>.attn = nn.MultiheadAttention(dim, num_heads,</span><br><span class="line">                                          dropout=drop, batch_first=<span class="literal">True</span>)</span><br><span class="line">        <span class="variable language_">self</span>.norm2 = nn.LayerNorm(dim)</span><br><span class="line">        <span class="variable language_">self</span>.mlp = MLP(dim, <span class="built_in">int</span>(dim * mlp_ratio), drop)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        h = <span class="variable language_">self</span>.norm1(x)                                <span class="comment"># (B, 197, 768)</span></span><br><span class="line">        <span class="comment"># q = k = v = h：自注意力；need_weights=False 可省下 197x197 的注意力图显存</span></span><br><span class="line">        attn_out, _ = <span class="variable language_">self</span>.attn(h, h, h, need_weights=<span class="literal">False</span>)</span><br><span class="line">        x = x + attn_out                                 <span class="comment"># 残差 1</span></span><br><span class="line">        x = x + <span class="variable language_">self</span>.mlp(<span class="variable language_">self</span>.norm2(x))                   <span class="comment"># 残差 2</span></span><br><span class="line">        <span class="keyword">return</span> x</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ViT</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, img_size=<span class="number">224</span>, patch_size=<span class="number">16</span>, in_chans=<span class="number">3</span>, num_classes=<span class="number">1000</span>,</span></span><br><span class="line"><span class="params">                 embed_dim=<span class="number">768</span>, depth=<span class="number">12</span>, num_heads=<span class="number">12</span>, mlp_ratio=<span class="number">4.0</span>, drop=<span class="number">0.0</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.patch_embed = PatchEmbed(img_size, patch_size, in_chans, embed_dim)</span><br><span class="line">        num_patches = <span class="variable language_">self</span>.patch_embed.num_patches                     <span class="comment"># 196</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># [CLS] token：一个可学习的向量，不来自任何图像区域</span></span><br><span class="line">        <span class="variable language_">self</span>.cls_token = nn.Parameter(torch.zeros(<span class="number">1</span>, <span class="number">1</span>, embed_dim))    <span class="comment"># (1, 1, 768)</span></span><br><span class="line">        <span class="comment"># 位置编码：196 个 patch + 1 个 CLS = 197 行，可学习</span></span><br><span class="line">        <span class="variable language_">self</span>.pos_embed = nn.Parameter(torch.zeros(<span class="number">1</span>, num_patches + <span class="number">1</span>, embed_dim))</span><br><span class="line">        <span class="variable language_">self</span>.pos_drop = nn.Dropout(drop)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.blocks = nn.ModuleList([</span><br><span class="line">            Block(embed_dim, num_heads, mlp_ratio, drop) <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(depth)</span><br><span class="line">        ])</span><br><span class="line">        <span class="variable language_">self</span>.norm = nn.LayerNorm(embed_dim)                            <span class="comment"># 最后一层 LN</span></span><br><span class="line">        <span class="variable language_">self</span>.head = nn.Linear(embed_dim, num_classes)                  <span class="comment"># 分类头</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># ViT 论文的初始化：截断正态 std=0.02</span></span><br><span class="line">        nn.init.trunc_normal_(<span class="variable language_">self</span>.pos_embed, std=<span class="number">0.02</span>)</span><br><span class="line">        nn.init.trunc_normal_(<span class="variable language_">self</span>.cls_token, std=<span class="number">0.02</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        B = x.shape[<span class="number">0</span>]</span><br><span class="line">        x = <span class="variable language_">self</span>.patch_embed(x)                       <span class="comment"># (B, 196, 768)</span></span><br><span class="line">        cls = <span class="variable language_">self</span>.cls_token.expand(B, -<span class="number">1</span>, -<span class="number">1</span>)        <span class="comment"># (B, 1, 768) 复制到整个 batch</span></span><br><span class="line">        x = torch.cat([cls, x], dim=<span class="number">1</span>)                <span class="comment"># (B, 197, 768)  CLS 放最前面</span></span><br><span class="line">        x = <span class="variable language_">self</span>.pos_drop(x + <span class="variable language_">self</span>.pos_embed)         <span class="comment"># 加位置编码，(B, 197, 768)</span></span><br><span class="line">        <span class="keyword">for</span> blk <span class="keyword">in</span> <span class="variable language_">self</span>.blocks:                       <span class="comment"># L 层堆叠</span></span><br><span class="line">            x = blk(x)</span><br><span class="line">        x = <span class="variable language_">self</span>.norm(x)</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.head(x[:, <span class="number">0</span>])                     <span class="comment"># 只取 CLS 位 -&gt; (B, num_classes)</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    model = ViT(img_size=<span class="number">224</span>, patch_size=<span class="number">16</span>, embed_dim=<span class="number">768</span>, depth=<span class="number">12</span>, num_heads=<span class="number">12</span>)</span><br><span class="line">    n_params = <span class="built_in">sum</span>(p.numel() <span class="keyword">for</span> p <span class="keyword">in</span> model.parameters())</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;参数量: <span class="subst">&#123;n_params / <span class="number">1e6</span>:<span class="number">.2</span>f&#125;</span> M&quot;</span>)          <span class="comment"># 期望约 86.4 M，对应 ViT-B/16</span></span><br><span class="line"></span><br><span class="line">    x = torch.randn(<span class="number">2</span>, <span class="number">3</span>, <span class="number">224</span>, <span class="number">224</span>)                   <span class="comment"># 模拟一个 batch=2 的输入</span></span><br><span class="line">    logits = model(x)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;输入:&quot;</span>, <span class="built_in">tuple</span>(x.shape))                    <span class="comment"># (2, 3, 224, 224)</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;输出:&quot;</span>, <span class="built_in">tuple</span>(logits.shape))               <span class="comment"># (2, 1000)</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>运行后会看到的关键数字与形状</strong>（可用于自检实现是否正确）：</p>
+<table>
+<thead>
+<tr>
+<th>检查点</th>
+<th>期望值</th>
+<th>若不符说明什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>参数量</td>
+<td>≈ <strong>86.4 M</strong></td>
+<td>与论文 86M 吻合；若明显偏小，通常是漏了 <code>pos_embed</code> 或 MLP 没做 4 倍扩张</td>
+</tr>
+<tr>
+<td><code>patch_embed</code> 输出</td>
+<td><code>(2, 196, 768)</code></td>
+<td>若得到 197，说明提前加了 CLS；若得到 49，说明 patch_size 用了 32</td>
+</tr>
+<tr>
+<td>加 CLS 后</td>
+<td><code>(2, 197, 768)</code></td>
+<td></td>
+</tr>
+<tr>
+<td>最终 logits</td>
+<td><code>(2, 1000)</code></td>
+<td>若得到 <code>(2, 197, 1000)</code>，说明忘了取 <code>x[:, 0]</code></td>
+</tr>
+</tbody></table>
+<p><strong>三处最容易被写错的地方</strong>，单独提醒：</p>
+<ol>
+<li><strong><code>batch_first=True</code> 不能漏</strong>。<code>nn.MultiheadAttention</code> 默认输入是 <code>(N, B, D)</code>（序列在前），而 ViT 的习惯是 <code>(B, N, D)</code>。漏了这个参数不会报错，但会把 batch 维当序列维去做注意力——结果完全错，且很难发现。</li>
+<li><strong><code>need_weights=False</code> 建议带上</strong>。默认会返回 197×197 的注意力权重矩阵，多层多 batch 累积起来占显存可观，而我们通常不需要它。</li>
+<li><strong>CLS 必须在最前面</strong>（<code>x[:, 0]</code>），位置编码的排布也要跟着一致。如果把 CLS 追加在末尾却仍取 <code>x[:, 0]</code>，就会取到第一个 patch 的特征，训练也能勉强收敛但精度明显偏低——这类 bug 的典型症状是”loss 能降、精度差 5~10 个点”。</li>
+</ol>
+<blockquote>
+<p>说明：本机环境未安装 PyTorch，上述代码按 <code>torch &gt;= 1.9</code> 的官方 API 编写，形状与参数量均已按 4.3 节的公式逐项核算（$12 \times 12D^2$ + 0.59M + 0.15M + 0.77M ≈ 86.4M）。实际运行时若显存不足，把 <code>batch=2</code> 降到 1 即可。</p>
+</blockquote>
+<hr>
+<h2 id="九、易混淆点与高频追问"><a href="#九、易混淆点与高频追问" class="headerlink" title="九、易混淆点与高频追问"></a>九、易混淆点与高频追问</h2><p>把这一节最高频的几个坑集中列出来，考试&#x2F;面试&#x2F;读代码都会遇到：</p>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>正确回答</th>
+<th>常见错误</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ViT-B&#x2F;16 的序列长度是多少？</td>
+<td><strong>197</strong>（196 patch + 1 CLS）</td>
+<td>答 196</td>
+</tr>
+<tr>
+<td>patch 展平维度是多少？</td>
+<td>16×16×3 &#x3D; <strong>768</strong></td>
+<td>忘了乘通道数答 256</td>
+</tr>
+<tr>
+<td>patch&#x3D;16 时投影矩阵是方阵吗？</td>
+<td>是，768×768（因为展平维度恰好等于 D）</td>
+<td>以为投影矩阵总是 3072×768</td>
+</tr>
+<tr>
+<td>参数量主要由什么决定？</td>
+<td>$L$ 与 $D$（$\approx 12LD^2$），与分辨率、patch 数几乎无关</td>
+<td>以为 patch 越小参数越多</td>
+</tr>
+<tr>
+<td>位置编码可以去掉吗？</td>
+<td>不行，自注意力置换不变，去掉后无法区分空间位置</td>
+<td>以为 CNN 的位置信息会自动继承</td>
+</tr>
+<tr>
+<td>换到 384 分辨率要做什么？</td>
+<td>对 <code>pos_embed</code> 双线性插值扩容（197 → 577）</td>
+<td>直接报形状错误就放弃</td>
+</tr>
+<tr>
+<td>分类必须用 CLS 吗？</td>
+<td>不是，GAP 也可；但分割&#x2F;检测&#x2F;多模态任务通常保留全部 patch 特征</td>
+<td>以为 CLS 是唯一出路</td>
+</tr>
+<tr>
+<td>ViT 在小数据集上一定更好吗？</td>
+<td>不是，数据不足时明显不如 CNN&#x2F;DeiT</td>
+<td>无脑上 ViT</td>
+</tr>
+<tr>
+<td>LN 还是 BN？</td>
+<td>LN（与 batch 无关、适配变长序列）</td>
+<td>用 BN</td>
+</tr>
+<tr>
+<td>Pre-LN 还是 Post-LN？</td>
+<td>Pre-LN（深层可训、无需死磕 warmup）</td>
+<td>照抄原版 Post-LN</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="十、本节在整门课中的位置与衔接"><a href="#十、本节在整门课中的位置与衔接" class="headerlink" title="十、本节在整门课中的位置与衔接"></a>十、本节在整门课中的位置与衔接</h2><p>用一张图收尾，把 ViT 与前后各讲串起来：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">     [第二章：自监督学习的三条路]              [第三章：视觉大模型]</span><br><span class="line">P2 前置任务 ─┐</span><br><span class="line">P3–P5 对比学习 ─┼─→ 需要一个&quot;能装的容器&quot; ─→  P7 ViT（本讲，地基）</span><br><span class="line">P6 掩码重建 ─┘                                   │</span><br><span class="line">                                                 ├─→ P8  MoCo v3  = ViT + 对比学习</span><br><span class="line">                                                 ├─→ P9/P10 DINO = ViT + 自蒸馏</span><br><span class="line">                                                 ├─→ P11/P12 MAE = ViT + 掩码重建</span><br><span class="line">                                                 └─→ P13 SAM（ViT 变体做分割提示）</span><br><span class="line">                                                           │</span><br><span class="line">                                       第四章 多模态 → P16 CLIP（ViT 做图像塔）</span><br><span class="line">                                                     → P20 LLaVA（ViT 做视觉编码器）</span><br></pre></td></tr></table></figure>
+
+<p>三点衔接提示，学完本节就应该能自己回答：</p>
+<ol>
+<li><strong>为什么 MoCo v3、DINO、MAE 全都选 ViT 当骨干？</strong> 因为 CNN 的局部性偏置在自监督里不是优势——自监督的核心是”从数据本身造监督信号”，模型越”白纸”，学到的东西越通用。ViT 恰好足够”白纸”。</li>
+<li><strong>ViT 没有 BN，这对自监督意味着什么？</strong> BN 在监督训练里有一个隐藏作用：它通过 batch 统计量提供了隐式正则与数值稳定。ViT 用 LN 就没有这个红利，于是<strong>自监督训 ViT 会崩</strong>——这正是 P8 那个”冻结 patch embedding”技巧要解决的问题。</li>
+<li><strong>为什么 CLIP&#x2F;LLaVA 的视觉塔多用 ViT-L&#x2F;14 而不是 B&#x2F;16？</strong> patch 14 换来了更细的粒度（224&#x2F;14 &#x3D; 16×16 &#x3D; 256 个 token），对图文对齐更有利；而 L 规模提供了足够容量。这也是”规模变种 + patch 变种”在真实工程里的组合应用。</li>
+</ol>
+<hr>
+<h2 id="十一、本讲一句话总结"><a href="#十一、本讲一句话总结" class="headerlink" title="十一、本讲一句话总结"></a>十一、本讲一句话总结</h2><p><strong>ViT 把图像切成 16×16 的”词”，用一次 stride&#x3D;16 的卷积完成线性投影，在最前面插一个 <code>[CLS]</code> 并用可学习的一维位置编码注入空间信息，然后交给一座 12 层的 Pre-LN Transformer Encoder（MHSA + 4 倍扩张 MLP，每层 $12D^2$ 参数），最后只取 <code>[CLS]</code> 位接分类头——224×224 &#x2F; patch16 对应 196 个 patch、197 长度、768 维、86M 参数、约 17.6 GFLOPs。它的代价是 $O(N^2)$ 的注意力与”必须大数据预训练”，而它的意义是：从这一讲开始，CV 与 NLP 用上了同一套骨干，后面 MoCo v3、DINO、MAE、CLIP、LLaVA 全部站在它肩膀上。</strong><br><em>（内容由AI生成，仅供参考）</em></p>
+<hr>
+<p><em>（内容由AI生成，仅供参考）</em></p>
+
+  </div>
+
+  <footer class="article-reactions">
+    <div class="reaction-group">
+      <button type="button" class="reaction reaction--comment" aria-label="跳转到评论区" data-action="scroll-to-comments">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-message-circle"></use></svg>
+
+      </button>
+      <span class="reaction-label">评论</span>
+      
+    </div>
+    <div class="reaction-group reaction-group--right">
+      
+      <button type="button" class="reaction reaction--share" aria-label="分享" data-action="share">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2 flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-share-2"></use></svg>
+
+      </button>
+      <span class="reaction-label">分享</span>
+    </div>
+  </footer>
+
+  
+
+
+  <nav class="article-actions">
+    
+      <a class="article-action article-action--prev" href="/2026/11/27/p8-moco-v3/">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-left"></use></svg>
+
+        <span class="action-label">上一篇</span>
+        <span class="action-title"></span>
+      </a>
+    
+    
+      <a class="article-action article-action--next" href="/2026/11/27/p6-masked-image-modeling-beit/">
+        <span class="action-label">下一篇</span>
+        <span class="action-title"></span>
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-right"></use></svg>
+
+      </a>
+    
+  </nav>
+</article>
+</div>
+
+<button type="button" class="back-to-top" data-action="scroll-to-top" aria-label="返回顶部" hidden>
+  
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-up"></use></svg>
+
+</button>
+
+
+
+      
+
+
+    </section>
+    
+  </main>
+
+  <div class="sidebar-backdrop js-sidebar-close" aria-hidden="true"></div>
+
+  
+<footer class="site-footer">
+  <span class="site-footer__left">© 2026 By lorena</span>
+  
+    <span class="site-footer__right">
+      
+        <span class="site-footer__row"><span class="site-footer__powered-prefix">Powered by Theme</span> <a href="https://github.com/Homulilly/hexo-theme-flatpaper" target="_blank" rel="noopener">FlatPaper</a></span>
+      
+    </span>
+  
+</footer>
+
+  
+<div class="search-panel" aria-hidden="true" data-index-url="/flatpaper-search.json">
+  <div class="search-backdrop js-search-close"></div>
+  <section class="search-dialog" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <span class="tape tape--top-left" aria-hidden="true"></span>
+    <header class="search-head">
+      <h2><span class="green-dot"></span>搜索文章</h2>
+      <button class="icon-button js-search-close" type="button" aria-label="关闭搜索">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+      </button>
+    </header>
+    <label class="search-field">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+      <input id="flatpaper-search" class="search-input" type="search" placeholder="输入关键词，按 Esc 关闭" autocomplete="off">
+    </label>
+    <div class="search-results" data-empty="输入关键词后显示匹配的文章">
+      <p class="search-empty">输入关键词后显示匹配的文章</p>
+    </div>
+  </section>
+</div>
+
+  <script>
+  window.FLATPAPER_I18N = {"language":"zh-CN","common.posts":"文章","common.categories":"分类","common.tags":"标签","common.comments":"评论","common.share":"分享","common.page":"页面","common.archive":"归档","common.post_list":"文章列表","common.search_posts":"搜索文章","common.random_posts":"随机文章","common.reward":"赞赏","common.view_all":"查看全部","pagination.prev":"上一页","pagination.next":"下一页","pagination.post_pager":"文章分页","pagination.archive_pager":"归档分页","index.featured":"精选文章","index.pinned":"置顶","index.read_more":"阅读全文","index.previous_slide":"上一张","index.next_slide":"下一张","index.carousel_pagination":"轮播页码","index.carousel_slide":"第 %d 张","index.latest_posts":"最新文章","index.empty_posts":"还没有文章。创建第一篇文章后，这里会显示最新内容。","archive.title":"归档","archive.post_list":"文章列表","taxonomy.category_count":"%d 篇","taxonomy.empty_categories":"暂时还没有分类。","taxonomy.empty_tags":"暂时还没有标签。","links.label":"友链","links.title":"友情链接","links.empty_data":"暂未加载到友链数据。请确认 source/_data/links.yml 存在并已 hexo clean。","links.rss_label":"%s 的 RSS","friends_feed.label":"朋友圈","friends_feed.title":"友链朋友圈","friends_feed.loading":"正在加载友链动态…","friends_feed.missing_url":"暂未配置 all.json 地址。","friends_feed.load_failed":"友链动态加载失败，请稍后再试。","friends_feed.empty":"暂时没有抓取到友链文章。","friends_feed.load_more":"加载更多","friends_feed.updated_at":"更新于 %s","friends_feed.friend_count":"%d 位友邻","friends_feed.active_count":"%d 位活跃","friends_feed.article_count":"%d 篇文章","friends_feed.unknown_author":"未知站点","friends_feed.date_unknown":"时间未知","guestbook.label":"留言板","guestbook.title":"留言板","guestbook.loading":"正在铺开留言墙…","guestbook.missing_config":"留言墙需要评论系统：请在主题配置中设置 comments: twikoo（并填写 envId）或 comments: artalk（并填写 server）。","guestbook.load_failed":"留言加载失败，请稍后再试。","guestbook.empty":"墙上还空着，来贴第一张留言吧！","guestbook.load_more":"展开更多留言","guestbook.total_count":"共 %d 条留言","guestbook.latest_note":"墙上展示最新 %d 条","guestbook.jump_to_comment":"查看留言","guestbook.sort_time":"查看最新","guestbook.sort_random":"随机排序","guestbook.anonymous":"匿名访客","guestbook.write_hint":"在下方留言，刷新后就会贴到墙上","post.scroll_to_comments":"跳转到评论区","post.previous":"上一篇","post.next":"下一篇","post.no_previous":"没有更早的文章了","post.no_next":"已经是最新的一篇","post.back_to_top":"返回顶部","post.related_posts":"相关文章","post.view_more":"查看更多","not_found.label":"页面走丢了","not_found.title":"找不到这个页面","not_found.text":"这个地址可能已经移动、删除，或者从未存在。","not_found.home":"返回首页","not_found.search":"搜索文章","search.placeholder":"输入关键词，按 Esc 关闭","search.empty":"输入关键词后显示匹配的文章","search.loading":"正在加载搜索索引…","search.load_failed":"搜索索引加载失败，请重新打开搜索重试","search.no_result":"没有找到与 \"%s\" 相关的文章","search.close":"关闭搜索","code.copy":"复制代码","code.collapse":"折叠代码","code.expand":"展开代码","heading.anchor":"链接到此节: %s","head.tag":"标签：%s","head.category":"分类：%s","head.archive":"归档","head.archive_with_date":"归档：%s","head.page_number":"第 %d 页","navigation.primary":"主导航","navigation.mobile":"移动端导航","navigation.brand_home":"FlatPaper 首页","navigation.brand_menu":"打开站点导航","navigation.open_sidebar":"打开侧边栏","navigation.close_sidebar":"关闭侧边栏","navigation.sidebar":"侧边栏","navigation.sidebar_tools":"侧边栏工具","navigation.site_links":"站点链接","navigation.site_info":"站点信息","colors.choose_theme_color":"选择主题色","colors.theme_color":"主题色","colors.toggle_color_mode":"切换颜色模式","colors.green":"绿色","colors.purple":"紫色","colors.pink":"粉色","colors.sakura":"樱花粉","colors.blue":"蓝色","colors.orange":"橙色","colors.black":"黑色","profile.default_bio":"热爱生活，热爱代码，喜欢分享技术与生活中的点滴。","profile.email_copied":"邮箱已复制","welcome.cta":"开始阅读","welcome.title":"欢迎来到 FlatPaper","welcome.text":"一个专注于内容与阅读体验的博客主题。","home_hero.label":"首页开屏","home_hero.enter":"开始阅读","home_hero.note":"今日","home_hero.default_subtitle":"日常记录","home_hero.nav_links":"开屏导航","home_hero.profile_links":"个人链接","home_hero.tools":"开屏工具","home_hero.shuffle_stickers":"打乱贴纸位置","home_hero.link":"链接","home_hero.sticker_image":"贴纸图片","home_hero.visit_confirm":"要访问 %s 吗？","home_hero.visit":"访问","home_hero.cancel":"取消","toc.title":"文章目录","toc.empty":"目录会根据文章标题自动生成。","toc.expand_all":"展开全部目录","toc.collapse_all":"收起全部目录","sidebar.hot_tags":"热门标签","sidebar.latest_posts":"最新文章"};
+  </script>
+  
+<script src="/js/main.js"></script>
+
+  
+  <script src="/js/twojian-ui.js" defer></script>
+  
+</body>
+</html>
