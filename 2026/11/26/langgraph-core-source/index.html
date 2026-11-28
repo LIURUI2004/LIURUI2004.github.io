@@ -1,0 +1,1237 @@
+<!doctype html>
+
+<html lang="zh-CN" data-fancybox-enabled="1">
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f3e9" data-flatpaper-theme-color>
+
+<title>Adaptive-RAG 项目学习笔记（二）：LangGraph 与核心源码调用关系 | lorena的小博客</title>
+<meta name="description" content="Adaptive-RAG 项目学习笔记（二）：LangGraph 与核心源码调用关系 本章整理此前已经学习过的 LangGraph 基础概念，以及 state.py、graph.py、chat_service.py 三个核心文件的分工。阅读目标：能够顺着一次用户请求，讲清楚数据如何进入 Graph、经过节点处理，最后如何返回。 1. LangGraph 是什...">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Adaptive-RAG 项目学习笔记（二）：LangGraph 与核心源码调用关系 | lorena的小博客">
+<meta property="og:url" content="https://liurui2004.github.io/2026/11/26/langgraph-core-source/">
+<meta property="og:site_name" content="lorena的小博客">
+<meta property="og:description" content="Adaptive-RAG 项目学习笔记（二）：LangGraph 与核心源码调用关系 本章整理此前已经学习过的 LangGraph 基础概念，以及 state.py、graph.py、chat_service.py 三个核心文件的分工。阅读目标：能够顺着一次用户请求，讲清楚数据如何进入 Graph、经过节点处理，最后如何返回。 1. LangGraph 是什...">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/langgraph-core-source/05-state-lifecycle.svg">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/langgraph-core-source/05-state-lifecycle.svg">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/langgraph-core-source/04-graph-routing.svg">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/26/langgraph-core-source/06-chatservice-sequence.svg">
+<meta property="article:published_time" content="2026-11-26T05:05:00.000Z">
+<meta property="article:modified_time" content="2026-11-28T04:40:55.569Z">
+<meta property="article:author" content="lorena">
+<meta property="article:tag" content="Adaptive-RAG">
+<meta property="article:tag" content="LangGraph">
+<meta property="article:tag" content="State">
+<meta property="article:tag" content="Graph">
+<meta property="article:tag" content="Python">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liurui2004.github.io/2026/11/26/langgraph-core-source/05-state-lifecycle.svg">
+<link rel="canonical" href="https://liurui2004.github.io/2026/11/26/langgraph-core-source/">
+
+<link rel="icon" href="/images/favicon.png" type="image/png">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Adaptive-RAG 项目学习笔记（二）：LangGraph 与核心源码调用关系","name":"Adaptive-RAG 项目学习笔记（二）：LangGraph 与核心源码调用关系 | lorena的小博客","description":"Adaptive-RAG 项目学习笔记（二）：LangGraph 与核心源码调用关系 本章整理此前已经学习过的 LangGraph 基础概念，以及 state.py、graph.py、chat_service.py 三个核心文件的分工。阅读目标：能够顺着一次用户请求，讲清楚数据如何进入 Graph、经过节点处理，最后如何返回。 1. LangGraph 是什...","url":"https://liurui2004.github.io/2026/11/26/langgraph-core-source/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/11/26/langgraph-core-source/","datePublished":"2026-11-26T05:05:00.000Z","dateModified":"2026-11-28T04:40:55.569Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"},"keywords":"Adaptive-RAG, LangGraph, State, Graph, Python"}</script>
+
+<script>
+  (function () {
+    var accents = { orange: 1, purple: 1, sakura: 1, blue: 1, pink: 1, green: 1, black: 1 };
+    var match = document.cookie.match(/(?:^|;\s*)flatpaper-accent=([^;]+)/);
+    var accent = 'green';
+    if (match) {
+      try { accent = decodeURIComponent(match[1]); } catch (e) {}
+    }
+    if (!accents[accent]) accent = 'green';
+    document.documentElement.setAttribute('data-accent', accent);
+    try {
+      if (localStorage.getItem('flatpaper-mode') === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+      }
+    } catch (e) {}
+  })();
+</script>
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css">
+<script defer src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+
+
+  
+  <link rel="stylesheet" href="/css/twojian-style.css?v=5">
+  
+<meta name="generator" content="Hexo 6.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body
+  class="is-post tape-disabled tag-style-tape bg-style-default"
+  data-default-accent="green"
+  data-code-theme="simple"
+  data-note-style="sticky"
+  data-note-icons="on"
+  data-button-style="circle"
+  data-strong-accent="on"
+>
+  
+    <div class="page-grain"></div>
+  
+  <svg width="0" height="0" style="position:absolute;z-index:-1;" aria-hidden="true">
+    <defs>
+      <filter id="paper-edge" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+  
+  <header class="site-header">
+  
+  <button class="icon-button js-sidebar-toggle sidebar-toggle" type="button" aria-label="打开侧边栏" aria-controls="paper-sidebar-drawer" aria-expanded="false">
+    
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-menu"></use></svg>
+
+  </button>
+
+  <div class="brand">
+    <div class="brand-mark-wrapper">
+      
+        <a class="brand-mark" href="/" aria-label="FlatPaper 首页">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-layout-grid"></use></svg>
+
+        </a>
+      
+    </div>
+    <a class="brand-text" href="/">lorena的小博客</a>
+  </div>
+
+  <nav class="site-nav" aria-label="主导航">
+    
+      
+        <a class="site-nav-link " href="/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+          <span>首页</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/categories/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+          <span>分类</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/tags/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+          <span>标签</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/archives/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+          <span>归档</span>
+        </a>
+      
+    
+  </nav>
+
+  <div class="header-tools">
+    <button class="icon-button js-search-open" type="button" aria-label="搜索文章">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+    </button>
+    <div class="accent-picker">
+      <button class="icon-button accent-toggle" type="button" aria-label="选择主题色" title="选择主题色" aria-haspopup="true" aria-expanded="false" aria-controls="accent-menu">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-palette flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-palette"></use></svg>
+
+      </button>
+      <div class="accent-menu" id="accent-menu" role="menu" aria-label="主题色">
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="橙色" aria-checked="false" data-accent-option="orange">
+          <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="紫色" aria-checked="false" data-accent-option="purple">
+          <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="樱花粉" aria-checked="false" data-accent-option="sakura">
+          <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="蓝色" aria-checked="false" data-accent-option="blue">
+          <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="粉色" aria-checked="false" data-accent-option="pink">
+          <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="绿色" aria-checked="false" data-accent-option="green">
+          <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="黑色" aria-checked="false" data-accent-option="black">
+          <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+    <button class="theme-toggle" type="button" aria-label="切换颜色模式">
+      <span class="theme-icon theme-icon--sun">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-sun"></use></svg>
+</span>
+      <span class="theme-icon theme-icon--moon">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-moon"></use></svg>
+</span>
+    </button>
+  </div>
+</header>
+
+
+  
+  <main class="paper-shell paper-shell--article">
+    
+
+<aside id="paper-sidebar-drawer" class="paper-sidebar paper-sidebar--right" aria-label="侧边栏">
+  <div class="drawer-toolbar" aria-label="侧边栏工具">
+    <div class="drawer-accent-options" role="group" aria-label="主题色">
+      <button type="button" class="accent-option" aria-label="橙色" aria-pressed="false" data-accent-option="orange">
+        <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="紫色" aria-pressed="false" data-accent-option="purple">
+        <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="樱花粉" aria-pressed="false" data-accent-option="sakura">
+        <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="蓝色" aria-pressed="false" data-accent-option="blue">
+        <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="粉色" aria-pressed="false" data-accent-option="pink">
+        <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="绿色" aria-pressed="false" data-accent-option="green">
+        <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="黑色" aria-pressed="false" data-accent-option="black">
+        <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+      </button>
+    </div>
+    <button class="icon-button drawer-close js-sidebar-close" type="button" aria-label="关闭侧边栏">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+    </button>
+  </div>
+
+  <section class="side-card nav-card">
+    <nav class="site-nav-drawer" aria-label="移动端导航">
+      
+        
+          <a class="" href="/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+            <span>首页</span>
+          </a>
+        
+      
+        
+          <a class="" href="/categories/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+            <span>分类</span>
+          </a>
+        
+      
+        
+          <a class="" href="/tags/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+            <span>标签</span>
+          </a>
+        
+      
+        
+          <a class="" href="/archives/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+            <span>归档</span>
+          </a>
+        
+      
+    </nav>
+  </section>
+
+  <section class="side-card profile-card">
+    
+      <div class="avatar avatar--image avatar--circle">
+        <img src="/images/avatar.jpg" alt="lorena" loading="lazy" referrerpolicy="no-referrer">
+      </div>
+    
+    <h3>lorena</h3>
+    <p class="profile-role">isfj 小女孩 · 懒惰但上进</p>
+    <p>目标成为estj的isfj小女孩，持续学习新知识中....</p>
+    
+    <div class="socials">
+      
+        <a href="https://github.com/LIURUI2004" target="_blank" rel="noopener" aria-label="GitHub" data-tooltip="GitHub">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 496 512" fill="currentColor" class="lucide lucide-github flatpaper-icon flatpaper-icon--fa-brands" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-fa-brands-github"></use></svg>
+
+          
+        </a>
+      
+        <a href="mailto:liurui20041008@gmail.com" target="_blank" rel="noopener" aria-label="Email" data-tooltip="Email">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-mail"></use></svg>
+
+          
+        </a>
+      
+        <a href="https://www.xiaohongshu.com/user/profile/66c9fef3000000001d0231f5" target="_blank" rel="noopener" aria-label="小红书" data-tooltip="小红书主页">
+          
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" class="lucide lucide-custom" aria-hidden="true"><path d="M22.405 9.879c.002.016.01.02.07.019h.725a.797.797 0 0 0 .78-.972.794.794 0 0 0-.884-.618.795.795 0 0 0-.692.794c0 .101-.002.666.001.777zm-11.509 4.808c-.203.001-1.353.004-1.685.003a2.528 2.528 0 0 1-.766-.126.025.025 0 0 0-.03.014L7.7 16.127a.025.025 0 0 0 .01.032c.111.06.336.124.495.124.66.01 1.32.002 1.981 0 .01 0 .02-.006.023-.015l.712-1.545a.025.025 0 0 0-.024-.036zM.477 9.91c-.071 0-.076.002-.076.01a.834.834 0 0 0-.01.08c-.027.397-.038.495-.234 3.06-.012.24-.034.389-.135.607-.026.057-.033.042.003.112.046.092.681 1.523.787 1.74.008.015.011.02.017.02.008 0 .033-.026.047-.044.147-.187.268-.391.371-.606.306-.635.44-1.325.486-1.706.014-.11.021-.22.03-.33l.204-2.616.022-.293c.003-.029 0-.033-.03-.034zm7.203 3.757a1.427 1.427 0 0 1-.135-.607c-.004-.084-.031-.39-.235-3.06a.443.443 0 0 0-.01-.082c-.004-.011-.052-.008-.076-.008h-1.48c-.03.001-.034.005-.03.034l.021.293c.076.982.153 1.964.233 2.946.05.4.186 1.085.487 1.706.103.215.223.419.37.606.015.018.037.051.048.049.02-.003.742-1.642.804-1.765.036-.07.03-.055.003-.112zm3.861-.913h-.872a.126.126 0 0 1-.116-.178l1.178-2.625a.025.025 0 0 0-.023-.035l-1.318-.003a.148.148 0 0 1-.135-.21l.876-1.954a.025.025 0 0 0-.023-.035h-1.56c-.01 0-.02.006-.024.015l-.926 2.068c-.085.169-.314.634-.399.938a.534.534 0 0 0-.02.191.46.46 0 0 0 .23.378.981.981 0 0 0 .46.119h.59c.041 0-.688 1.482-.834 1.972a.53.53 0 0 0-.023.172.465.465 0 0 0 .23.398c.15.092.342.12.475.12l1.66-.001c.01 0 .02-.006.023-.015l.575-1.28a.025.025 0 0 0-.024-.035zm-6.93-4.937H3.1a.032.032 0 0 0-.034.033c0 1.048-.01 2.795-.01 6.829 0 .288-.269.262-.28.262h-.74c-.04.001-.044.004-.04.047.001.037.465 1.064.555 1.263.01.02.03.033.051.033.157.003.767.009.938-.014.153-.02.3-.06.438-.132.3-.156.49-.419.595-.765.052-.172.075-.353.075-.533.002-2.33 0-4.66-.007-6.991a.032.032 0 0 0-.032-.032zm11.784 6.896c0-.014-.01-.021-.024-.022h-1.465c-.048-.001-.049-.002-.05-.049v-4.66c0-.072-.005-.07.07-.07h.863c.08 0 .075.004.075-.074V8.393c0-.082.006-.076-.08-.076h-3.5c-.064 0-.075-.006-.075.073v1.445c0 .083-.006.077.08.077h.854c.075 0 .07-.004.07.07v4.624c0 .095.008.084-.085.084-.37 0-1.11-.002-1.304 0-.048.001-.06.03-.06.03l-.697 1.519s-.014.025-.008.036c.006.01.013.008.058.008 1.748.003 3.495.002 5.243.002.03-.001.034-.006.035-.033v-1.539zm4.177-3.43c0 .013-.007.023-.02.024-.346.006-.692.004-1.037.004-.014-.002-.022-.01-.022-.024-.005-.434-.007-.869-.01-1.303 0-.072-.006-.071.07-.07l.733-.003c.041 0 .081.002.12.015.093.025.16.107.165.204.006.431.002 1.153.001 1.153zm2.67.244a1.953 1.953 0 0 0-.883-.222h-.18c-.04-.001-.04-.003-.042-.04V10.21c0-.132-.007-.263-.025-.394a1.823 1.823 0 0 0-.153-.53 1.533 1.533 0 0 0-.677-.71 2.167 2.167 0 0 0-1-.258c-.153-.003-.567 0-.72 0-.07 0-.068.004-.068-.065V7.76c0-.031-.01-.041-.046-.039H17.93s-.016 0-.023.007c-.006.006-.008.012-.008.023v.546c-.008.036-.057.015-.082.022h-.95c-.022.002-.028.008-.03.032v1.481c0 .09-.004.082.082.082h.913c.082 0 .072.128.072.128V11.19s.003.117-.06.117h-1.482c-.068 0-.06.082-.06.082v1.445s-.01.068.064.068h1.457c.082 0 .076-.006.076.079v3.225c0 .088-.007.081.082.081h1.43c.09 0 .082.007.082-.08v-3.27c0-.029.006-.035.033-.035l2.323-.003c.098 0 .191.02.28.061a.46.46 0 0 1 .274.407c.008.395.003.79.003 1.185 0 .259-.107.367-.33.367h-1.218c-.023.002-.029.008-.028.033.184.437.374.871.57 1.303a.045.045 0 0 0 .04.026c.17.005.34.002.51.003.15-.002.517.004.666-.01a2.03 2.03 0 0 0 .408-.075c.59-.18.975-.698.976-1.313v-1.981c0-.128-.01-.254-.034-.38 0 .078-.029-.641-.724-.998z"/></svg>
+          
+        </a>
+      
+      
+        
+        
+        <a href="/atom.xml" aria-label="RSS feed" data-tooltip="RSS feed">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rss flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-rss"></use></svg>
+
+        </a>
+      
+    </div>
+  </section>
+
+  
+
+  
+    <div class="post-sticky-stack">
+      <section class="side-card toc-card">
+        <header class="toc-card__head">
+          <h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table-of-contents flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-table-of-contents"></use></svg>
+文章目录</h2>
+          <button type="button" class="toc-toggle-all" data-action="toggle-toc" aria-pressed="false" aria-label="展开全部目录" title="展开全部目录">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-chevron-down"></use></svg>
+
+          </button>
+        </header>
+        <div class="toc-content">
+          
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-LangGraph-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="toc-text">1. LangGraph 是什么？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-LangGraph-%E6%A0%B8%E5%BF%83%E5%90%8D%E8%AF%8D%E4%B8%8E-API"><span class="toc-text">2. LangGraph 核心名词与 API</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-State%EF%BC%9A%E8%8A%82%E7%82%B9%E4%B9%8B%E9%97%B4%E5%85%B1%E4%BA%AB%E7%9A%84%E6%95%B0%E6%8D%AE"><span class="toc-text">3. State：节点之间共享的数据</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-Node%EF%BC%9A%E5%AE%8C%E6%88%90%E5%85%B7%E4%BD%93%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%87%BD%E6%95%B0"><span class="toc-text">4. Node：完成具体任务的函数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-%E5%9B%9B%E4%B8%AA%E6%9C%80%E9%87%8D%E8%A6%81%E7%9A%84-Graph-API"><span class="toc-text">5. 四个最重要的 Graph API</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E5%88%9B%E5%BB%BA%E5%B7%A5%E4%BD%9C%E6%B5%81%EF%BC%9AStateGraph"><span class="toc-text">5.1 创建工作流：StateGraph()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-%E6%B3%A8%E5%86%8C%E8%8A%82%E7%82%B9%EF%BC%9Aadd-node"><span class="toc-text">5.2 注册节点：add_node()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-%E5%BB%BA%E7%AB%8B%E5%9B%BA%E5%AE%9A%E8%BF%9E%E6%8E%A5%EF%BC%9Aadd-edge"><span class="toc-text">5.3 建立固定连接：add_edge()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-4-%E5%BB%BA%E7%AB%8B%E6%9D%A1%E4%BB%B6%E8%BF%9E%E6%8E%A5%EF%BC%9Aadd-conditional-edges"><span class="toc-text">5.4 建立条件连接：add_conditional_edges()</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-%E9%A1%B9%E7%9B%AE%E4%B8%89%E4%B8%AA%E6%A0%B8%E5%BF%83%E6%96%87%E4%BB%B6%EF%BC%9A%E5%90%84%E8%87%AA%E8%B4%9F%E8%B4%A3%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="toc-text">6. 项目三个核心文件：各自负责什么？</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%BA%90%E7%A0%81%E6%96%87%E4%BB%B6%E5%88%86%E6%9E%90%E8%A1%A8"><span class="toc-text">源码文件分析表</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#7-graph-py%EF%BC%9A%E5%B7%A5%E4%BD%9C%E6%B5%81%E6%80%BB%E8%B0%83%E5%BA%A6%E4%B8%AD%E5%BF%83"><span class="toc-text">7. graph.py：工作流总调度中心</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#7-1-build-graph-%E7%9A%84%E8%81%8C%E8%B4%A3"><span class="toc-text">7.1 build_graph() 的职责</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-2-%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E4%B8%8E-partial"><span class="toc-text">7.2 依赖注入与 partial()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-3-%E9%A1%B9%E7%9B%AE%E4%B8%AD%E5%AD%A6%E4%B9%A0%E8%BF%87%E7%9A%84%E4%B8%BB%E8%A6%81%E8%8A%82%E7%82%B9"><span class="toc-text">7.3 项目中学习过的主要节点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-4-%E7%AC%AC%E4%B8%80%E5%A4%84%E5%88%86%E6%B5%81%EF%BC%9A%E5%AE%89%E5%85%A8%E6%A3%80%E6%9F%A5%E4%B9%8B%E5%90%8E"><span class="toc-text">7.4 第一处分流：安全检查之后</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-5-%E7%AC%AC%E4%BA%8C%E5%A4%84%E5%88%86%E6%B5%81%EF%BC%9A%E5%A4%8D%E6%9D%82%E5%BA%A6%E5%88%A4%E6%96%AD%E4%B9%8B%E5%90%8E"><span class="toc-text">7.5 第二处分流：复杂度判断之后</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#8-state-py%EF%BC%9AAgentState-%E4%B8%8E%E5%88%9D%E5%A7%8B%E7%8A%B6%E6%80%81"><span class="toc-text">8. state.py：AgentState 与初始状态</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#8-1-AgentState-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="toc-text">8.1 AgentState 是什么？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-2-%E6%AD%A4%E5%89%8D%E5%AD%A6%E4%B9%A0%E5%88%B0%E7%9A%84%E5%88%9D%E5%A7%8B-State-%E5%AD%97%E6%AE%B5"><span class="toc-text">8.2 此前学习到的初始 State 字段</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#9-chat-service-py%EF%BC%9A%E8%AF%B7%E6%B1%82%E5%A6%82%E4%BD%95%E8%BF%9B%E5%85%A5-Graph%EF%BC%9F"><span class="toc-text">9. chat_service.py：请求如何进入 Graph？</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#9-1-%E6%9E%84%E5%BB%BA-Graph"><span class="toc-text">9.1 构建 Graph</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-2-%E5%A4%84%E7%90%86%E4%B8%80%E6%AC%A1%E8%AF%B7%E6%B1%82"><span class="toc-text">9.2 处理一次请求</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-3-compile-%E5%92%8C-ainvoke-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F"><span class="toc-text">9.3 compile() 和 ainvoke() 有什么区别？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-4-%E5%90%8C%E6%AD%A5%E3%80%81%E5%BC%82%E6%AD%A5%E5%92%8C%E6%B5%81%E5%BC%8F%E6%89%A7%E8%A1%8C"><span class="toc-text">9.4 同步、异步和流式执行</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#10-%E6%9C%AC%E7%AB%A0%E6%9C%80%E9%87%8D%E8%A6%81%E7%9A%84%E4%B8%A4%E5%BC%A0%E8%A1%A8"><span class="toc-text">10. 本章最重要的两张表</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%BA%90%E7%A0%81%E6%96%87%E4%BB%B6%E5%88%86%E6%9E%90%E8%A1%A8-1"><span class="toc-text">源码文件分析表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Node-%E4%BA%94%E9%97%AE"><span class="toc-text">Node 五问</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#11-%E6%9C%AC%E7%AB%A0%E7%9F%A5%E8%AF%86%E4%B8%B2%E8%81%94"><span class="toc-text">11. 本章知识串联</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#12-%E8%87%AA%E6%B5%8B%E9%A2%98"><span class="toc-text">12. 自测题</span></a></li></ol>
+          
+        </div>
+      </section>
+      
+
+
+    </div>
+  
+
+  
+
+</aside>
+
+    <section class="paper-main">
+      
+
+<div class="article-tape-wrap">
+<span class="tape tape--top-right" aria-hidden="true"></span>
+<article class="article-paper">
+  
+  <header class="article-header">
+    
+      <a class="label-pill" href="/categories/agent%E7%AC%94%E8%AE%B0/">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+        agent笔记
+      </a>
+    
+    <h1>Adaptive-RAG 项目学习笔记（二）：LangGraph 与核心源码调用关系</h1>
+    <div class="meta-line meta-line--article">
+      <span class="meta-date">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-calendar"></use></svg>
+2026-11-26</span>
+      
+        <span class="meta-tags">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+          <a class="meta-tag-link" href="/tags/Adaptive-RAG/">#Adaptive-RAG</a><a class="meta-tag-link" href="/tags/LangGraph/">#LangGraph</a><a class="meta-tag-link" href="/tags/State/">#State</a><a class="meta-tag-link" href="/tags/Graph/">#Graph</a><a class="meta-tag-link" href="/tags/Python/">#Python</a>
+        </span>
+      
+    </div>
+  </header>
+
+  
+
+
+  <div class="article-content">
+    <h1 id="Adaptive-RAG-项目学习笔记（二）：LangGraph-与核心源码调用关系"><a href="#Adaptive-RAG-项目学习笔记（二）：LangGraph-与核心源码调用关系" class="headerlink" title="Adaptive-RAG 项目学习笔记（二）：LangGraph 与核心源码调用关系"></a>Adaptive-RAG 项目学习笔记（二）：LangGraph 与核心源码调用关系</h1><blockquote>
+<p>本章整理此前已经学习过的 LangGraph 基础概念，以及 <code>state.py</code>、<code>graph.py</code>、<code>chat_service.py</code> 三个核心文件的分工。<br>阅读目标：能够顺着一次用户请求，讲清楚数据如何进入 Graph、经过节点处理，最后如何返回。</p>
+</blockquote>
+<h2 id="1-LangGraph-是什么？"><a href="#1-LangGraph-是什么？" class="headerlink" title="1. LangGraph 是什么？"></a>1. LangGraph 是什么？</h2><p>LangGraph 可以理解为：<strong>把多个 Python 函数组织成一张可执行的工作流图，并管理它们之间的数据传递和执行顺序。</strong></p>
+<p>可以先把它想象成一张流程图：</p>
+<ul>
+<li>Node（节点）：负责完成一项具体任务。</li>
+<li>Edge（边）：规定节点之间如何连接。</li>
+<li>State（状态）：保存工作流运行过程中的共享数据。</li>
+<li>Graph（图）：组织节点、边和条件路由。</li>
+</ul>
+<p><img src="/2026/11/26/langgraph-core-source/05-state-lifecycle.svg" alt="Graph、Node与State概念"></p>
+<h2 id="2-LangGraph-核心名词与-API"><a href="#2-LangGraph-核心名词与-API" class="headerlink" title="2. LangGraph 核心名词与 API"></a>2. LangGraph 核心名词与 API</h2><table>
+<thead>
+<tr>
+<th>名词 &#x2F; API</th>
+<th>是什么</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>State</code>（状态）</td>
+<td>工作流共享的数据</td>
+<td>保存用户输入、中间结果和最终回答</td>
+</tr>
+<tr>
+<td><code>AgentState</code></td>
+<td>项目定义的状态类型</td>
+<td>规定 State 可以有哪些字段</td>
+</tr>
+<tr>
+<td><code>StateGraph</code></td>
+<td>LangGraph 的图构建器</td>
+<td>创建一张以指定 State 为基础的工作流图</td>
+</tr>
+<tr>
+<td><code>Node</code>（节点）</td>
+<td>通常是一个 Python 函数</td>
+<td>读取 State、执行任务、返回状态更新</td>
+</tr>
+<tr>
+<td><code>add_node()</code></td>
+<td>节点注册方法</td>
+<td>把函数注册为 Graph 节点</td>
+</tr>
+<tr>
+<td><code>add_edge()</code></td>
+<td>固定连接方法</td>
+<td>指定一个节点完成后进入哪个节点</td>
+</tr>
+<tr>
+<td><code>add_conditional_edges()</code></td>
+<td>条件连接方法</td>
+<td>根据条件函数的结果选择下一个节点</td>
+</tr>
+<tr>
+<td><code>START</code></td>
+<td>开始标记</td>
+<td>表示工作流入口</td>
+</tr>
+<tr>
+<td><code>END</code></td>
+<td>结束标记</td>
+<td>表示工作流结束</td>
+</tr>
+<tr>
+<td><code>compile()</code></td>
+<td>编译方法</td>
+<td>将定义好的工作流编译成可执行对象</td>
+</tr>
+<tr>
+<td><code>invoke()</code></td>
+<td>同步执行方法</td>
+<td>同步运行已编译的 Graph</td>
+</tr>
+<tr>
+<td><code>ainvoke()</code></td>
+<td>异步执行方法</td>
+<td>异步运行已编译的 Graph</td>
+</tr>
+<tr>
+<td><code>stream()</code> &#x2F; <code>astream()</code></td>
+<td>流式执行方法</td>
+<td>逐步获取工作流执行过程或更新</td>
+</tr>
+</tbody></table>
+<h2 id="3-State：节点之间共享的数据"><a href="#3-State：节点之间共享的数据" class="headerlink" title="3. State：节点之间共享的数据"></a>3. State：节点之间共享的数据</h2><p>State 可以理解为一份不断补充的“任务档案”。</p>
+<p>例如，用户刚提出问题时，State 可能只有：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;user_query&quot;</span>: <span class="string">&quot;帮我查询订单 ORD10003 的物流&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>意图识别节点执行后，可能增加 <code>intent</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;user_query&quot;</span>: <span class="string">&quot;帮我查询订单 ORD10003 的物流&quot;</span>,</span><br><span class="line">    <span class="string">&quot;intent&quot;</span>: <span class="string">&quot;...&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>路由节点执行后，可能增加 <code>strategy</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;user_query&quot;</span>: <span class="string">&quot;帮我查询订单 ORD10003 的物流&quot;</span>,</span><br><span class="line">    <span class="string">&quot;intent&quot;</span>: <span class="string">&quot;...&quot;</span>,</span><br><span class="line">    <span class="string">&quot;strategy&quot;</span>: <span class="string">&quot;...&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>后续还可能增加计划、工具结果、引用和最终回答等字段。</p>
+<p><strong>关键理解：Node 通常从 State 读取数据，并返回一个字典，告诉 LangGraph 哪些字段需要更新。</strong></p>
+<p>例如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">example_node</span>(<span class="params">state</span>):</span><br><span class="line">    query = state[<span class="string">&quot;user_query&quot;</span>]</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;intent&quot;</span>: <span class="string">&quot;LOGISTICS&quot;</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>state[&quot;user_query&quot;]</code>：读取用户问题。</li>
+<li><code>return &#123;&quot;intent&quot;: ...&#125;</code>：提交需要更新的字段。</li>
+<li><code>return &#123;&#125;</code>：表示当前节点没有提交新的字段更新。</li>
+</ul>
+<p>State 字段不是一开始就必须全部填满，而是随着工作流逐步产生。</p>
+<p><img src="/2026/11/26/langgraph-core-source/05-state-lifecycle.svg" alt="State在工作流中的变化"></p>
+<h2 id="4-Node：完成具体任务的函数"><a href="#4-Node：完成具体任务的函数" class="headerlink" title="4. Node：完成具体任务的函数"></a>4. Node：完成具体任务的函数</h2><p>Node（节点）本质上通常就是一个 Python 函数。</p>
+<p>例如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">classify_intent</span>(<span class="params">state</span>):</span><br><span class="line">    query = state[<span class="string">&quot;user_query&quot;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 根据 query 判断用户意图</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;intent&quot;</span>: <span class="string">&quot;...&quot;</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<p>每个 Node 都可以按照下面四步理解：</p>
+<ol>
+<li>接收当前 State。</li>
+<li>读取完成任务所需的字段。</li>
+<li>执行具体逻辑。</li>
+<li>返回需要更新的字段。</li>
+</ol>
+<p>后续阅读任何 Node，都要回答五个问题：</p>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>需要弄清楚什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1. 输入是什么？</td>
+<td>Node 接收什么参数？</td>
+</tr>
+<tr>
+<td>2. 读取 State 的哪些字段？</td>
+<td>例如 <code>user_query</code>、<code>intent</code>、<code>strategy</code></td>
+</tr>
+<tr>
+<td>3. 它具体做什么？</td>
+<td>调用模型、检索文档、规划任务或执行工具？</td>
+</tr>
+<tr>
+<td>4. 它返回什么？</td>
+<td>返回哪些字段更新？</td>
+</tr>
+<tr>
+<td>5. 下一个节点是谁？</td>
+<td>查看固定边或条件边</td>
+</tr>
+</tbody></table>
+<h2 id="5-四个最重要的-Graph-API"><a href="#5-四个最重要的-Graph-API" class="headerlink" title="5. 四个最重要的 Graph API"></a>5. 四个最重要的 Graph API</h2><h3 id="5-1-创建工作流：StateGraph"><a href="#5-1-创建工作流：StateGraph" class="headerlink" title="5.1 创建工作流：StateGraph()"></a>5.1 创建工作流：<code>StateGraph()</code></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">graph = StateGraph(AgentState)</span><br></pre></td></tr></table></figure>
+
+<p>含义：创建一张以 <code>AgentState</code> 作为状态结构的工作流图。</p>
+<h3 id="5-2-注册节点：add-node"><a href="#5-2-注册节点：add-node" class="headerlink" title="5.2 注册节点：add_node()"></a>5.2 注册节点：<code>add_node()</code></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">graph.add_node(<span class="string">&quot;plan_tasks&quot;</span>, planner_node)</span><br></pre></td></tr></table></figure>
+
+<p>含义：把 <code>planner_node</code> 函数注册为名为 <code>plan_tasks</code> 的节点。</p>
+<p>注意：<strong>注册节点不等于执行节点。</strong> 这一步只是告诉 Graph，工作流中存在这个节点。</p>
+<h3 id="5-3-建立固定连接：add-edge"><a href="#5-3-建立固定连接：add-edge" class="headerlink" title="5.3 建立固定连接：add_edge()"></a>5.3 建立固定连接：<code>add_edge()</code></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">graph.add_edge(<span class="string">&quot;plan_tasks&quot;</span>, <span class="string">&quot;execute_tools&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>含义：<code>plan_tasks</code> 执行完成后，接着进入 <code>execute_tools</code>。</p>
+<h3 id="5-4-建立条件连接：add-conditional-edges"><a href="#5-4-建立条件连接：add-conditional-edges" class="headerlink" title="5.4 建立条件连接：add_conditional_edges()"></a>5.4 建立条件连接：<code>add_conditional_edges()</code></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">graph.add_conditional_edges(</span><br><span class="line">    <span class="string">&quot;route_complexity&quot;</span>,</span><br><span class="line">    route_function,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;AGENT&quot;</span>: <span class="string">&quot;plan_tasks&quot;</span>,</span><br><span class="line">        <span class="string">&quot;SINGLE&quot;</span>: <span class="string">&quot;retrieve_docs&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>三个部分：</p>
+<ol>
+<li><code>&quot;route_complexity&quot;</code>：从哪个节点之后进行条件路由。</li>
+<li><code>route_function</code>：负责判断并返回路由结果的函数。</li>
+<li>字典：把路由结果映射到目标节点。</li>
+</ol>
+<h2 id="6-项目三个核心文件：各自负责什么？"><a href="#6-项目三个核心文件：各自负责什么？" class="headerlink" title="6. 项目三个核心文件：各自负责什么？"></a>6. 项目三个核心文件：各自负责什么？</h2><p>目前学习过的三个关键文件：</p>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>主要职责</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>app/agents/state.py</code></td>
+<td>定义 <code>AgentState</code>，规定工作流状态有哪些字段</td>
+</tr>
+<tr>
+<td><code>app/agents/graph.py</code></td>
+<td>创建 Graph，注册节点，连接节点，配置条件路由并编译</td>
+</tr>
+<tr>
+<td><code>app/services/chat_service.py</code></td>
+<td>接收用户请求，准备初始 State，启动 Graph，整理最终响应</td>
+</tr>
+</tbody></table>
+<p>可以用一句话记忆：</p>
+<ul>
+<li><code>state.py</code>：规定数据长什么样。</li>
+<li><code>graph.py</code>：规定工作流怎么走。</li>
+<li><code>chat_service.py</code>：负责把一次用户请求送进工作流，再把结果交还给用户。</li>
+</ul>
+<h3 id="源码文件分析表"><a href="#源码文件分析表" class="headerlink" title="源码文件分析表"></a>源码文件分析表</h3><p>以后每学习一个源码文件，都填写这张表。</p>
+<table>
+<thead>
+<tr>
+<th>要回答的问题</th>
+<th><code>graph.py</code> 示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>这个文件负责什么？</td>
+<td>构建工作流</td>
+</tr>
+<tr>
+<td>谁调用它？</td>
+<td><code>ChatService</code></td>
+</tr>
+<tr>
+<td>它接收什么？</td>
+<td>LLM、Retriever、Reranker、Registry 等依赖</td>
+</tr>
+<tr>
+<td>它输出什么？</td>
+<td><code>CompiledStateGraph</code>（编译后的可执行工作流）</td>
+</tr>
+<tr>
+<td>它与谁协作？</td>
+<td>State、各个 Node、路由函数</td>
+</tr>
+</tbody></table>
+<h2 id="7-graph-py：工作流总调度中心"><a href="#7-graph-py：工作流总调度中心" class="headerlink" title="7. graph.py：工作流总调度中心"></a>7. graph.py：工作流总调度中心</h2><p>源码位置：<code>app/agents/graph.py</code></p>
+<p>GitHub 源码：<a target="_blank" rel="noopener" href="https://github.com/JEen-wang/Adaptive-rag/blob/main/app/agents/graph.py">graph.py</a></p>
+<h3 id="7-1-build-graph-的职责"><a href="#7-1-build-graph-的职责" class="headerlink" title="7.1 build_graph() 的职责"></a>7.1 <code>build_graph()</code> 的职责</h3><p><code>build_graph()</code> 是构建工作流的函数。</p>
+<p>它接收项目运行需要的组件，创建业务对象，注册节点、连接节点、设置条件路由，最后调用 <code>compile()</code>，返回可执行 Graph。</p>
+<p>此前学习到的主要依赖：</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>llm</code></td>
+<td>LLM（大语言模型）接口</td>
+</tr>
+<tr>
+<td><code>settings</code></td>
+<td>项目配置</td>
+</tr>
+<tr>
+<td><code>retriever</code></td>
+<td>Retriever（检索器），负责从知识库取回相关内容</td>
+</tr>
+<tr>
+<td><code>reranker</code></td>
+<td>Reranker（重排序器），对检索结果重新排序</td>
+</tr>
+<tr>
+<td><code>registry</code></td>
+<td>ToolRegistry（工具注册表），管理可用工具</td>
+</tr>
+</tbody></table>
+<h3 id="7-2-依赖注入与-partial"><a href="#7-2-依赖注入与-partial" class="headerlink" title="7.2 依赖注入与 partial()"></a>7.2 依赖注入与 <code>partial()</code></h3><p>依赖注入（Dependency Injection）是指：需要使用的对象由外部创建，再传入当前组件，而不是由当前组件自己创建所有依赖。</p>
+<p>这样更容易替换组件和进行测试。</p>
+<p>项目还使用 Python 的 <code>partial()</code>（偏函数工具）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> functools <span class="keyword">import</span> partial</span><br><span class="line"></span><br><span class="line">partial(intent_node, classifier=classifier)</span><br></pre></td></tr></table></figure>
+
+<p>它的作用是提前固定函数的一部分参数。</p>
+<p>例如原始函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">intent_node</span>(<span class="params">state, classifier</span>):</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+
+<p>使用 <code>partial()</code> 后，<code>classifier</code> 已经提前绑定，Graph 执行节点时再传入 <code>state</code> 即可。</p>
+<h3 id="7-3-项目中学习过的主要节点"><a href="#7-3-项目中学习过的主要节点" class="headerlink" title="7.3 项目中学习过的主要节点"></a>7.3 项目中学习过的主要节点</h3><table>
+<thead>
+<tr>
+<th>Graph 节点名称</th>
+<th>对应功能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>apply_guardrail</code></td>
+<td>安全检查，例如检查提示词注入风险</td>
+</tr>
+<tr>
+<td><code>classify_intent</code></td>
+<td>识别用户意图</td>
+</tr>
+<tr>
+<td><code>route_complexity</code></td>
+<td>判断问题复杂度和处理策略</td>
+</tr>
+<tr>
+<td><code>retrieve_docs</code></td>
+<td>执行知识检索流程</td>
+</tr>
+<tr>
+<td><code>plan_tasks</code></td>
+<td>制定 Agent 工具调用计划</td>
+</tr>
+<tr>
+<td><code>execute_tools</code></td>
+<td>执行计划中的工具</td>
+</tr>
+<tr>
+<td><code>generate_answer</code></td>
+<td>根据问题、检索内容或工具结果生成回答</td>
+</tr>
+<tr>
+<td><code>refuse_answer</code></td>
+<td>生成拒绝回答</td>
+</tr>
+<tr>
+<td><code>check_faithfulness</code></td>
+<td>检查回答是否有依据、是否忠实于来源</td>
+</tr>
+<tr>
+<td><code>compact_memory</code></td>
+<td>整理或压缩对话记忆</td>
+</tr>
+</tbody></table>
+<p>注意：<code>route_complexity</code> 是 Graph 中的节点名称；它注册的实际函数是 <code>router_node</code>。两者不要混为一谈。</p>
+<h3 id="7-4-第一处分流：安全检查之后"><a href="#7-4-第一处分流：安全检查之后" class="headerlink" title="7.4 第一处分流：安全检查之后"></a>7.4 第一处分流：安全检查之后</h3><p>项目中的 <code>_after_guardrail(state)</code>（安全检查后的条件路由函数）可以概括为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">_after_guardrail</span>(<span class="params">state</span>):</span><br><span class="line">    <span class="keyword">return</span> (</span><br><span class="line">        <span class="string">&quot;refuse_answer&quot;</span></span><br><span class="line">        <span class="keyword">if</span> state.get(<span class="string">&quot;refused&quot;</span>)</span><br><span class="line">        <span class="keyword">else</span> <span class="string">&quot;classify_intent&quot;</span></span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+
+<p>含义：</p>
+<ul>
+<li>如果 <code>refused</code> 为真，进入 <code>refuse_answer</code>。</li>
+<li>否则进入 <code>classify_intent</code>。</li>
+</ul>
+<p>这里的 <code>_after_guardrail()</code> 是条件路由函数，不是通过 <code>add_node()</code> 注册的业务节点。</p>
+<h3 id="7-5-第二处分流：复杂度判断之后"><a href="#7-5-第二处分流：复杂度判断之后" class="headerlink" title="7.5 第二处分流：复杂度判断之后"></a>7.5 第二处分流：复杂度判断之后</h3><p><code>_route_after_complexity(state)</code>（复杂度判断后的条件路由函数）读取 State 中已经产生的 <code>strategy</code>，再决定下一个节点。</p>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>目标节点</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>DIRECT</code></td>
+<td><code>generate_answer</code></td>
+<td>直接生成回答</td>
+</tr>
+<tr>
+<td><code>REFUSE</code></td>
+<td><code>refuse_answer</code></td>
+<td>拒绝回答</td>
+</tr>
+<tr>
+<td><code>SINGLE</code></td>
+<td><code>retrieve_docs</code></td>
+<td>单轮检索</td>
+</tr>
+<tr>
+<td><code>MULTI</code></td>
+<td><code>retrieve_docs</code></td>
+<td>进入检索流程，由检索逻辑处理多轮需求</td>
+</tr>
+<tr>
+<td><code>AGENT</code></td>
+<td><code>plan_tasks</code></td>
+<td>进入 Agent 规划</td>
+</tr>
+</tbody></table>
+<p>需要区分三个名字：</p>
+<ul>
+<li><code>router_node</code>：路由业务节点，调用 AdaptiveRouter 分析问题并产生 <code>strategy</code>。</li>
+<li><code>_route_after_complexity()</code>：条件路由函数，读取 <code>strategy</code> 并映射目标节点。</li>
+<li><code>route_complexity</code>：Graph 中注册的节点名称。</li>
+</ul>
+<p><img src="/2026/11/26/langgraph-core-source/04-graph-routing.svg" alt="Graph主流程与条件路由"></p>
+<p>正常回答路线：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">generate_answer</span><br><span class="line">       ↓</span><br><span class="line">check_faithfulness</span><br><span class="line">       ↓</span><br><span class="line">compact_memory</span><br><span class="line">       ↓</span><br><span class="line">      END</span><br></pre></td></tr></table></figure>
+
+<p>拒绝路线：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">refuse_answer</span><br><span class="line">       ↓</span><br><span class="line">compact_memory</span><br><span class="line">       ↓</span><br><span class="line">      END</span><br></pre></td></tr></table></figure>
+
+<p>拒绝路线不会经过正常回答路线中的 <code>check_faithfulness</code>。</p>
+<h2 id="8-state-py：AgentState-与初始状态"><a href="#8-state-py：AgentState-与初始状态" class="headerlink" title="8. state.py：AgentState 与初始状态"></a>8. state.py：AgentState 与初始状态</h2><p>源码位置：<code>app/agents/state.py</code>，以及 <code>chat_service.py</code> 中的 <code>_initial_state()</code>。</p>
+<h3 id="8-1-AgentState-是什么？"><a href="#8-1-AgentState-是什么？" class="headerlink" title="8.1 AgentState 是什么？"></a>8.1 <code>AgentState</code> 是什么？</h3><p><code>AgentState</code> 是项目定义的状态类型。</p>
+<p>项目使用 <code>TypedDict</code>（用于描述字典字段及类型的类型标注工具）定义状态；<code>total=False</code> 表示字段不要求在每次初始化时全部提供。</p>
+<h3 id="8-2-此前学习到的初始-State-字段"><a href="#8-2-此前学习到的初始-State-字段" class="headerlink" title="8.2 此前学习到的初始 State 字段"></a>8.2 此前学习到的初始 State 字段</h3><table>
+<thead>
+<tr>
+<th>字段</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>trace_id</code></td>
+<td>当前请求的追踪 ID</td>
+</tr>
+<tr>
+<td><code>session_id</code></td>
+<td>当前对话会话 ID</td>
+</tr>
+<tr>
+<td><code>user_id</code></td>
+<td>用户 ID</td>
+</tr>
+<tr>
+<td><code>user_query</code></td>
+<td>用户当前提出的问题</td>
+</tr>
+<tr>
+<td><code>messages</code></td>
+<td>近期对话历史</td>
+</tr>
+<tr>
+<td><code>summary</code></td>
+<td>历史对话摘要</td>
+</tr>
+<tr>
+<td><code>retrieved_chunks</code></td>
+<td>检索得到的文档片段</td>
+</tr>
+<tr>
+<td><code>tool_results</code></td>
+<td>工具执行结果</td>
+</tr>
+<tr>
+<td><code>citations</code></td>
+<td>回答使用的引用信息</td>
+</tr>
+<tr>
+<td><code>refused</code></td>
+<td>是否进入拒绝处理</td>
+</tr>
+<tr>
+<td><code>step_count</code></td>
+<td>Agent 执行步骤计数</td>
+</tr>
+<tr>
+<td><code>token_usage</code></td>
+<td>Token 使用统计</td>
+</tr>
+<tr>
+<td><code>latency</code></td>
+<td>各阶段耗时统计</td>
+</tr>
+<tr>
+<td><code>confirm_action_id</code></td>
+<td>用户确认操作相关的 ID</td>
+</tr>
+<tr>
+<td><code>confirmed_action</code></td>
+<td>已确认的操作信息</td>
+</tr>
+<tr>
+<td><code>idempotency_key</code></td>
+<td>幂等控制标识，用于避免同一操作被重复执行</td>
+</tr>
+</tbody></table>
+<p>注意：初始 State 不一定已经包含 <code>intent</code>、<code>strategy</code>、<code>plan</code>、<code>final_answer</code> 等字段。这些字段会在后续节点执行时逐步产生或更新。</p>
+<h2 id="9-chat-service-py：请求如何进入-Graph？"><a href="#9-chat-service-py：请求如何进入-Graph？" class="headerlink" title="9. chat_service.py：请求如何进入 Graph？"></a>9. chat_service.py：请求如何进入 Graph？</h2><p>源码位置：<code>app/services/chat_service.py</code></p>
+<p><code>ChatService</code>（聊天服务类）负责接收一次用户请求、准备初始状态、启动 Graph，并整理最终响应。</p>
+<p>此前学习到的调用关系：</p>
+<p><img src="/2026/11/26/langgraph-core-source/06-chatservice-sequence.svg" alt="ChatService请求执行流程"></p>
+<h3 id="9-1-构建-Graph"><a href="#9-1-构建-Graph" class="headerlink" title="9.1 构建 Graph"></a>9.1 构建 Graph</h3><p><code>ChatService</code> 初始化时会调用 <code>build_graph()</code>，将 LLM、配置、检索器、重排序器、工具注册表等依赖传进去，并保存编译后的 Graph。</p>
+<p>概念上：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">self</span>._graph = build_graph(</span><br><span class="line">    llm=llm,</span><br><span class="line">    settings=settings,</span><br><span class="line">    retriever=retriever,</span><br><span class="line">    reranker=reranker,</span><br><span class="line">    registry=<span class="variable language_">self</span>.registry,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<h3 id="9-2-处理一次请求"><a href="#9-2-处理一次请求" class="headerlink" title="9.2 处理一次请求"></a>9.2 处理一次请求</h3><p>此前学习到的主要逻辑：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">state = <span class="keyword">await</span> <span class="variable language_">self</span>._initial_state(...)</span><br><span class="line">result = <span class="keyword">await</span> <span class="variable language_">self</span>._invoke(state)</span><br><span class="line">response = <span class="variable language_">self</span>._to_response(result, ...)</span><br></pre></td></tr></table></figure>
+
+<p>对应关系：</p>
+<ol>
+<li><code>_initial_state()</code>：准备初始 State。</li>
+<li><code>_invoke()</code>：调用 Graph 执行工作流。</li>
+<li><code>_to_response()</code>：把最终 State 整理成 API 响应。</li>
+</ol>
+<h3 id="9-3-compile-和-ainvoke-有什么区别？"><a href="#9-3-compile-和-ainvoke-有什么区别？" class="headerlink" title="9.3 compile() 和 ainvoke() 有什么区别？"></a>9.3 <code>compile()</code> 和 <code>ainvoke()</code> 有什么区别？</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">app = graph.<span class="built_in">compile</span>()</span><br></pre></td></tr></table></figure>
+
+<p><code>compile()</code>（编译方法）负责把已经定义好的工作流编译成可执行对象。它不代表已经处理了某个用户问题。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">result = <span class="keyword">await</span> app.ainvoke(state)</span><br></pre></td></tr></table></figure>
+
+<p><code>ainvoke()</code>（异步执行方法）才是真正传入 State 并运行工作流。</p>
+<p><code>result</code> 通常是整个工作流执行后的最终 State，而不是单独的回答字符串。最终回答一般保存在：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">result.get(<span class="string">&quot;final_answer&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>之后 <code>_to_response()</code> 再提取回答和其他响应信息。</p>
+<h3 id="9-4-同步、异步和流式执行"><a href="#9-4-同步、异步和流式执行" class="headerlink" title="9.4 同步、异步和流式执行"></a>9.4 同步、异步和流式执行</h3><table>
+<thead>
+<tr>
+<th>方法</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>invoke()</code></td>
+<td>同步执行 Graph</td>
+</tr>
+<tr>
+<td><code>ainvoke()</code></td>
+<td>异步执行 Graph</td>
+</tr>
+<tr>
+<td><code>stream()</code></td>
+<td>同步流式获取执行过程</td>
+</tr>
+<tr>
+<td><code>astream()</code></td>
+<td>异步流式获取执行过程</td>
+</tr>
+</tbody></table>
+<p>项目使用 <code>ainvoke()</code>，是因为工作流中可能需要等待 LLM、数据库、检索器和工具等 I&#x2F;O 操作。</p>
+<p>注意：流式获取节点更新，不等于最终答案一定逐字流式生成；还需要看项目如何处理和发送这些事件。</p>
+<h2 id="10-本章最重要的两张表"><a href="#10-本章最重要的两张表" class="headerlink" title="10. 本章最重要的两张表"></a>10. 本章最重要的两张表</h2><h3 id="源码文件分析表-1"><a href="#源码文件分析表-1" class="headerlink" title="源码文件分析表"></a>源码文件分析表</h3><table>
+<thead>
+<tr>
+<th>要回答的问题</th>
+<th>示例：<code>graph.py</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>这个文件负责什么？</td>
+<td>构建工作流</td>
+</tr>
+<tr>
+<td>谁调用它？</td>
+<td><code>ChatService</code></td>
+</tr>
+<tr>
+<td>它接收什么？</td>
+<td>LLM、Retriever、Reranker、Registry 等</td>
+</tr>
+<tr>
+<td>它输出什么？</td>
+<td><code>CompiledStateGraph</code></td>
+</tr>
+<tr>
+<td>它与谁协作？</td>
+<td>State、各个 Node、路由函数</td>
+</tr>
+</tbody></table>
+<h3 id="Node-五问"><a href="#Node-五问" class="headerlink" title="Node 五问"></a>Node 五问</h3><table>
+<thead>
+<tr>
+<th>问题</th>
+<th>需要回答的内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1. 输入是什么？</td>
+<td>接收什么参数？通常是当前 State</td>
+</tr>
+<tr>
+<td>2. 读取哪些 State 字段？</td>
+<td>例如 <code>user_query</code>、<code>intent</code>、<code>strategy</code></td>
+</tr>
+<tr>
+<td>3. 具体做什么？</td>
+<td>调用模型、检索文档、规划任务或执行工具</td>
+</tr>
+<tr>
+<td>4. 返回什么？</td>
+<td>返回哪些字段更新？</td>
+</tr>
+<tr>
+<td>5. 下一个节点是谁？</td>
+<td>查看 <code>add_edge()</code> 或 <code>add_conditional_edges()</code></td>
+</tr>
+</tbody></table>
+<h2 id="11-本章知识串联"><a href="#11-本章知识串联" class="headerlink" title="11. 本章知识串联"></a>11. 本章知识串联</h2><p>把一次用户请求从头到尾串起来：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">用户提出问题</span><br><span class="line">    ↓</span><br><span class="line">ChatService.chat()</span><br><span class="line">    ↓</span><br><span class="line">_initial_state()</span><br><span class="line">    ↓</span><br><span class="line">准备初始 AgentState</span><br><span class="line">    ↓</span><br><span class="line">_invoke()</span><br><span class="line">    ↓</span><br><span class="line">self._graph.ainvoke(state)</span><br><span class="line">    ↓</span><br><span class="line">Graph 开始执行</span><br><span class="line">    ↓</span><br><span class="line">各个 Node 读取和更新 State</span><br><span class="line">    ↓</span><br><span class="line">条件路由决定下一节点</span><br><span class="line">    ↓</span><br><span class="line">工作流执行结束</span><br><span class="line">    ↓</span><br><span class="line">得到最终 State</span><br><span class="line">    ↓</span><br><span class="line">_to_response()</span><br><span class="line">    ↓</span><br><span class="line">返回用户</span><br></pre></td></tr></table></figure>
+
+<p>一句话记忆：</p>
+<p><strong>ChatService 负责使用 Graph；Graph 负责组织节点和路由；State 负责在节点之间传递数据。</strong></p>
+<h2 id="12-自测题"><a href="#12-自测题" class="headerlink" title="12. 自测题"></a>12. 自测题</h2><ol>
+<li><code>StateGraph(AgentState)</code> 是在做什么？</li>
+<li><code>add_node()</code> 是注册节点还是执行节点？</li>
+<li><code>add_edge()</code> 和 <code>add_conditional_edges()</code> 有什么区别？</li>
+<li><code>build_graph()</code> 和 <code>ChatService.chat()</code> 分别负责什么？</li>
+<li><code>compile()</code> 和 <code>ainvoke()</code> 的区别是什么？</li>
+<li>为什么 <code>ainvoke()</code> 的返回值不是单独的回答字符串？</li>
+<li><code>_after_guardrail()</code> 和 <code>_route_after_complexity()</code> 分别负责什么？</li>
+<li><code>router_node</code>、<code>route_complexity</code>、<code>_route_after_complexity()</code> 有什么区别？</li>
+<li>为什么初始 State 不需要包含所有字段？</li>
+<li>请不看笔记，讲一遍用户请求从 <code>ChatService</code> 到 Graph 再返回响应的完整过程。</li>
+</ol>
+<blockquote>
+<p>本章完成标准：不看笔记，也能画出 ChatService → State → Graph → Node &#x2F; Router → 最终 State → Response 的数据流。</p>
+</blockquote>
+
+  </div>
+
+  <footer class="article-reactions">
+    <div class="reaction-group">
+      <button type="button" class="reaction reaction--comment" aria-label="跳转到评论区" data-action="scroll-to-comments">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-message-circle"></use></svg>
+
+      </button>
+      <span class="reaction-label">评论</span>
+      
+    </div>
+    <div class="reaction-group reaction-group--right">
+      
+      <button type="button" class="reaction reaction--share" aria-label="分享" data-action="share">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2 flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-share-2"></use></svg>
+
+      </button>
+      <span class="reaction-label">分享</span>
+    </div>
+  </footer>
+
+  
+
+
+  <nav class="article-actions">
+    
+      <a class="article-action article-action--prev" href="/2026/11/26/dl-basics-notes/">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-left"></use></svg>
+
+        <span class="action-label">上一篇</span>
+        <span class="action-title">深度学习基础知识速查手册</span>
+      </a>
+    
+    
+      <a class="article-action article-action--next" href="/2026/11/26/adaptive-rag-architecture/">
+        <span class="action-label">下一篇</span>
+        <span class="action-title">Adaptive-RAG 项目学习笔记（一）：整体架构与处理策略</span>
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-right"></use></svg>
+
+      </a>
+    
+  </nav>
+</article>
+</div>
+
+<button type="button" class="back-to-top" data-action="scroll-to-top" aria-label="返回顶部" hidden>
+  
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-up"></use></svg>
+
+</button>
+
+
+  <section class="related-paper">
+    <header class="related-paper__head">
+      <h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-link"></use></svg>
+相关文章</h2>
+      <a class="related-paper__more" href="/archives/">
+        <span>查看更多</span>
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-right"></use></svg>
+
+      </a>
+    </header>
+    <div class="related-paper__grid">
+      
+        <a class="related-card" href="/2026/11/26/adaptive-rag-architecture/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-0 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/2026/11/26/adaptive-rag-architecture/01-adaptive-rag-overview.svg" alt="Adaptive-RAG 项目学习笔记（一）：整体架构与处理策略" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">Adaptive-RAG 项目学习笔记（一）：整体架构与处理策略</strong>
+            <em class="related-card__date">2026-11-26</em>
+          </span>
+        </a>
+      
+    </div>
+  </section>
+
+
+      
+
+
+    </section>
+    
+  </main>
+
+  <div class="sidebar-backdrop js-sidebar-close" aria-hidden="true"></div>
+
+  
+<footer class="site-footer">
+  <span class="site-footer__left">© 2026 By lorena</span>
+  
+    <span class="site-footer__right">
+      
+        <span class="site-footer__row"><span class="site-footer__powered-prefix">Powered by Theme</span> <a href="https://github.com/Homulilly/hexo-theme-flatpaper" target="_blank" rel="noopener">FlatPaper</a></span>
+      
+    </span>
+  
+</footer>
+
+  
+<div class="search-panel" aria-hidden="true" data-index-url="/flatpaper-search.json">
+  <div class="search-backdrop js-search-close"></div>
+  <section class="search-dialog" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <span class="tape tape--top-left" aria-hidden="true"></span>
+    <header class="search-head">
+      <h2><span class="green-dot"></span>搜索文章</h2>
+      <button class="icon-button js-search-close" type="button" aria-label="关闭搜索">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+      </button>
+    </header>
+    <label class="search-field">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+      <input id="flatpaper-search" class="search-input" type="search" placeholder="输入关键词，按 Esc 关闭" autocomplete="off">
+    </label>
+    <div class="search-results" data-empty="输入关键词后显示匹配的文章">
+      <p class="search-empty">输入关键词后显示匹配的文章</p>
+    </div>
+  </section>
+</div>
+
+  <script>
+  window.FLATPAPER_I18N = {"language":"zh-CN","common.posts":"文章","common.categories":"分类","common.tags":"标签","common.comments":"评论","common.share":"分享","common.page":"页面","common.archive":"归档","common.post_list":"文章列表","common.search_posts":"搜索文章","common.random_posts":"随机文章","common.reward":"赞赏","common.view_all":"查看全部","pagination.prev":"上一页","pagination.next":"下一页","pagination.post_pager":"文章分页","pagination.archive_pager":"归档分页","index.featured":"精选文章","index.pinned":"置顶","index.read_more":"阅读全文","index.previous_slide":"上一张","index.next_slide":"下一张","index.carousel_pagination":"轮播页码","index.carousel_slide":"第 %d 张","index.latest_posts":"最新文章","index.empty_posts":"还没有文章。创建第一篇文章后，这里会显示最新内容。","archive.title":"归档","archive.post_list":"文章列表","taxonomy.category_count":"%d 篇","taxonomy.empty_categories":"暂时还没有分类。","taxonomy.empty_tags":"暂时还没有标签。","links.label":"友链","links.title":"友情链接","links.empty_data":"暂未加载到友链数据。请确认 source/_data/links.yml 存在并已 hexo clean。","links.rss_label":"%s 的 RSS","friends_feed.label":"朋友圈","friends_feed.title":"友链朋友圈","friends_feed.loading":"正在加载友链动态…","friends_feed.missing_url":"暂未配置 all.json 地址。","friends_feed.load_failed":"友链动态加载失败，请稍后再试。","friends_feed.empty":"暂时没有抓取到友链文章。","friends_feed.load_more":"加载更多","friends_feed.updated_at":"更新于 %s","friends_feed.friend_count":"%d 位友邻","friends_feed.active_count":"%d 位活跃","friends_feed.article_count":"%d 篇文章","friends_feed.unknown_author":"未知站点","friends_feed.date_unknown":"时间未知","guestbook.label":"留言板","guestbook.title":"留言板","guestbook.loading":"正在铺开留言墙…","guestbook.missing_config":"留言墙需要评论系统：请在主题配置中设置 comments: twikoo（并填写 envId）或 comments: artalk（并填写 server）。","guestbook.load_failed":"留言加载失败，请稍后再试。","guestbook.empty":"墙上还空着，来贴第一张留言吧！","guestbook.load_more":"展开更多留言","guestbook.total_count":"共 %d 条留言","guestbook.latest_note":"墙上展示最新 %d 条","guestbook.jump_to_comment":"查看留言","guestbook.sort_time":"查看最新","guestbook.sort_random":"随机排序","guestbook.anonymous":"匿名访客","guestbook.write_hint":"在下方留言，刷新后就会贴到墙上","post.scroll_to_comments":"跳转到评论区","post.previous":"上一篇","post.next":"下一篇","post.no_previous":"没有更早的文章了","post.no_next":"已经是最新的一篇","post.back_to_top":"返回顶部","post.related_posts":"相关文章","post.view_more":"查看更多","not_found.label":"页面走丢了","not_found.title":"找不到这个页面","not_found.text":"这个地址可能已经移动、删除，或者从未存在。","not_found.home":"返回首页","not_found.search":"搜索文章","search.placeholder":"输入关键词，按 Esc 关闭","search.empty":"输入关键词后显示匹配的文章","search.loading":"正在加载搜索索引…","search.load_failed":"搜索索引加载失败，请重新打开搜索重试","search.no_result":"没有找到与 \"%s\" 相关的文章","search.close":"关闭搜索","code.copy":"复制代码","code.collapse":"折叠代码","code.expand":"展开代码","heading.anchor":"链接到此节: %s","head.tag":"标签：%s","head.category":"分类：%s","head.archive":"归档","head.archive_with_date":"归档：%s","head.page_number":"第 %d 页","navigation.primary":"主导航","navigation.mobile":"移动端导航","navigation.brand_home":"FlatPaper 首页","navigation.brand_menu":"打开站点导航","navigation.open_sidebar":"打开侧边栏","navigation.close_sidebar":"关闭侧边栏","navigation.sidebar":"侧边栏","navigation.sidebar_tools":"侧边栏工具","navigation.site_links":"站点链接","navigation.site_info":"站点信息","colors.choose_theme_color":"选择主题色","colors.theme_color":"主题色","colors.toggle_color_mode":"切换颜色模式","colors.green":"绿色","colors.purple":"紫色","colors.pink":"粉色","colors.sakura":"樱花粉","colors.blue":"蓝色","colors.orange":"橙色","colors.black":"黑色","profile.default_bio":"热爱生活，热爱代码，喜欢分享技术与生活中的点滴。","profile.email_copied":"邮箱已复制","welcome.cta":"开始阅读","welcome.title":"欢迎来到 FlatPaper","welcome.text":"一个专注于内容与阅读体验的博客主题。","home_hero.label":"首页开屏","home_hero.enter":"开始阅读","home_hero.note":"今日","home_hero.default_subtitle":"日常记录","home_hero.nav_links":"开屏导航","home_hero.profile_links":"个人链接","home_hero.tools":"开屏工具","home_hero.shuffle_stickers":"打乱贴纸位置","home_hero.link":"链接","home_hero.sticker_image":"贴纸图片","home_hero.visit_confirm":"要访问 %s 吗？","home_hero.visit":"访问","home_hero.cancel":"取消","toc.title":"文章目录","toc.empty":"目录会根据文章标题自动生成。","toc.expand_all":"展开全部目录","toc.collapse_all":"收起全部目录","sidebar.hot_tags":"热门标签","sidebar.latest_posts":"最新文章"};
+  </script>
+  
+<script src="/js/main.js"></script>
+
+  
+  <script src="/js/twojian-ui.js" defer></script>
+  
+</body>
+</html>

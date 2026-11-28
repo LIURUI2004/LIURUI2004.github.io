@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1450" height="690" viewBox="0 0 1450 690">
+<defs><marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#78877b"/></marker>
+<style>
+.bg{fill:#fbfaf6}
+.title{font:700 34px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#26372c}
+.subtitle{font:400 17px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#68766b}
+.h{font:700 20px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#26372c;text-anchor:middle}
+.p{font:400 15px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#58675d;text-anchor:middle}
+.small{font:400 13px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#66736a;text-anchor:middle}
+.note{font:500 15px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#536258}
+.tag{font:700 14px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#4d654f;text-anchor:middle}
+.arrow{fill:none;stroke:#78877b;stroke-width:2.5;marker-end:url(#arr)}
+.line{fill:none;stroke:#aab4aa;stroke-width:2}
+</style>
+</defs>
+<rect class="bg" width="1450" height="690" rx="22"/>
+<text class="title" x="54" y="62">State：工作流中共享的数据</text>
+<text class="subtitle" x="54" y="96">节点读取当前 State，并返回需要更新的字段</text>
+<rect x="45" y="190" width="285" height="270" rx="17" fill="#ffffff" stroke="#9ba99d" stroke-width="2.2"/><text class="h" x="187" y="250" text-anchor="middle">初始状态</text><text class="p" x="187" y="320" text-anchor="middle">user_query</text><text class="p" x="187" y="368" text-anchor="middle">user_id / session_id</text><text class="p" x="187" y="416" text-anchor="middle">messages / summary</text><rect x="395" y="190" width="285" height="270" rx="17" fill="#e7f0e3" stroke="#789574" stroke-width="2.2"/><text class="h" x="537" y="250" text-anchor="middle">意图与路由</text><text class="p" x="537" y="320" text-anchor="middle">intent</text><text class="p" x="537" y="368" text-anchor="middle">complexity</text><text class="p" x="537" y="416" text-anchor="middle">strategy</text><rect x="745" y="190" width="285" height="270" rx="17" fill="#e5edf7" stroke="#8098b5" stroke-width="2.2"/><text class="h" x="887" y="250" text-anchor="middle">检索 / Agent</text><text class="p" x="887" y="320" text-anchor="middle">retrieved_chunks</text><text class="p" x="887" y="368" text-anchor="middle">plan / tool_results</text><text class="p" x="887" y="416" text-anchor="middle">pending_action</text><rect x="1095" y="190" width="285" height="270" rx="17" fill="#f5edda" stroke="#b99d5d" stroke-width="2.2"/><text class="h" x="1237" y="250" text-anchor="middle">最终结果</text><text class="p" x="1237" y="320" text-anchor="middle">final_answer</text><text class="p" x="1237" y="368" text-anchor="middle">citations / refused</text><text class="p" x="1237" y="416" text-anchor="middle">latency / token_usage</text><path class="arrow" d="M330 325 H385"/><path class="arrow" d="M680 325 H735"/><path class="arrow" d="M1030 325 H1085"/><text class="tag" x="720" y="545" text-anchor="middle">Node：读取 State → 执行业务逻辑 → 返回字段更新 → 后续节点继续读取</text><text class="note" x="720" y="590" text-anchor="middle">State 不要求所有字段在开始时就填满，而是随着工作流逐步产生。</text></svg>

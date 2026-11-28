@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1450" height="780" viewBox="0 0 1450 780">
+<defs><marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#78877b"/></marker>
+<style>
+.bg{fill:#fbfaf6}
+.title{font:700 34px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#26372c}
+.subtitle{font:400 17px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#68766b}
+.h{font:700 20px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#26372c;text-anchor:middle}
+.p{font:400 15px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#58675d;text-anchor:middle}
+.small{font:400 13px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#66736a;text-anchor:middle}
+.note{font:500 15px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#536258}
+.tag{font:700 14px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#4d654f;text-anchor:middle}
+.arrow{fill:none;stroke:#78877b;stroke-width:2.5;marker-end:url(#arr)}
+.line{fill:none;stroke:#aab4aa;stroke-width:2}
+</style>
+</defs>
+<rect class="bg" width="1450" height="780" rx="22"/>
+<text class="title" x="54" y="62">五种 Strategy（处理策略）</text>
+<text class="subtitle" x="54" y="96">策略决定系统采用哪条路线；以下是当前笔记中学到的映射关系</text>
+<rect x="55" y="210" width="230" height="180" rx="16" fill="#e7f0e3" stroke="#789574" stroke-width="2.2"/><text class="h" x="170.0" y="293.0">DIRECT</text><text class="p" x="170.0" y="322.0">直接回答</text><text class="small" x="170" y="330" text-anchor="middle">generate_answer</text><rect x="345" y="210" width="230" height="180" rx="16" fill="#e5edf7" stroke="#8098b5" stroke-width="2.2"/><text class="h" x="460.0" y="293.0">SINGLE</text><text class="p" x="460.0" y="322.0">单轮检索</text><text class="small" x="460" y="330" text-anchor="middle">retrieve_docs</text><rect x="635" y="210" width="230" height="180" rx="16" fill="#e5edf7" stroke="#8098b5" stroke-width="2.2"/><text class="h" x="750.0" y="293.0">MULTI</text><text class="p" x="750.0" y="322.0">多轮 / 多跳检索</text><text class="small" x="750" y="330" text-anchor="middle">retrieve_docs</text><rect x="925" y="210" width="230" height="180" rx="16" fill="#f5edda" stroke="#b99d5d" stroke-width="2.2"/><text class="h" x="1040.0" y="293.0">AGENT</text><text class="p" x="1040.0" y="322.0">规划并执行工具</text><text class="small" x="1040" y="330" text-anchor="middle">plan_tasks → execute_tools</text><rect x="1215" y="210" width="230" height="180" rx="16" fill="#f8e9e6" stroke="#bd8278" stroke-width="2.2"/><text class="h" x="1330.0" y="293.0">REFUSE</text><text class="p" x="1330.0" y="322.0">拒绝处理</text><text class="small" x="1330" y="330" text-anchor="middle">refuse_answer</text><text class="tag" x="725" y="470" text-anchor="middle">注意：SINGLE 和 MULTI 在 Graph 层面共用 retrieve_docs。</text><rect x="170" y="535" width="1110" height="105" rx="16" fill="#ffffff" stroke="#9ba99d" stroke-width="2.2"/><text class="h" x="725.0" y="580.5">SINGLE：一次知识检索</text><text class="p" x="725.0" y="609.5">MULTI：检索流程内部可能通过 SelfRAGLoop 进行迭代</text><text class="note" x="725" y="700" text-anchor="middle">策略不是简单按关键词硬编码；实际选择由项目路由逻辑判断。</text></svg>

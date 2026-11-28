@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="650" viewBox="0 0 1400 650">
+<defs><marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#78877b"/></marker>
+<style>
+.bg{fill:#fbfaf6}
+.title{font:700 34px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#26372c}
+.subtitle{font:400 17px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#68766b}
+.h{font:700 20px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#26372c;text-anchor:middle}
+.p{font:400 15px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#58675d;text-anchor:middle}
+.small{font:400 13px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#66736a;text-anchor:middle}
+.note{font:500 15px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#536258}
+.tag{font:700 14px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#4d654f;text-anchor:middle}
+.arrow{fill:none;stroke:#78877b;stroke-width:2.5;marker-end:url(#arr)}
+.line{fill:none;stroke:#aab4aa;stroke-width:2}
+</style>
+</defs>
+<rect class="bg" width="1400" height="650" rx="22"/>
+<text class="title" x="54" y="62">一次请求如何进入并运行 Graph</text>
+<text class="subtitle" x="54" y="96">ChatService 负责准备输入、启动工作流、整理输出</text>
+<rect x="55" y="230" width="205" height="120" rx="16" fill="#e7f0e3" stroke="#789574" stroke-width="2.2"/><text class="h" x="157.5" y="283.0">用户请求</text><text class="p" x="157.5" y="312.0">chat()</text><rect x="330" y="230" width="205" height="120" rx="16" fill="#e7f0e3" stroke="#789574" stroke-width="2.2"/><text class="h" x="432.5" y="283.0">_initial_state()</text><text class="p" x="432.5" y="312.0">准备 AgentState</text><rect x="605" y="230" width="205" height="120" rx="16" fill="#e7f0e3" stroke="#789574" stroke-width="2.2"/><text class="h" x="707.5" y="283.0">_invoke()</text><text class="p" x="707.5" y="312.0">调用已编译 Graph</text><rect x="880" y="230" width="205" height="120" rx="16" fill="#e7f0e3" stroke="#789574" stroke-width="2.2"/><text class="h" x="982.5" y="283.0">ainvoke(state)</text><text class="p" x="982.5" y="312.0">异步执行节点</text><rect x="1155" y="230" width="205" height="120" rx="16" fill="#e7f0e3" stroke="#789574" stroke-width="2.2"/><text class="h" x="1257.5" y="283.0">_to_response()</text><text class="p" x="1257.5" y="312.0">整理 API 响应</text><path class="arrow" d="M260 290 H320"/><path class="arrow" d="M535 290 H595"/><path class="arrow" d="M810 290 H870"/><path class="arrow" d="M1085 290 H1145"/><text class="tag" x="700" y="455" text-anchor="middle">Graph 返回的是最终 State；ChatService 再从中整理 final_answer 等响应字段。</text><text class="note" x="700" y="520" text-anchor="middle">build_graph()：搭建工作流    |    ChatService：在每次请求中使用工作流</text></svg>
