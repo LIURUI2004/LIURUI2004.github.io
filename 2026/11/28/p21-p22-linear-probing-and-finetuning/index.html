@@ -1,0 +1,955 @@
+<!doctype html>
+
+<html lang="zh-CN" data-fancybox-enabled="1">
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f3e9" data-flatpaper-theme-color>
+
+<title>P21-P22 线性探测与微调：ViT 下游迁移代码笔记 | lorena的小博客</title>
+<meta name="description" content="一、视频信息与本节定位 项目 内容 稿件 BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程） 分P P21（5.1 线性探测与微调，05:22）、P22（5.2 线性探测与微调代码详解，05:40） 技术线 从零训练 → 自监督预训练（MAE&#x2F;MoCo）→ 有监督对比（CLIP）→ 预训练模型的三种下游迁移方式（线性探测 &amp;#x...">
+<meta property="og:type" content="article">
+<meta property="og:title" content="P21-P22 线性探测与微调：ViT 下游迁移代码笔记 | lorena的小博客">
+<meta property="og:url" content="https://liurui2004.github.io/2026/11/28/p21-p22-linear-probing-and-finetuning/">
+<meta property="og:site_name" content="lorena的小博客">
+<meta property="og:description" content="一、视频信息与本节定位 项目 内容 稿件 BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程） 分P P21（5.1 线性探测与微调，05:22）、P22（5.2 线性探测与微调代码详解，05:40） 技术线 从零训练 → 自监督预训练（MAE&#x2F;MoCo）→ 有监督对比（CLIP）→ 预训练模型的三种下游迁移方式（线性探测 &amp;#x...">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/28/p21-p22-linear-probing-and-finetuning/P22_04_compare.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/28/p21-p22-linear-probing-and-finetuning/P22_01_model_def.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/28/p21-p22-linear-probing-and-finetuning/P22_02_dataset.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/28/p21-p22-linear-probing-and-finetuning/P22_03_main.png">
+<meta property="article:published_time" content="2026-11-28T13:10:00.000Z">
+<meta property="article:modified_time" content="2026-11-28T08:00:39.342Z">
+<meta property="article:author" content="lorena">
+<meta property="article:tag" content="ViT">
+<meta property="article:tag" content="迁移学习">
+<meta property="article:tag" content="Linear Probing">
+<meta property="article:tag" content="Fine-tuning">
+<meta property="article:tag" content="CIFAR-10">
+<meta property="article:tag" content="timm">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liurui2004.github.io/2026/11/28/p21-p22-linear-probing-and-finetuning/P22_04_compare.png">
+<link rel="canonical" href="https://liurui2004.github.io/2026/11/28/p21-p22-linear-probing-and-finetuning/">
+
+<link rel="icon" href="/images/favicon.png" type="image/png">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"P21-P22 线性探测与微调：ViT 下游迁移代码笔记","name":"P21-P22 线性探测与微调：ViT 下游迁移代码笔记 | lorena的小博客","description":"一、视频信息与本节定位 项目 内容 稿件 BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程） 分P P21（5.1 线性探测与微调，05:22）、P22（5.2 线性探测与微调代码详解，05:40） 技术线 从零训练 → 自监督预训练（MAE&#x2F;MoCo）→ 有监督对比（CLIP）→ 预训练模型的三种下游迁移方式（线性探测 &#x...","url":"https://liurui2004.github.io/2026/11/28/p21-p22-linear-probing-and-finetuning/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/11/28/p21-p22-linear-probing-and-finetuning/","datePublished":"2026-11-28T13:10:00.000Z","dateModified":"2026-11-28T08:00:39.342Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"},"keywords":"ViT, 迁移学习, Linear Probing, Fine-tuning, CIFAR-10, timm"}</script>
+
+<script>
+  (function () {
+    var accents = { orange: 1, purple: 1, sakura: 1, blue: 1, pink: 1, green: 1, black: 1 };
+    var match = document.cookie.match(/(?:^|;\s*)flatpaper-accent=([^;]+)/);
+    var accent = 'green';
+    if (match) {
+      try { accent = decodeURIComponent(match[1]); } catch (e) {}
+    }
+    if (!accents[accent]) accent = 'green';
+    document.documentElement.setAttribute('data-accent', accent);
+    try {
+      if (localStorage.getItem('flatpaper-mode') === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+      }
+    } catch (e) {}
+  })();
+</script>
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css">
+<script defer src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+
+
+  
+  <link rel="stylesheet" href="/css/twojian-style.css?v=5">
+  
+<meta name="generator" content="Hexo 6.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body
+  class="is-post tape-disabled tag-style-tape bg-style-default"
+  data-default-accent="green"
+  data-code-theme="simple"
+  data-note-style="sticky"
+  data-note-icons="on"
+  data-button-style="circle"
+  data-strong-accent="on"
+>
+  
+    <div class="page-grain"></div>
+  
+  <svg width="0" height="0" style="position:absolute;z-index:-1;" aria-hidden="true">
+    <defs>
+      <filter id="paper-edge" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+  
+  <header class="site-header">
+  
+  <button class="icon-button js-sidebar-toggle sidebar-toggle" type="button" aria-label="打开侧边栏" aria-controls="paper-sidebar-drawer" aria-expanded="false">
+    
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-menu"></use></svg>
+
+  </button>
+
+  <div class="brand">
+    <div class="brand-mark-wrapper">
+      
+        <a class="brand-mark" href="/" aria-label="FlatPaper 首页">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-layout-grid"></use></svg>
+
+        </a>
+      
+    </div>
+    <a class="brand-text" href="/">lorena的小博客</a>
+  </div>
+
+  <nav class="site-nav" aria-label="主导航">
+    
+      
+        <a class="site-nav-link " href="/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+          <span>首页</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/categories/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+          <span>分类</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/tags/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+          <span>标签</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/archives/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+          <span>归档</span>
+        </a>
+      
+    
+  </nav>
+
+  <div class="header-tools">
+    <button class="icon-button js-search-open" type="button" aria-label="搜索文章">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+    </button>
+    <div class="accent-picker">
+      <button class="icon-button accent-toggle" type="button" aria-label="选择主题色" title="选择主题色" aria-haspopup="true" aria-expanded="false" aria-controls="accent-menu">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-palette flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-palette"></use></svg>
+
+      </button>
+      <div class="accent-menu" id="accent-menu" role="menu" aria-label="主题色">
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="橙色" aria-checked="false" data-accent-option="orange">
+          <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="紫色" aria-checked="false" data-accent-option="purple">
+          <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="樱花粉" aria-checked="false" data-accent-option="sakura">
+          <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="蓝色" aria-checked="false" data-accent-option="blue">
+          <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="粉色" aria-checked="false" data-accent-option="pink">
+          <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="绿色" aria-checked="false" data-accent-option="green">
+          <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="黑色" aria-checked="false" data-accent-option="black">
+          <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+    <button class="theme-toggle" type="button" aria-label="切换颜色模式">
+      <span class="theme-icon theme-icon--sun">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-sun"></use></svg>
+</span>
+      <span class="theme-icon theme-icon--moon">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-moon"></use></svg>
+</span>
+    </button>
+  </div>
+</header>
+
+
+  
+  <main class="paper-shell paper-shell--article">
+    
+
+<aside id="paper-sidebar-drawer" class="paper-sidebar paper-sidebar--right" aria-label="侧边栏">
+  <div class="drawer-toolbar" aria-label="侧边栏工具">
+    <div class="drawer-accent-options" role="group" aria-label="主题色">
+      <button type="button" class="accent-option" aria-label="橙色" aria-pressed="false" data-accent-option="orange">
+        <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="紫色" aria-pressed="false" data-accent-option="purple">
+        <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="樱花粉" aria-pressed="false" data-accent-option="sakura">
+        <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="蓝色" aria-pressed="false" data-accent-option="blue">
+        <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="粉色" aria-pressed="false" data-accent-option="pink">
+        <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="绿色" aria-pressed="false" data-accent-option="green">
+        <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="黑色" aria-pressed="false" data-accent-option="black">
+        <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+      </button>
+    </div>
+    <button class="icon-button drawer-close js-sidebar-close" type="button" aria-label="关闭侧边栏">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+    </button>
+  </div>
+
+  <section class="side-card nav-card">
+    <nav class="site-nav-drawer" aria-label="移动端导航">
+      
+        
+          <a class="" href="/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+            <span>首页</span>
+          </a>
+        
+      
+        
+          <a class="" href="/categories/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+            <span>分类</span>
+          </a>
+        
+      
+        
+          <a class="" href="/tags/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+            <span>标签</span>
+          </a>
+        
+      
+        
+          <a class="" href="/archives/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+            <span>归档</span>
+          </a>
+        
+      
+    </nav>
+  </section>
+
+  <section class="side-card profile-card">
+    
+      <div class="avatar avatar--image avatar--circle">
+        <img src="/images/avatar.jpg" alt="lorena" loading="lazy" referrerpolicy="no-referrer">
+      </div>
+    
+    <h3>lorena</h3>
+    <p class="profile-role">isfj 小女孩 · 懒惰但上进</p>
+    <p>目标成为estj的isfj小女孩，持续学习新知识中....</p>
+    
+    <div class="socials">
+      
+        <a href="https://github.com/LIURUI2004" target="_blank" rel="noopener" aria-label="GitHub" data-tooltip="GitHub">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 496 512" fill="currentColor" class="lucide lucide-github flatpaper-icon flatpaper-icon--fa-brands" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-fa-brands-github"></use></svg>
+
+          
+        </a>
+      
+        <a href="mailto:liurui20041008@gmail.com" target="_blank" rel="noopener" aria-label="Email" data-tooltip="Email">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-mail"></use></svg>
+
+          
+        </a>
+      
+        <a href="https://www.xiaohongshu.com/user/profile/66c9fef3000000001d0231f5" target="_blank" rel="noopener" aria-label="小红书" data-tooltip="小红书主页">
+          
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" class="lucide lucide-custom" aria-hidden="true"><path d="M22.405 9.879c.002.016.01.02.07.019h.725a.797.797 0 0 0 .78-.972.794.794 0 0 0-.884-.618.795.795 0 0 0-.692.794c0 .101-.002.666.001.777zm-11.509 4.808c-.203.001-1.353.004-1.685.003a2.528 2.528 0 0 1-.766-.126.025.025 0 0 0-.03.014L7.7 16.127a.025.025 0 0 0 .01.032c.111.06.336.124.495.124.66.01 1.32.002 1.981 0 .01 0 .02-.006.023-.015l.712-1.545a.025.025 0 0 0-.024-.036zM.477 9.91c-.071 0-.076.002-.076.01a.834.834 0 0 0-.01.08c-.027.397-.038.495-.234 3.06-.012.24-.034.389-.135.607-.026.057-.033.042.003.112.046.092.681 1.523.787 1.74.008.015.011.02.017.02.008 0 .033-.026.047-.044.147-.187.268-.391.371-.606.306-.635.44-1.325.486-1.706.014-.11.021-.22.03-.33l.204-2.616.022-.293c.003-.029 0-.033-.03-.034zm7.203 3.757a1.427 1.427 0 0 1-.135-.607c-.004-.084-.031-.39-.235-3.06a.443.443 0 0 0-.01-.082c-.004-.011-.052-.008-.076-.008h-1.48c-.03.001-.034.005-.03.034l.021.293c.076.982.153 1.964.233 2.946.05.4.186 1.085.487 1.706.103.215.223.419.37.606.015.018.037.051.048.049.02-.003.742-1.642.804-1.765.036-.07.03-.055.003-.112zm3.861-.913h-.872a.126.126 0 0 1-.116-.178l1.178-2.625a.025.025 0 0 0-.023-.035l-1.318-.003a.148.148 0 0 1-.135-.21l.876-1.954a.025.025 0 0 0-.023-.035h-1.56c-.01 0-.02.006-.024.015l-.926 2.068c-.085.169-.314.634-.399.938a.534.534 0 0 0-.02.191.46.46 0 0 0 .23.378.981.981 0 0 0 .46.119h.59c.041 0-.688 1.482-.834 1.972a.53.53 0 0 0-.023.172.465.465 0 0 0 .23.398c.15.092.342.12.475.12l1.66-.001c.01 0 .02-.006.023-.015l.575-1.28a.025.025 0 0 0-.024-.035zm-6.93-4.937H3.1a.032.032 0 0 0-.034.033c0 1.048-.01 2.795-.01 6.829 0 .288-.269.262-.28.262h-.74c-.04.001-.044.004-.04.047.001.037.465 1.064.555 1.263.01.02.03.033.051.033.157.003.767.009.938-.014.153-.02.3-.06.438-.132.3-.156.49-.419.595-.765.052-.172.075-.353.075-.533.002-2.33 0-4.66-.007-6.991a.032.032 0 0 0-.032-.032zm11.784 6.896c0-.014-.01-.021-.024-.022h-1.465c-.048-.001-.049-.002-.05-.049v-4.66c0-.072-.005-.07.07-.07h.863c.08 0 .075.004.075-.074V8.393c0-.082.006-.076-.08-.076h-3.5c-.064 0-.075-.006-.075.073v1.445c0 .083-.006.077.08.077h.854c.075 0 .07-.004.07.07v4.624c0 .095.008.084-.085.084-.37 0-1.11-.002-1.304 0-.048.001-.06.03-.06.03l-.697 1.519s-.014.025-.008.036c.006.01.013.008.058.008 1.748.003 3.495.002 5.243.002.03-.001.034-.006.035-.033v-1.539zm4.177-3.43c0 .013-.007.023-.02.024-.346.006-.692.004-1.037.004-.014-.002-.022-.01-.022-.024-.005-.434-.007-.869-.01-1.303 0-.072-.006-.071.07-.07l.733-.003c.041 0 .081.002.12.015.093.025.16.107.165.204.006.431.002 1.153.001 1.153zm2.67.244a1.953 1.953 0 0 0-.883-.222h-.18c-.04-.001-.04-.003-.042-.04V10.21c0-.132-.007-.263-.025-.394a1.823 1.823 0 0 0-.153-.53 1.533 1.533 0 0 0-.677-.71 2.167 2.167 0 0 0-1-.258c-.153-.003-.567 0-.72 0-.07 0-.068.004-.068-.065V7.76c0-.031-.01-.041-.046-.039H17.93s-.016 0-.023.007c-.006.006-.008.012-.008.023v.546c-.008.036-.057.015-.082.022h-.95c-.022.002-.028.008-.03.032v1.481c0 .09-.004.082.082.082h.913c.082 0 .072.128.072.128V11.19s.003.117-.06.117h-1.482c-.068 0-.06.082-.06.082v1.445s-.01.068.064.068h1.457c.082 0 .076-.006.076.079v3.225c0 .088-.007.081.082.081h1.43c.09 0 .082.007.082-.08v-3.27c0-.029.006-.035.033-.035l2.323-.003c.098 0 .191.02.28.061a.46.46 0 0 1 .274.407c.008.395.003.79.003 1.185 0 .259-.107.367-.33.367h-1.218c-.023.002-.029.008-.028.033.184.437.374.871.57 1.303a.045.045 0 0 0 .04.026c.17.005.34.002.51.003.15-.002.517.004.666-.01a2.03 2.03 0 0 0 .408-.075c.59-.18.975-.698.976-1.313v-1.981c0-.128-.01-.254-.034-.38 0 .078-.029-.641-.724-.998z"/></svg>
+          
+        </a>
+      
+      
+        
+        
+        <a href="/atom.xml" aria-label="RSS feed" data-tooltip="RSS feed">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rss flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-rss"></use></svg>
+
+        </a>
+      
+    </div>
+  </section>
+
+  
+
+  
+    <div class="post-sticky-stack">
+      <section class="side-card toc-card">
+        <header class="toc-card__head">
+          <h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table-of-contents flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-table-of-contents"></use></svg>
+文章目录</h2>
+          <button type="button" class="toc-toggle-all" data-action="toggle-toc" aria-pressed="false" aria-label="展开全部目录" title="展开全部目录">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-chevron-down"></use></svg>
+
+          </button>
+        </header>
+        <div class="toc-content">
+          
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E8%A7%86%E9%A2%91%E4%BF%A1%E6%81%AF%E4%B8%8E%E6%9C%AC%E8%8A%82%E5%AE%9A%E4%BD%8D"><span class="toc-text">一、视频信息与本节定位</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%85%88%E6%8A%8A%E4%B8%A4%E4%B8%AA%E6%A6%82%E5%BF%B5%E5%88%86%E6%B8%85%E6%A5%9A"><span class="toc-text">二、先把两个概念分清楚</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-Linear-Probing%EF%BC%88%E7%BA%BF%E6%80%A7%E6%8E%A2%E6%B5%8B%EF%BC%89"><span class="toc-text">1. Linear Probing（线性探测）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-Fine-tuning%EF%BC%88%E5%BE%AE%E8%B0%83%EF%BC%89"><span class="toc-text">2. Fine-tuning（微调）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E6%9C%80%E5%AE%B9%E6%98%93%E6%B7%B7%E6%B7%86%E7%9A%84%E5%9C%B0%E6%96%B9%EF%BC%88%E8%BF%99%E8%8A%82%E6%9C%80%E5%AE%B9%E6%98%93%E8%80%83%E7%9A%84%E7%82%B9%EF%BC%89"><span class="toc-text">3. 最容易混淆的地方（这节最容易考的点）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E6%A8%A1%E5%9E%8B%E5%AE%9A%E4%B9%89%EF%BC%9A%E9%80%90%E8%A1%8C%E7%9C%8B%E6%87%82%E4%BB%A3%E7%A0%81"><span class="toc-text">三、模型定义：逐行看懂代码</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-FineTuning-%E7%B1%BB"><span class="toc-text">1. FineTuning 类</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-LinearProbing-%E7%B1%BB"><span class="toc-text">2. LinearProbing 类</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E4%B8%A4%E7%A7%8D%E5%86%99%E6%B3%95%E5%9C%A8%E5%8F%82%E6%95%B0%E5%B1%82%E9%9D%A2%E5%B7%AE%E5%A4%9A%E5%B0%91"><span class="toc-text">3. 两种写法在参数层面差多少</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E6%95%B0%E6%8D%AE%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BF%85%E9%A1%BB-Resize-%E5%88%B0-224"><span class="toc-text">四、数据：为什么必须 Resize 到 224</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81main-%E4%B8%BA%E4%BB%80%E4%B9%88%E2%80%9D%E7%9C%8B%E8%B5%B7%E6%9D%A5%E5%9C%A8%E8%AE%AD%E7%BB%83%E2%80%9D%E5%8D%B4%E4%B8%8D%E7%AE%97%E8%AE%AD%E7%BB%83"><span class="toc-text">五、main 为什么”看起来在训练”却不算训练</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E5%AE%8C%E6%95%B4%E5%8F%AF%E8%BF%90%E8%A1%8C%E7%89%88%E6%9C%AC"><span class="toc-text">六、完整可运行版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E5%92%8C-SAM2-%E5%8F%98%E5%8C%96%E6%A3%80%E6%B5%8B%E7%9A%84%E8%81%94%E7%B3%BB"><span class="toc-text">七、和 SAM2 &#x2F; 变化检测的联系</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E8%BF%90%E8%A1%8C%E5%89%8D%E6%A3%80%E6%9F%A5%E6%B8%85%E5%8D%95"><span class="toc-text">八、运行前检查清单</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E6%9D%A5%E6%BA%90%E4%B8%8E%E8%8C%83%E5%9B%B4"><span class="toc-text">九、来源与范围</span></a></li></ol>
+          
+        </div>
+      </section>
+      
+
+
+    </div>
+  
+
+  
+
+</aside>
+
+    <section class="paper-main">
+      
+
+<div class="article-tape-wrap">
+<span class="tape tape--top-right" aria-hidden="true"></span>
+<article class="article-paper">
+  
+  <header class="article-header">
+    
+      <a class="label-pill" href="/categories/%E5%A4%9A%E6%A8%A1%E6%80%81%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%AD%A6%E4%B9%A0/">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+        多模态大模型学习
+      </a>
+    
+    <h1>P21-P22 线性探测与微调：ViT 下游迁移代码笔记</h1>
+    <div class="meta-line meta-line--article">
+      <span class="meta-date">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-calendar"></use></svg>
+2026-11-28</span>
+      
+        <span class="meta-tags">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+          <a class="meta-tag-link" href="/tags/ViT/">#ViT</a><a class="meta-tag-link" href="/tags/%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0/">#迁移学习</a><a class="meta-tag-link" href="/tags/Linear-Probing/">#Linear Probing</a><a class="meta-tag-link" href="/tags/Fine-tuning/">#Fine-tuning</a><a class="meta-tag-link" href="/tags/CIFAR-10/">#CIFAR-10</a><a class="meta-tag-link" href="/tags/timm/">#timm</a>
+        </span>
+      
+    </div>
+  </header>
+
+  
+
+
+  <div class="article-content">
+    <h2 id="一、视频信息与本节定位"><a href="#一、视频信息与本节定位" class="headerlink" title="一、视频信息与本节定位"></a>一、视频信息与本节定位</h2><table>
+<thead>
+<tr>
+<th>项目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>稿件</td>
+<td>BV1E9U8BBEvZ（B站强推！全网最全最详细的多模态大模型教程）</td>
+</tr>
+<tr>
+<td>分P</td>
+<td>P21（5.1 线性探测与微调，05:22）、P22（5.2 线性探测与微调代码详解，05:40）</td>
+</tr>
+<tr>
+<td>技术线</td>
+<td>从零训练 → 自监督预训练（MAE&#x2F;MoCo）→ 有监督对比（CLIP）→ <strong>预训练模型的三种下游迁移方式</strong>（线性探测 &#x2F; 微调 &#x2F; Adapter）</td>
+</tr>
+<tr>
+<td>本节定位</td>
+<td>下游迁移的第一、二种方式。核心问题不是”怎么写模型”，而是**”预训练权重拿来之后，到底放开哪些参数去学”**</td>
+</tr>
+</tbody></table>
+<p>预训练模型（ViT-Small&#x2F;16，在 ImageNet 上训过）已经学会通用视觉特征，现在要它输出 CIFAR-10 的 10 个类别。原分类头是 ImageNet 的 1000 类，必须换掉。换掉之后有两种选择：</p>
+<ul>
+<li><strong>Linear Probing（线性探测）</strong>：主干预训练权重全部冻结，只训新分类头。</li>
+<li><strong>Fine-tuning（微调）</strong>：主干和新分类头一起训。</li>
+</ul>
+<p>这两种做法对应两个不同的科学问题：前者问”预训练特征本身够不够好”，后者问”让特征提取器再适应一下新任务能不能更好”。</p>
+<p><img src="/2026/11/28/p21-p22-linear-probing-and-finetuning/P22_04_compare.png" alt="两种迁移策略在图上的位置：主干冻结与否、哪些参数被更新"></p>
+<h2 id="二、先把两个概念分清楚"><a href="#二、先把两个概念分清楚" class="headerlink" title="二、先把两个概念分清楚"></a>二、先把两个概念分清楚</h2><h3 id="1-Linear-Probing（线性探测）"><a href="#1-Linear-Probing（线性探测）" class="headerlink" title="1. Linear Probing（线性探测）"></a>1. Linear Probing（线性探测）</h3><p>一句话：<strong>把预训练 ViT 当作固定的特征提取器，不让它学习新东西，只训练最后新加的线性分类头。</strong></p>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ViT 主干（patch embed + 12 个 block + norm）</td>
+<td>冻结，<code>requires_grad = False</code></td>
+</tr>
+<tr>
+<td>新分类头 <code>nn.Linear</code></td>
+<td>可训练</td>
+</tr>
+</tbody></table>
+<p>它的实验含义：如果只用一个线性分类器就能把 CIFAR-10 分开，说明预训练特征里已经含有足够好的判别信息。所以线性探测常被当作<strong>评价自监督预训练质量的标准探针</strong>（MAE、MoCo 论文里都用它做 main result 表格）。</p>
+<h3 id="2-Fine-tuning（微调）"><a href="#2-Fine-tuning（微调）" class="headerlink" title="2. Fine-tuning（微调）"></a>2. Fine-tuning（微调）</h3><p>一句话：<strong>不只训练新分类头，还允许预训练 ViT 主干继续调整参数，让它适应新任务。</strong></p>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ViT 主干</td>
+<td>可训练</td>
+</tr>
+<tr>
+<td>新分类头 <code>nn.Linear</code></td>
+<td>可训练</td>
+</tr>
+</tbody></table>
+<p>它的实验含义：给特征提取器一点自由度，让它把通用特征改造成 CIFAR-10 专用的特征。代价是容易过拟合小数据集，学习率要调小（课程里线性探测用 1e-3，全模型微调用 1e-4 这个量级）。</p>
+<h3 id="3-最容易混淆的地方（这节最容易考的点）"><a href="#3-最容易混淆的地方（这节最容易考的点）" class="headerlink" title="3. 最容易混淆的地方（这节最容易考的点）"></a>3. 最容易混淆的地方（这节最容易考的点）</h3><p><code>Linear Probing</code> 里的 “Linear” 指的是**”只训练一个线性读出头”这一实验策略**；代码里的 <code>nn.Linear</code> 是一个具体的线性层。</p>
+<p>模型里出现 <code>nn.Linear</code> 完全不代表你在做 linear probing——<code>FineTuning</code> 类里也有 <code>nn.Linear</code>（新分类头）。</p>
+<p>判断标准只有一条：<strong>看哪些参数的 <code>requires_grad</code> 是 True</strong>。</p>
+<h2 id="三、模型定义：逐行看懂代码"><a href="#三、模型定义：逐行看懂代码" class="headerlink" title="三、模型定义：逐行看懂代码"></a>三、模型定义：逐行看懂代码</h2><p><img src="/2026/11/28/p21-p22-linear-probing-and-finetuning/P22_01_model_def.png" alt="课程截图中的两种模型定义，按可读性重新排版"></p>
+<h3 id="1-FineTuning-类"><a href="#1-FineTuning-类" class="headerlink" title="1. FineTuning 类"></a>1. FineTuning 类</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">FineTuning</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, num_classes=<span class="number">10</span></span>):</span><br><span class="line"></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.vit = timm.create_model(</span><br><span class="line"></span><br><span class="line">            <span class="string">&quot;vit_small_patch16_224&quot;</span>,</span><br><span class="line"></span><br><span class="line">            pretrained=<span class="literal">True</span></span><br><span class="line"></span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        in_features = <span class="variable language_">self</span>.vit.head.in_features</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.vit.head = nn.Linear(in_features, num_classes)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.vit(x)</span><br></pre></td></tr></table></figure>
+
+<p>逐句说明：</p>
+<ul>
+<li><code>nn.Module</code>：PyTorch 自定义模型统一继承它，才能被 <code>model.parameters()</code>、<code>.train()</code>、<code>.to(device)</code> 正常管理。</li>
+<li><code>timm.create_model(&quot;vit_small_patch16_224&quot;, pretrained=True)</code>：一行搭出 ViT-Small，patch 16×16，输入 224×224，<code>pretrained=True</code> 表示顺带下载并加载 ImageNet 预训练权重。这一步就是”迁移”的来源。</li>
+<li><code>self.vit.head.in_features</code>：读原分类头接收的特征维度。ViT-Small 的 <code>embed_dim = 384</code>，所以这里是 384。</li>
+<li><code>self.vit.head = nn.Linear(in_features, num_classes)</code>：把 1000 类头换成 10 类头。<strong>新头是随机初始化的</strong>，所以它必须可训练，否则整个模型输出的永远是随机结果。</li>
+<li><code>forward</code>：不做任何额外处理，直接 <code>self.vit(x)</code>。因为 Fine-tuning 的差别不在前向计算，而在<strong>优化器会更新哪些参数</strong>。</li>
+</ul>
+<p>关键点：这个类里<strong>没有写任何冻结代码</strong>，<code>self.vit</code> 的全部参数默认 <code>requires_grad=True</code>，所以梯度会一路回传到 patch embedding。</p>
+<h3 id="2-LinearProbing-类"><a href="#2-LinearProbing-类" class="headerlink" title="2. LinearProbing 类"></a>2. LinearProbing 类</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">LinearProbing</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, num_classes=<span class="number">10</span></span>):</span><br><span class="line"></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.vit = timm.create_model(<span class="string">&quot;vit_small_patch16_224&quot;</span>, pretrained=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> param <span class="keyword">in</span> <span class="variable language_">self</span>.vit.parameters():</span><br><span class="line"></span><br><span class="line">            param.requires_grad = <span class="literal">False</span></span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.vit.head = nn.Linear(<span class="variable language_">self</span>.vit.head.in_features, num_classes)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.vit(x)</span><br></pre></td></tr></table></figure>
+
+<p>和 FineTuning 只差三行，但语义完全不同：</p>
+<ul>
+<li><code>for param in self.vit.parameters(): param.requires_grad = False</code>：把 <strong>ViT 的所有参数（包括原分类头）</strong> 的梯度开关关掉。之后 <code>loss.backward()</code> 不会算、也不会存这些参数的梯度，<code>optimizer.step()</code> 自然改不动它们。</li>
+<li><code>self.vit.head = nn.Linear(self.vit.head.in_features, num_classes)</code>：<strong>在冻结之后</strong>再新建分类头。</li>
+</ul>
+<blockquote>
+<p><strong>顺序坑（很容易踩）</strong>：如果先建新头再执行冻结循环，新建的 <code>head</code> 也会被 <code>requires_grad = False</code> 冻住，整个网络就没有任何可训练参数，训练 loss 会一直不动。课程强调的”先冻结原 ViT，再创建新分类头”就是这个原因。</p>
+<p>另一层保险：新建的 <code>nn.Linear</code> 默认 <code>requires_grad=True</code>，所以只要它是在冻结循环之后赋值进去的，就不会被冻。</p>
+</blockquote>
+<h3 id="3-两种写法在参数层面差多少"><a href="#3-两种写法在参数层面差多少" class="headerlink" title="3. 两种写法在参数层面差多少"></a>3. 两种写法在参数层面差多少</h3><table>
+<thead>
+<tr>
+<th>项目</th>
+<th>LinearProbing</th>
+<th>FineTuning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>可训练参数</td>
+<td>384×10 + 10 ≈ 3.8K</td>
+<td>ViT-Small 全部 ≈ 22M</td>
+</tr>
+<tr>
+<td>显存（激活 + 梯度）</td>
+<td>很小，主干不需要存梯度</td>
+<td>大，主干要存激活与梯度</td>
+</tr>
+<tr>
+<td>收敛速度</td>
+<td>快，几个 epoch 就有结果</td>
+<td>慢，需要更多 epoch 和调学习率</td>
+</tr>
+<tr>
+<td>过拟合风险</td>
+<td>低</td>
+<td>高（尤其 CIFAR-10 只有 50K 张）</td>
+</tr>
+</tbody></table>
+<p>可以把 <code>sum(p.numel() for p in model.parameters() if p.requires_grad)</code> 打印出来验证：linear probe 时应该只有几千，fine-tune 时是两千万级。</p>
+<h2 id="四、数据：为什么必须-Resize-到-224"><a href="#四、数据：为什么必须-Resize-到-224" class="headerlink" title="四、数据：为什么必须 Resize 到 224"></a>四、数据：为什么必须 Resize 到 224</h2><p>CIFAR-10 原图只有 <strong>32×32</strong>，而 <code>vit_small_patch16_224</code> 里的 <code>224</code> 指模型期望的输入分辨率 224×224（14×14 &#x3D; 196 个 patch，每个 patch 16×16）。ViT 的 patch embedding 是固定尺寸的卷积核，位置编码长度也按 197 个 token 固定，所以<strong>分辨率不能随便改</strong>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">transform = transforms.Compose([</span><br><span class="line"></span><br><span class="line">    transforms.Resize((<span class="number">224</span>, <span class="number">224</span>)),</span><br><span class="line"></span><br><span class="line">    transforms.ToTensor()</span><br><span class="line"></span><br><span class="line">])</span><br><span class="line"></span><br><span class="line">train_dataset = CIFAR10(root=<span class="string">&quot;./cifar10&quot;</span>, train=<span class="literal">True</span>, download=<span class="literal">True</span>, transform=transform)</span><br><span class="line"></span><br><span class="line">loader = DataLoader(train_dataset, batch_size=<span class="number">4</span>, shuffle=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2026/11/28/p21-p22-linear-probing-and-finetuning/P22_02_dataset.png" alt="CIFAR-10 数据加载与 batch 形状"></p>
+<ul>
+<li><code>Resize((224, 224))</code>：把 32×32 放大到 224×224。这是”小图放大”，会损失细节，但为了复用 224 预训练权重，这一步是必须的妥协。</li>
+<li><code>ToTensor()</code>：把 PIL 图像转成 <code>torch.float32</code>，形状 <code>[3, 224, 224]</code>，数值缩放到 [0,1]。</li>
+<li><code>DataLoader(..., batch_size=4, shuffle=True)</code>：<code>batch_size=4</code> 是为了显存友好（课程演示环境），真实实验可用 32&#x2F;64&#x2F;128；<code>shuffle=True</code> 打乱顺序，避免同类样本连续出现导致梯度抖动方向一致。</li>
+</ul>
+<p>形状推理链（贯穿全节，务必记住）：</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>形状</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>一个 batch 输入</td>
+<td><code>[4, 3, 224, 224]</code></td>
+</tr>
+<tr>
+<td>patch_embed 之后</td>
+<td><code>[4, 196, 384]</code></td>
+</tr>
+<tr>
+<td>拼上 cls token</td>
+<td><code>[4, 197, 384]</code></td>
+</tr>
+<tr>
+<td>分类头输出 logits</td>
+<td><code>[4, 10]</code></td>
+</tr>
+<tr>
+<td>标签</td>
+<td><code>[4]</code></td>
+</tr>
+</tbody></table>
+<p><code>196 = (224/16)²</code>，<code>197 = 196 + 1</code>（cls token），<code>384</code> 是 ViT-Small 的 <code>embed_dim</code>。这三个数字在后一节 Adapter 里还会反复出现。</p>
+<h2 id="五、main-为什么”看起来在训练”却不算训练"><a href="#五、main-为什么”看起来在训练”却不算训练" class="headerlink" title="五、main 为什么”看起来在训练”却不算训练"></a>五、main 为什么”看起来在训练”却不算训练</h2><p>课程截图里的 <code>main</code> 片段是这样的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line"></span><br><span class="line">    dataset = load_cifar10_dataset()</span><br><span class="line"></span><br><span class="line">    model = FineTuning(num_classes=<span class="number">10</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> images, label <span class="keyword">in</span> dataset:</span><br><span class="line"></span><br><span class="line">        logits = model(images)</span><br><span class="line"></span><br><span class="line">        loss = torch.nn.CrossEntropyLoss()(logits, label)</span><br><span class="line"></span><br><span class="line">        <span class="built_in">print</span>(loss)</span><br></pre></td></tr></table></figure>
+
+<p>它缺了两件最关键的事：</p>
+<ol>
+<li><strong>没有 <code>loss.backward()</code></strong> —— 不会计算任何梯度；</li>
+<li><strong>没有 <code>optimizer.step()</code></strong> —— 即使有梯度也不会更新参数。</li>
+</ol>
+<p>所以这段代码只做了”前向推理 + 算损失 + 打印”，模型参数从头到尾一个都没变。严格说它是<strong>验证&#x2F;推理流程</strong>，不是训练流程。</p>
+<p><img src="/2026/11/28/p21-p22-linear-probing-and-finetuning/P22_03_main.png" alt="主函数与两种训练模式的入口"></p>
+<p>一段能真正训练的循环至少要有这四步：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">optimizer.zero_grad()          <span class="comment"># 1. 清掉上一轮残留梯度</span></span><br><span class="line"></span><br><span class="line">loss.backward()                <span class="comment"># 2. 反向传播，算梯度</span></span><br><span class="line"></span><br><span class="line">optimizer.step()               <span class="comment"># 3. 用梯度更新参数</span></span><br><span class="line"></span><br><span class="line">optimizer.zero_grad()          <span class="comment"># 下一轮开始前再清一次</span></span><br></pre></td></tr></table></figure>
+
+<p>线性探测还有一个额外细节：即使主干参数被冻结，主干里的 <strong>Dropout &#x2F; DropPath 仍然会在 <code>model.train()</code> 状态下随机丢激活</strong>，让特征不稳定。规范做法是把主干设成 eval、只让头处于 train：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">model.train()</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> mode == <span class="string">&quot;linear_probe&quot;</span>:</span><br><span class="line"></span><br><span class="line">    model.vit.<span class="built_in">eval</span>()   <span class="comment"># 关闭主干里的 Dropout / DropPath</span></span><br><span class="line"></span><br><span class="line">    model.vit.head.train()</span><br></pre></td></tr></table></figure>
+
+<h2 id="六、完整可运行版本"><a href="#六、完整可运行版本" class="headerlink" title="六、完整可运行版本"></a>六、完整可运行版本</h2><p>压缩包里的 <code>linear_probing_finetuning_cifar10.py</code> 是把上面所有要点补齐后的完整脚本，结构如下：</p>
+<table>
+<thead>
+<tr>
+<th>部分</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>FineTuning</code> &#x2F; <code>LinearProbing</code></td>
+<td>两个模型类，区别只在冻结与否</td>
+</tr>
+<tr>
+<td><code>load_cifar10_dataset</code></td>
+<td>Resize + ToTensor + DataLoader</td>
+</tr>
+<tr>
+<td><code>train_one_epoch</code></td>
+<td>完整训练循环：<code>zero_grad → forward → loss → backward → step</code>，并累计 loss 与准确率</td>
+</tr>
+<tr>
+<td><code>main</code></td>
+<td>由 <code>MODE</code> 切换策略，统计可训练参数量，跑 <code>NUM_EPOCHS</code> 轮</td>
+</tr>
+</tbody></table>
+<p>运行方式：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">pip install torch torchvision timm</span><br><span class="line"></span><br><span class="line">python linear_probing_finetuning_cifar10.py</span><br></pre></td></tr></table></figure>
+
+<p>脚本头部用两个开关控制实验：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">MODE = <span class="string">&quot;linear_probe&quot;</span>   <span class="comment"># 改成 &quot;fine_tune&quot; 即为全模型微调</span></span><br><span class="line"></span><br><span class="line">BATCH_SIZE = <span class="number">4</span></span><br><span class="line"></span><br><span class="line">NUM_EPOCHS = <span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<p>学习率建议：<code>linear_probe</code> 用 <code>1e-3</code>（只有头在学，可以大胆一点），<code>fine_tune</code> 用 <code>1e-4</code>（全模型，太大容易把预训练权重冲坏）。</p>
+<p>首次运行会下载两样东西：CIFAR-10 数据集（约 170MB）和 timm 的 ViT 预训练权重（约 90MB），都要联网。</p>
+<h2 id="七、和-SAM2-变化检测的联系"><a href="#七、和-SAM2-变化检测的联系" class="headerlink" title="七、和 SAM2 &#x2F; 变化检测的联系"></a>七、和 SAM2 &#x2F; 变化检测的联系</h2><p>把这两个策略映射回自己的研究方向（弱监督变化检测、SAR&#x2F;光学联合变化检测）：</p>
+<table>
+<thead>
+<tr>
+<th>做法</th>
+<th>对应哪一类</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>冻结整个图像编码器，只训变化检测头</td>
+<td>接近 <strong>linear probing</strong>，但检测头通常是卷积&#x2F;多层结构，不是单纯 <code>nn.Linear</code>，严格说不叫 strict linear probing</td>
+</tr>
+<tr>
+<td>冻结大部分，只解冻最后 1-2 个 stage + 检测头</td>
+<td><strong>部分微调（partial fine-tuning）</strong></td>
+</tr>
+<tr>
+<td>全部解冻一起训</td>
+<td><strong>full fine-tuning</strong></td>
+</tr>
+</tbody></table>
+<p>SAM2 这类大模型迁移到遥感变化检测时，”只解冻最后 stage”是最常见的折中：比 linear probing 效果好，又比全微调省显存、少过拟合。这也正好引出下一节要讲的第三个选项——<strong>Adapter：不改主干主体，只在主干旁边挂小模块</strong>。</p>
+<h2 id="八、运行前检查清单"><a href="#八、运行前检查清单" class="headerlink" title="八、运行前检查清单"></a>八、运行前检查清单</h2><ul>
+<li><input disabled="" type="checkbox"> 已安装 <code>torch</code>、<code>torchvision</code>、<code>timm</code>，能正常 import</li>
+<li><input disabled="" type="checkbox"> 首次运行允许联网（CIFAR-10 + 预训练权重）</li>
+<li><input disabled="" type="checkbox"> 输入已 Resize 到 224×224，输出 logits 形状 <code>[B, 10]</code></li>
+<li><input disabled="" type="checkbox"> 线性探测时新分类头 <code>requires_grad=True</code></li>
+<li><input disabled="" type="checkbox"> 训练循环包含 <code>zero_grad / backward / step</code></li>
+<li><input disabled="" type="checkbox"> 正式实验要划分验证集或留出测试集，别只看训练 loss</li>
+</ul>
+<h2 id="九、来源与范围"><a href="#九、来源与范围" class="headerlink" title="九、来源与范围"></a>九、来源与范围</h2><ul>
+<li>内容依据课程 P21、P22 两节，以及压缩包内的代码笔记与 <code>linear_probing_finetuning_cifar10.py</code>、截图代码片段整理。</li>
+<li>课程公开目录：<a target="_blank" rel="noopener" href="https://www.hyouit.com/4219.html">https://www.hyouit.com/4219.html</a></li>
+<li>下一节：P23 5.3 Adapter 方法、P24 5.4 Adapter 代码详解。</li>
+</ul>
+
+  </div>
+
+  <footer class="article-reactions">
+    <div class="reaction-group">
+      <button type="button" class="reaction reaction--comment" aria-label="跳转到评论区" data-action="scroll-to-comments">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-message-circle"></use></svg>
+
+      </button>
+      <span class="reaction-label">评论</span>
+      
+    </div>
+    <div class="reaction-group reaction-group--right">
+      
+      <button type="button" class="reaction reaction--share" aria-label="分享" data-action="share">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2 flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-share-2"></use></svg>
+
+      </button>
+      <span class="reaction-label">分享</span>
+    </div>
+  </footer>
+
+  
+
+
+  <nav class="article-actions">
+    
+      <a class="article-action article-action--prev" href="/2026/11/28/p23-adapter-method/">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-left"></use></svg>
+
+        <span class="action-label">上一篇</span>
+        <span class="action-title">P23 Adapter 方法：不动主干、只挂小模块的第三种迁移方式</span>
+      </a>
+    
+    
+      <a class="article-action article-action--next" href="/2026/11/28/langgraph-core-source/">
+        <span class="action-label">下一篇</span>
+        <span class="action-title"></span>
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-right"></use></svg>
+
+      </a>
+    
+  </nav>
+</article>
+</div>
+
+<button type="button" class="back-to-top" data-action="scroll-to-top" aria-label="返回顶部" hidden>
+  
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-up"></use></svg>
+
+</button>
+
+
+  <section class="related-paper">
+    <header class="related-paper__head">
+      <h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-link"></use></svg>
+相关文章</h2>
+      <a class="related-paper__more" href="/archives/">
+        <span>查看更多</span>
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-right"></use></svg>
+
+      </a>
+    </header>
+    <div class="related-paper__grid">
+      
+        <a class="related-card" href="/2026/11/28/p24-adapter-code-walkthrough/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-0 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/2026/11/28/p24-adapter-code-walkthrough/P24_02_adaptmlp.png" alt="P24 Adapter 代码详解：逐行拆解手写 ViT 前向与并行 Adapter 分支" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">P24 Adapter 代码详解：逐行拆解手写 ViT 前向与并行 Adapter 分支</strong>
+            <em class="related-card__date">2026-11-28</em>
+          </span>
+        </a>
+      
+        <a class="related-card" href="/2026/11/28/p23-adapter-method/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-1 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/2026/11/28/p23-adapter-method/P23_01_adapter_position.png" alt="P23 Adapter 方法：不动主干、只挂小模块的第三种迁移方式" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">P23 Adapter 方法：不动主干、只挂小模块的第三种迁移方式</strong>
+            <em class="related-card__date">2026-11-28</em>
+          </span>
+        </a>
+      
+        <a class="related-card" href="/2026/11/27/p8-moco-v3/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-2 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/2026/11/27/p8-moco-v3/P8_25.png" alt="3.2 MoCo v3 自监督骨干网络" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">3.2 MoCo v3 自监督骨干网络</strong>
+            <em class="related-card__date">2026-11-27</em>
+          </span>
+        </a>
+      
+        <a class="related-card" href="/2026/11/27/p7-vision-transformer/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-0 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/2026/11/27/p7-vision-transformer/P7_40.png" alt="3.1 ViT 与其变种" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">3.1 ViT 与其变种</strong>
+            <em class="related-card__date">2026-11-27</em>
+          </span>
+        </a>
+      
+    </div>
+  </section>
+
+
+      
+
+
+    </section>
+    
+  </main>
+
+  <div class="sidebar-backdrop js-sidebar-close" aria-hidden="true"></div>
+
+  
+<footer class="site-footer">
+  <span class="site-footer__left">© 2026 By lorena</span>
+  
+    <span class="site-footer__right">
+      
+        <span class="site-footer__row"><span class="site-footer__powered-prefix">Powered by Theme</span> <a href="https://github.com/Homulilly/hexo-theme-flatpaper" target="_blank" rel="noopener">FlatPaper</a></span>
+      
+    </span>
+  
+</footer>
+
+  
+<div class="search-panel" aria-hidden="true" data-index-url="/flatpaper-search.json">
+  <div class="search-backdrop js-search-close"></div>
+  <section class="search-dialog" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <span class="tape tape--top-left" aria-hidden="true"></span>
+    <header class="search-head">
+      <h2><span class="green-dot"></span>搜索文章</h2>
+      <button class="icon-button js-search-close" type="button" aria-label="关闭搜索">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+      </button>
+    </header>
+    <label class="search-field">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+      <input id="flatpaper-search" class="search-input" type="search" placeholder="输入关键词，按 Esc 关闭" autocomplete="off">
+    </label>
+    <div class="search-results" data-empty="输入关键词后显示匹配的文章">
+      <p class="search-empty">输入关键词后显示匹配的文章</p>
+    </div>
+  </section>
+</div>
+
+  <script>
+  window.FLATPAPER_I18N = {"language":"zh-CN","common.posts":"文章","common.categories":"分类","common.tags":"标签","common.comments":"评论","common.share":"分享","common.page":"页面","common.archive":"归档","common.post_list":"文章列表","common.search_posts":"搜索文章","common.random_posts":"随机文章","common.reward":"赞赏","common.view_all":"查看全部","pagination.prev":"上一页","pagination.next":"下一页","pagination.post_pager":"文章分页","pagination.archive_pager":"归档分页","index.featured":"精选文章","index.pinned":"置顶","index.read_more":"阅读全文","index.previous_slide":"上一张","index.next_slide":"下一张","index.carousel_pagination":"轮播页码","index.carousel_slide":"第 %d 张","index.latest_posts":"最新文章","index.empty_posts":"还没有文章。创建第一篇文章后，这里会显示最新内容。","archive.title":"归档","archive.post_list":"文章列表","taxonomy.category_count":"%d 篇","taxonomy.empty_categories":"暂时还没有分类。","taxonomy.empty_tags":"暂时还没有标签。","links.label":"友链","links.title":"友情链接","links.empty_data":"暂未加载到友链数据。请确认 source/_data/links.yml 存在并已 hexo clean。","links.rss_label":"%s 的 RSS","friends_feed.label":"朋友圈","friends_feed.title":"友链朋友圈","friends_feed.loading":"正在加载友链动态…","friends_feed.missing_url":"暂未配置 all.json 地址。","friends_feed.load_failed":"友链动态加载失败，请稍后再试。","friends_feed.empty":"暂时没有抓取到友链文章。","friends_feed.load_more":"加载更多","friends_feed.updated_at":"更新于 %s","friends_feed.friend_count":"%d 位友邻","friends_feed.active_count":"%d 位活跃","friends_feed.article_count":"%d 篇文章","friends_feed.unknown_author":"未知站点","friends_feed.date_unknown":"时间未知","guestbook.label":"留言板","guestbook.title":"留言板","guestbook.loading":"正在铺开留言墙…","guestbook.missing_config":"留言墙需要评论系统：请在主题配置中设置 comments: twikoo（并填写 envId）或 comments: artalk（并填写 server）。","guestbook.load_failed":"留言加载失败，请稍后再试。","guestbook.empty":"墙上还空着，来贴第一张留言吧！","guestbook.load_more":"展开更多留言","guestbook.total_count":"共 %d 条留言","guestbook.latest_note":"墙上展示最新 %d 条","guestbook.jump_to_comment":"查看留言","guestbook.sort_time":"查看最新","guestbook.sort_random":"随机排序","guestbook.anonymous":"匿名访客","guestbook.write_hint":"在下方留言，刷新后就会贴到墙上","post.scroll_to_comments":"跳转到评论区","post.previous":"上一篇","post.next":"下一篇","post.no_previous":"没有更早的文章了","post.no_next":"已经是最新的一篇","post.back_to_top":"返回顶部","post.related_posts":"相关文章","post.view_more":"查看更多","not_found.label":"页面走丢了","not_found.title":"找不到这个页面","not_found.text":"这个地址可能已经移动、删除，或者从未存在。","not_found.home":"返回首页","not_found.search":"搜索文章","search.placeholder":"输入关键词，按 Esc 关闭","search.empty":"输入关键词后显示匹配的文章","search.loading":"正在加载搜索索引…","search.load_failed":"搜索索引加载失败，请重新打开搜索重试","search.no_result":"没有找到与 \"%s\" 相关的文章","search.close":"关闭搜索","code.copy":"复制代码","code.collapse":"折叠代码","code.expand":"展开代码","heading.anchor":"链接到此节: %s","head.tag":"标签：%s","head.category":"分类：%s","head.archive":"归档","head.archive_with_date":"归档：%s","head.page_number":"第 %d 页","navigation.primary":"主导航","navigation.mobile":"移动端导航","navigation.brand_home":"FlatPaper 首页","navigation.brand_menu":"打开站点导航","navigation.open_sidebar":"打开侧边栏","navigation.close_sidebar":"关闭侧边栏","navigation.sidebar":"侧边栏","navigation.sidebar_tools":"侧边栏工具","navigation.site_links":"站点链接","navigation.site_info":"站点信息","colors.choose_theme_color":"选择主题色","colors.theme_color":"主题色","colors.toggle_color_mode":"切换颜色模式","colors.green":"绿色","colors.purple":"紫色","colors.pink":"粉色","colors.sakura":"樱花粉","colors.blue":"蓝色","colors.orange":"橙色","colors.black":"黑色","profile.default_bio":"热爱生活，热爱代码，喜欢分享技术与生活中的点滴。","profile.email_copied":"邮箱已复制","welcome.cta":"开始阅读","welcome.title":"欢迎来到 FlatPaper","welcome.text":"一个专注于内容与阅读体验的博客主题。","home_hero.label":"首页开屏","home_hero.enter":"开始阅读","home_hero.note":"今日","home_hero.default_subtitle":"日常记录","home_hero.nav_links":"开屏导航","home_hero.profile_links":"个人链接","home_hero.tools":"开屏工具","home_hero.shuffle_stickers":"打乱贴纸位置","home_hero.link":"链接","home_hero.sticker_image":"贴纸图片","home_hero.visit_confirm":"要访问 %s 吗？","home_hero.visit":"访问","home_hero.cancel":"取消","toc.title":"文章目录","toc.empty":"目录会根据文章标题自动生成。","toc.expand_all":"展开全部目录","toc.collapse_all":"收起全部目录","sidebar.hot_tags":"热门标签","sidebar.latest_posts":"最新文章"};
+  </script>
+  
+<script src="/js/main.js"></script>
+
+  
+  <script src="/js/twojian-ui.js" defer></script>
+  
+</body>
+</html>

@@ -1,0 +1,1294 @@
+<!doctype html>
+
+<html lang="zh-CN" data-fancybox-enabled="1">
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f3e9" data-flatpaper-theme-color>
+
+<title>P24 Adapter 代码详解：逐行拆解手写 ViT 前向与并行 Adapter 分支 | lorena的小博客</title>
+<meta name="description" content="〇、先说清楚这一节难在哪5.3 讲的是思想，5.4 是把它写成代码。这一节之所以听起来吃力，是因为它不是”照 timm 的接口调一下”这么简单，而是遇到了一个真实工程矛盾： timm 提供的 vit_small_patch16_224，它的 blocks 是一个 nn.Sequential，每个 Block 的 forward 是写死的（x &#x3D; x + at...">
+<meta property="og:type" content="article">
+<meta property="og:title" content="P24 Adapter 代码详解：逐行拆解手写 ViT 前向与并行 Adapter 分支 | lorena的小博客">
+<meta property="og:url" content="https://liurui2004.github.io/2026/11/28/p24-adapter-code-walkthrough/">
+<meta property="og:site_name" content="lorena的小博客">
+<meta property="og:description" content="〇、先说清楚这一节难在哪5.3 讲的是思想，5.4 是把它写成代码。这一节之所以听起来吃力，是因为它不是”照 timm 的接口调一下”这么简单，而是遇到了一个真实工程矛盾： timm 提供的 vit_small_patch16_224，它的 blocks 是一个 nn.Sequential，每个 Block 的 forward 是写死的（x &#x3D; x + at...">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/28/p24-adapter-code-walkthrough/P24_02_adaptmlp.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/28/p24-adapter-code-walkthrough/P24_01_file_structure.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/28/p24-adapter-code-walkthrough/P24_03_freeze_and_insert.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/28/p24-adapter-code-walkthrough/P24_04_patch_embed.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/28/p24-adapter-code-walkthrough/P24_05_block_attn.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/28/p24-adapter-code-walkthrough/P24_06_block_mlp.png">
+<meta property="og:image" content="https://liurui2004.github.io/2026/11/28/p24-adapter-code-walkthrough/P24_07_tail.png">
+<meta property="article:published_time" content="2026-11-28T13:40:00.000Z">
+<meta property="article:modified_time" content="2026-11-28T08:09:22.403Z">
+<meta property="article:author" content="lorena">
+<meta property="article:tag" content="ViT">
+<meta property="article:tag" content="PyTorch">
+<meta property="article:tag" content="timm">
+<meta property="article:tag" content="Adapter">
+<meta property="article:tag" content="参数高效微调">
+<meta property="article:tag" content="代码详解">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liurui2004.github.io/2026/11/28/p24-adapter-code-walkthrough/P24_02_adaptmlp.png">
+<link rel="canonical" href="https://liurui2004.github.io/2026/11/28/p24-adapter-code-walkthrough/">
+
+<link rel="icon" href="/images/favicon.png" type="image/png">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"P24 Adapter 代码详解：逐行拆解手写 ViT 前向与并行 Adapter 分支","name":"P24 Adapter 代码详解：逐行拆解手写 ViT 前向与并行 Adapter 分支 | lorena的小博客","description":"〇、先说清楚这一节难在哪5.3 讲的是思想，5.4 是把它写成代码。这一节之所以听起来吃力，是因为它不是”照 timm 的接口调一下”这么简单，而是遇到了一个真实工程矛盾： timm 提供的 vit_small_patch16_224，它的 blocks 是一个 nn.Sequential，每个 Block 的 forward 是写死的（x = x + at...","url":"https://liurui2004.github.io/2026/11/28/p24-adapter-code-walkthrough/","inLanguage":"zh-CN","isPartOf":{"@type":"WebSite","name":"lorena的小博客","url":"https://liurui2004.github.io/"},"mainEntityOfPage":"https://liurui2004.github.io/2026/11/28/p24-adapter-code-walkthrough/","datePublished":"2026-11-28T13:40:00.000Z","dateModified":"2026-11-28T08:09:22.403Z","author":{"@type":"Person","name":"lorena"},"publisher":{"@type":"Organization","name":"lorena的小博客"},"keywords":"ViT, PyTorch, timm, Adapter, 参数高效微调, 代码详解"}</script>
+
+<script>
+  (function () {
+    var accents = { orange: 1, purple: 1, sakura: 1, blue: 1, pink: 1, green: 1, black: 1 };
+    var match = document.cookie.match(/(?:^|;\s*)flatpaper-accent=([^;]+)/);
+    var accent = 'green';
+    if (match) {
+      try { accent = decodeURIComponent(match[1]); } catch (e) {}
+    }
+    if (!accents[accent]) accent = 'green';
+    document.documentElement.setAttribute('data-accent', accent);
+    try {
+      if (localStorage.getItem('flatpaper-mode') === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+      }
+    } catch (e) {}
+  })();
+</script>
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css">
+<script defer src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+
+
+  
+  <link rel="stylesheet" href="/css/twojian-style.css?v=5">
+  
+<meta name="generator" content="Hexo 6.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body
+  class="is-post tape-disabled tag-style-tape bg-style-default"
+  data-default-accent="green"
+  data-code-theme="simple"
+  data-note-style="sticky"
+  data-note-icons="on"
+  data-button-style="circle"
+  data-strong-accent="on"
+>
+  
+    <div class="page-grain"></div>
+  
+  <svg width="0" height="0" style="position:absolute;z-index:-1;" aria-hidden="true">
+    <defs>
+      <filter id="paper-edge" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+  
+  <header class="site-header">
+  
+  <button class="icon-button js-sidebar-toggle sidebar-toggle" type="button" aria-label="打开侧边栏" aria-controls="paper-sidebar-drawer" aria-expanded="false">
+    
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-menu"></use></svg>
+
+  </button>
+
+  <div class="brand">
+    <div class="brand-mark-wrapper">
+      
+        <a class="brand-mark" href="/" aria-label="FlatPaper 首页">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-layout-grid"></use></svg>
+
+        </a>
+      
+    </div>
+    <a class="brand-text" href="/">lorena的小博客</a>
+  </div>
+
+  <nav class="site-nav" aria-label="主导航">
+    
+      
+        <a class="site-nav-link " href="/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+          <span>首页</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/categories/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+          <span>分类</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/tags/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+          <span>标签</span>
+        </a>
+      
+    
+      
+        <a class="site-nav-link " href="/archives/">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+          <span>归档</span>
+        </a>
+      
+    
+  </nav>
+
+  <div class="header-tools">
+    <button class="icon-button js-search-open" type="button" aria-label="搜索文章">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+    </button>
+    <div class="accent-picker">
+      <button class="icon-button accent-toggle" type="button" aria-label="选择主题色" title="选择主题色" aria-haspopup="true" aria-expanded="false" aria-controls="accent-menu">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-palette flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-palette"></use></svg>
+
+      </button>
+      <div class="accent-menu" id="accent-menu" role="menu" aria-label="主题色">
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="橙色" aria-checked="false" data-accent-option="orange">
+          <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="紫色" aria-checked="false" data-accent-option="purple">
+          <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="樱花粉" aria-checked="false" data-accent-option="sakura">
+          <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="蓝色" aria-checked="false" data-accent-option="blue">
+          <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="粉色" aria-checked="false" data-accent-option="pink">
+          <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="绿色" aria-checked="false" data-accent-option="green">
+          <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="accent-option" role="menuitemradio" aria-label="黑色" aria-checked="false" data-accent-option="black">
+          <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+    <button class="theme-toggle" type="button" aria-label="切换颜色模式">
+      <span class="theme-icon theme-icon--sun">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-sun"></use></svg>
+</span>
+      <span class="theme-icon theme-icon--moon">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-moon"></use></svg>
+</span>
+    </button>
+  </div>
+</header>
+
+
+  
+  <main class="paper-shell paper-shell--article">
+    
+
+<aside id="paper-sidebar-drawer" class="paper-sidebar paper-sidebar--right" aria-label="侧边栏">
+  <div class="drawer-toolbar" aria-label="侧边栏工具">
+    <div class="drawer-accent-options" role="group" aria-label="主题色">
+      <button type="button" class="accent-option" aria-label="橙色" aria-pressed="false" data-accent-option="orange">
+        <span class="accent-swatch accent-swatch--orange" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="紫色" aria-pressed="false" data-accent-option="purple">
+        <span class="accent-swatch accent-swatch--purple" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="樱花粉" aria-pressed="false" data-accent-option="sakura">
+        <span class="accent-swatch accent-swatch--sakura" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="蓝色" aria-pressed="false" data-accent-option="blue">
+        <span class="accent-swatch accent-swatch--blue" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="粉色" aria-pressed="false" data-accent-option="pink">
+        <span class="accent-swatch accent-swatch--pink" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="绿色" aria-pressed="false" data-accent-option="green">
+        <span class="accent-swatch accent-swatch--green" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="accent-option" aria-label="黑色" aria-pressed="false" data-accent-option="black">
+        <span class="accent-swatch accent-swatch--black" aria-hidden="true"></span>
+      </button>
+    </div>
+    <button class="icon-button drawer-close js-sidebar-close" type="button" aria-label="关闭侧边栏">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+    </button>
+  </div>
+
+  <section class="side-card nav-card">
+    <nav class="site-nav-drawer" aria-label="移动端导航">
+      
+        
+          <a class="" href="/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-house flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-house"></use></svg>
+
+            <span>首页</span>
+          </a>
+        
+      
+        
+          <a class="" href="/categories/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+            <span>分类</span>
+          </a>
+        
+      
+        
+          <a class="" href="/tags/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+            <span>标签</span>
+          </a>
+        
+      
+        
+          <a class="" href="/archives/">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-archive flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-archive"></use></svg>
+
+            <span>归档</span>
+          </a>
+        
+      
+    </nav>
+  </section>
+
+  <section class="side-card profile-card">
+    
+      <div class="avatar avatar--image avatar--circle">
+        <img src="/images/avatar.jpg" alt="lorena" loading="lazy" referrerpolicy="no-referrer">
+      </div>
+    
+    <h3>lorena</h3>
+    <p class="profile-role">isfj 小女孩 · 懒惰但上进</p>
+    <p>目标成为estj的isfj小女孩，持续学习新知识中....</p>
+    
+    <div class="socials">
+      
+        <a href="https://github.com/LIURUI2004" target="_blank" rel="noopener" aria-label="GitHub" data-tooltip="GitHub">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 496 512" fill="currentColor" class="lucide lucide-github flatpaper-icon flatpaper-icon--fa-brands" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-fa-brands-github"></use></svg>
+
+          
+        </a>
+      
+        <a href="mailto:liurui20041008@gmail.com" target="_blank" rel="noopener" aria-label="Email" data-tooltip="Email">
+          
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-mail"></use></svg>
+
+          
+        </a>
+      
+        <a href="https://www.xiaohongshu.com/user/profile/66c9fef3000000001d0231f5" target="_blank" rel="noopener" aria-label="小红书" data-tooltip="小红书主页">
+          
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" class="lucide lucide-custom" aria-hidden="true"><path d="M22.405 9.879c.002.016.01.02.07.019h.725a.797.797 0 0 0 .78-.972.794.794 0 0 0-.884-.618.795.795 0 0 0-.692.794c0 .101-.002.666.001.777zm-11.509 4.808c-.203.001-1.353.004-1.685.003a2.528 2.528 0 0 1-.766-.126.025.025 0 0 0-.03.014L7.7 16.127a.025.025 0 0 0 .01.032c.111.06.336.124.495.124.66.01 1.32.002 1.981 0 .01 0 .02-.006.023-.015l.712-1.545a.025.025 0 0 0-.024-.036zM.477 9.91c-.071 0-.076.002-.076.01a.834.834 0 0 0-.01.08c-.027.397-.038.495-.234 3.06-.012.24-.034.389-.135.607-.026.057-.033.042.003.112.046.092.681 1.523.787 1.74.008.015.011.02.017.02.008 0 .033-.026.047-.044.147-.187.268-.391.371-.606.306-.635.44-1.325.486-1.706.014-.11.021-.22.03-.33l.204-2.616.022-.293c.003-.029 0-.033-.03-.034zm7.203 3.757a1.427 1.427 0 0 1-.135-.607c-.004-.084-.031-.39-.235-3.06a.443.443 0 0 0-.01-.082c-.004-.011-.052-.008-.076-.008h-1.48c-.03.001-.034.005-.03.034l.021.293c.076.982.153 1.964.233 2.946.05.4.186 1.085.487 1.706.103.215.223.419.37.606.015.018.037.051.048.049.02-.003.742-1.642.804-1.765.036-.07.03-.055.003-.112zm3.861-.913h-.872a.126.126 0 0 1-.116-.178l1.178-2.625a.025.025 0 0 0-.023-.035l-1.318-.003a.148.148 0 0 1-.135-.21l.876-1.954a.025.025 0 0 0-.023-.035h-1.56c-.01 0-.02.006-.024.015l-.926 2.068c-.085.169-.314.634-.399.938a.534.534 0 0 0-.02.191.46.46 0 0 0 .23.378.981.981 0 0 0 .46.119h.59c.041 0-.688 1.482-.834 1.972a.53.53 0 0 0-.023.172.465.465 0 0 0 .23.398c.15.092.342.12.475.12l1.66-.001c.01 0 .02-.006.023-.015l.575-1.28a.025.025 0 0 0-.024-.035zm-6.93-4.937H3.1a.032.032 0 0 0-.034.033c0 1.048-.01 2.795-.01 6.829 0 .288-.269.262-.28.262h-.74c-.04.001-.044.004-.04.047.001.037.465 1.064.555 1.263.01.02.03.033.051.033.157.003.767.009.938-.014.153-.02.3-.06.438-.132.3-.156.49-.419.595-.765.052-.172.075-.353.075-.533.002-2.33 0-4.66-.007-6.991a.032.032 0 0 0-.032-.032zm11.784 6.896c0-.014-.01-.021-.024-.022h-1.465c-.048-.001-.049-.002-.05-.049v-4.66c0-.072-.005-.07.07-.07h.863c.08 0 .075.004.075-.074V8.393c0-.082.006-.076-.08-.076h-3.5c-.064 0-.075-.006-.075.073v1.445c0 .083-.006.077.08.077h.854c.075 0 .07-.004.07.07v4.624c0 .095.008.084-.085.084-.37 0-1.11-.002-1.304 0-.048.001-.06.03-.06.03l-.697 1.519s-.014.025-.008.036c.006.01.013.008.058.008 1.748.003 3.495.002 5.243.002.03-.001.034-.006.035-.033v-1.539zm4.177-3.43c0 .013-.007.023-.02.024-.346.006-.692.004-1.037.004-.014-.002-.022-.01-.022-.024-.005-.434-.007-.869-.01-1.303 0-.072-.006-.071.07-.07l.733-.003c.041 0 .081.002.12.015.093.025.16.107.165.204.006.431.002 1.153.001 1.153zm2.67.244a1.953 1.953 0 0 0-.883-.222h-.18c-.04-.001-.04-.003-.042-.04V10.21c0-.132-.007-.263-.025-.394a1.823 1.823 0 0 0-.153-.53 1.533 1.533 0 0 0-.677-.71 2.167 2.167 0 0 0-1-.258c-.153-.003-.567 0-.72 0-.07 0-.068.004-.068-.065V7.76c0-.031-.01-.041-.046-.039H17.93s-.016 0-.023.007c-.006.006-.008.012-.008.023v.546c-.008.036-.057.015-.082.022h-.95c-.022.002-.028.008-.03.032v1.481c0 .09-.004.082.082.082h.913c.082 0 .072.128.072.128V11.19s.003.117-.06.117h-1.482c-.068 0-.06.082-.06.082v1.445s-.01.068.064.068h1.457c.082 0 .076-.006.076.079v3.225c0 .088-.007.081.082.081h1.43c.09 0 .082.007.082-.08v-3.27c0-.029.006-.035.033-.035l2.323-.003c.098 0 .191.02.28.061a.46.46 0 0 1 .274.407c.008.395.003.79.003 1.185 0 .259-.107.367-.33.367h-1.218c-.023.002-.029.008-.028.033.184.437.374.871.57 1.303a.045.045 0 0 0 .04.026c.17.005.34.002.51.003.15-.002.517.004.666-.01a2.03 2.03 0 0 0 .408-.075c.59-.18.975-.698.976-1.313v-1.981c0-.128-.01-.254-.034-.38 0 .078-.029-.641-.724-.998z"/></svg>
+          
+        </a>
+      
+      
+        
+        
+        <a href="/atom.xml" aria-label="RSS feed" data-tooltip="RSS feed">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rss flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-rss"></use></svg>
+
+        </a>
+      
+    </div>
+  </section>
+
+  
+
+  
+    <div class="post-sticky-stack">
+      <section class="side-card toc-card">
+        <header class="toc-card__head">
+          <h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table-of-contents flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-table-of-contents"></use></svg>
+文章目录</h2>
+          <button type="button" class="toc-toggle-all" data-action="toggle-toc" aria-pressed="false" aria-label="展开全部目录" title="展开全部目录">
+            
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-chevron-down"></use></svg>
+
+          </button>
+        </header>
+        <div class="toc-content">
+          
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E3%80%87%E3%80%81%E5%85%88%E8%AF%B4%E6%B8%85%E6%A5%9A%E8%BF%99%E4%B8%80%E8%8A%82%E9%9A%BE%E5%9C%A8%E5%93%AA"><span class="toc-text">〇、先说清楚这一节难在哪</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E7%AC%AC-1-%E5%9D%97%EF%BC%9AAdaptMLP-%E2%80%94%E2%80%94-Adapter-%E7%9A%84%E7%93%B6%E9%A2%88%E6%A8%A1%E5%9D%97"><span class="toc-text">一、第 1 块：AdaptMLP —— Adapter 的瓶颈模块</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%80%90%E8%A1%8C%E6%B3%A8%E9%87%8A"><span class="toc-text">逐行注释</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E6%95%B0%E9%87%8F%E7%AE%97%E4%B8%80%E4%B8%8B"><span class="toc-text">参数量算一下</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E7%AC%AC-2-%E5%9D%97%EF%BC%9AAdapter-%E7%B1%BB%E7%9A%84-init-%E2%80%94%E2%80%94-%E5%86%BB%E7%BB%93-%E6%8C%82%E6%A8%A1%E5%9D%97-%E6%8D%A2%E5%A4%B4"><span class="toc-text">二、第 2 块：Adapter 类的 __init__ —— 冻结 + 挂模块 + 换头</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%80%90%E8%A1%8C%E6%B3%A8%E9%87%8A-1"><span class="toc-text">逐行注释</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%99%E4%BB%B6%E4%BA%8B%E5%81%9A%E5%AE%8C%E4%B9%8B%E5%90%8E%EF%BC%8C%E6%A8%A1%E5%9E%8B%E9%87%8C%E5%88%B0%E5%BA%95%E5%93%AA%E4%BA%9B%E5%8F%82%E6%95%B0%E5%8F%AF%E8%AE%AD%E7%BB%83%EF%BC%9F"><span class="toc-text">这件事做完之后，模型里到底哪些参数可训练？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E7%AC%AC-3-%E5%9D%97%EF%BC%9Aforward-%E6%89%8B%E5%86%99-ViT-%E5%89%8D%E5%90%91-%E2%80%94%E2%80%94-%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%99%E4%B9%88%E9%95%BF"><span class="toc-text">三、第 3 块：forward 手写 ViT 前向 —— 为什么这么长</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E6%AE%B5%E2%91%A0%E2%91%A1%E2%91%A2%EF%BC%9A%E5%88%87-patch%E3%80%81%E6%8B%BC-cls-token%E3%80%81%E5%8A%A0%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81"><span class="toc-text">3.1 段①②③：切 patch、拼 cls token、加位置编码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-%E6%AE%B5%E2%91%A3%E5%89%8D%E5%8D%8A%EF%BC%9A12-%E4%B8%AA-block-%E9%87%8C%E7%9A%84-attention-%E8%B7%AF%E5%BE%84%EF%BC%88%E6%AE%8B%E5%B7%AE%E7%85%A7%E6%8A%84%E5%8E%9F%E7%89%88%EF%BC%89"><span class="toc-text">3.2 段④前半：12 个 block 里的 attention 路径（残差照抄原版）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-%E6%AE%B5%E2%91%A3%E5%90%8E%E5%8D%8A%EF%BC%9AMLP-%E4%B8%8E-adapter-%E4%B8%A4%E8%B7%AF%E5%B9%B6%E8%A1%8C%E7%9B%B8%E5%8A%A0%EF%BC%88%E6%9C%AC%E8%8A%82%E6%A0%B8%E5%BF%83%EF%BC%89"><span class="toc-text">3.3 段④后半：MLP 与 adapter 两路并行相加（本节核心）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-4-%E6%AE%B5%E2%91%A4%EF%BC%9A%E6%94%B6%E5%B0%BE-%E2%80%94%E2%80%94-%E5%BD%92%E4%B8%80%E5%8C%96%E3%80%81%E5%8F%96-cls-token%E3%80%81%E8%BF%87%E5%88%86%E7%B1%BB%E5%A4%B4"><span class="toc-text">3.4 段⑤：收尾 —— 归一化、取 cls token、过分类头</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E6%8A%8A%E6%89%80%E6%9C%89%E5%BD%A2%E7%8A%B6%E4%B8%B2%E6%88%90%E4%B8%80%E5%BC%A0%E8%A1%A8%EF%BC%88%E8%83%8C%E4%B8%8B%E6%9D%A5%E5%B0%B1%E4%B8%8D%E5%AE%B9%E6%98%93%E6%99%95%EF%BC%89"><span class="toc-text">四、把所有形状串成一张表（背下来就不容易晕）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E5%92%8C%E5%89%8D%E4%B8%A4%E8%8A%82%E6%94%BE%E5%9C%A8%E4%B8%80%E8%B5%B7%E7%9C%8B"><span class="toc-text">五、和前两节放在一起看</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E8%AF%BE%E7%A8%8B%E4%BB%A3%E7%A0%81%E7%9A%84%E5%9B%9B%E5%A4%84%E5%8F%AF%E6%94%B9%E8%BF%9B%E7%82%B9%EF%BC%88%E8%AF%BB%E6%87%82%E5%90%8E%E5%86%8D%E7%9C%8B%E8%BF%99%E6%AE%B5%EF%BC%8C%E8%83%BD%E5%B0%91%E8%B8%A9%E5%9D%91%EF%BC%89"><span class="toc-text">六、课程代码的四处可改进点（读懂后再看这段，能少踩坑）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-self-adapter-mlps-%E7%94%A8%E6%99%AE%E9%80%9A-list-%E8%A3%85%E6%A8%A1%E5%9D%97%EF%BC%88%E6%9C%80%E4%B8%A5%E9%87%8D%EF%BC%89"><span class="toc-text">1. self.adapter_mlps &#x3D; [] 用普通 list 装模块（最严重）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-MLP-%E9%82%A3%E4%B8%80%E6%AD%A5%E4%B8%A2%E4%BA%86%E6%81%92%E7%AD%89%E9%A1%B9"><span class="toc-text">2. MLP 那一步丢了恒等项</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-adapter-%E5%88%86%E6%94%AF%E5%90%83%E7%9A%84%E6%98%AF%E6%9C%AA%E5%BD%92%E4%B8%80%E5%8C%96%E7%9A%84-x"><span class="toc-text">3. adapter 分支吃的是未归一化的 x</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-%E5%B0%91%E4%BA%86%E4%B8%80%E4%B8%AA-drop-path"><span class="toc-text">4. 少了一个 drop_path</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-%E8%AE%AD%E7%BB%83%E6%97%B6%E4%B9%9F%E8%A6%81%E8%AE%B0%E5%BE%97%E5%85%B3%E6%8E%89%E4%B8%BB%E5%B9%B2%E7%9A%84%E9%9A%8F%E6%9C%BA%E6%80%A7"><span class="toc-text">5. 训练时也要记得关掉主干的随机性</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E6%95%B4%E7%90%86%E7%89%88%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81%EF%BC%88%E5%8F%AF%E7%9B%B4%E6%8E%A5%E8%B7%91%EF%BC%89"><span class="toc-text">七、整理版完整代码（可直接跑）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E6%9D%A5%E6%BA%90%E4%B8%8E%E8%8C%83%E5%9B%B4"><span class="toc-text">八、来源与范围</span></a></li></ol>
+          
+        </div>
+      </section>
+      
+
+
+    </div>
+  
+
+  
+
+</aside>
+
+    <section class="paper-main">
+      
+
+<div class="article-tape-wrap">
+<span class="tape tape--top-right" aria-hidden="true"></span>
+<article class="article-paper">
+  
+  <header class="article-header">
+    
+      <a class="label-pill" href="/categories/%E5%A4%9A%E6%A8%A1%E6%80%81%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%AD%A6%E4%B9%A0/">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-folder"></use></svg>
+
+        多模态大模型学习
+      </a>
+    
+    <h1>P24 Adapter 代码详解：逐行拆解手写 ViT 前向与并行 Adapter 分支</h1>
+    <div class="meta-line meta-line--article">
+      <span class="meta-date">
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-calendar"></use></svg>
+2026-11-28</span>
+      
+        <span class="meta-tags">
+          
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-tag"></use></svg>
+
+          <a class="meta-tag-link" href="/tags/ViT/">#ViT</a><a class="meta-tag-link" href="/tags/PyTorch/">#PyTorch</a><a class="meta-tag-link" href="/tags/timm/">#timm</a><a class="meta-tag-link" href="/tags/Adapter/">#Adapter</a><a class="meta-tag-link" href="/tags/%E5%8F%82%E6%95%B0%E9%AB%98%E6%95%88%E5%BE%AE%E8%B0%83/">#参数高效微调</a><a class="meta-tag-link" href="/tags/%E4%BB%A3%E7%A0%81%E8%AF%A6%E8%A7%A3/">#代码详解</a>
+        </span>
+      
+    </div>
+  </header>
+
+  
+
+
+  <div class="article-content">
+    <h2 id="〇、先说清楚这一节难在哪"><a href="#〇、先说清楚这一节难在哪" class="headerlink" title="〇、先说清楚这一节难在哪"></a>〇、先说清楚这一节难在哪</h2><p>5.3 讲的是思想，5.4 是把它写成代码。这一节之所以听起来吃力，是因为它<strong>不是”照 timm 的接口调一下”这么简单</strong>，而是遇到了一个真实工程矛盾：</p>
+<blockquote>
+<p><code>timm</code> 提供的 <code>vit_small_patch16_224</code>，它的 <code>blocks</code> 是一个 <code>nn.Sequential</code>，每个 <code>Block</code> 的 <code>forward</code> 是写死的（<code>x = x + attn(norm1(x))</code>，<code>x = x + mlp(norm2(x))</code>）。<br>我们想在里面<strong>并联一条 adapter 分支</strong>，但没法只改一行就插进去。</p>
+</blockquote>
+<p>于是课程选了最直接的办法：<strong>把 ViT 的整个前向过程手写一遍</strong>，在 12 个 block 的循环里，自己控制”原 MLP 输出”和”adapter 输出”怎么相加。这样做的好处是完全可控，坏处是你必须把 ViT 前向的每一步都亲手补回来——这也是这一节代码看起来长的原因。</p>
+<p>整节代码只有三块，按顺序读就不会乱：</p>
+<table>
+<thead>
+<tr>
+<th>序号</th>
+<th>代码块</th>
+<th>作用</th>
+<th>难度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>AdaptMLP</code></td>
+<td>定义 adapter 小模块本身（down→ReLU→up）</td>
+<td>简单</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>Adapter.__init__</code></td>
+<td>冻结主干 + 给 12 个 block 各挂一个 <code>AdaptMLP</code> + 换分类头</td>
+<td>中等</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>Adapter.forward</code></td>
+<td>手写 ViT 前向，在 MLP 处并联 adapter</td>
+<td><strong>本节难点</strong></td>
+</tr>
+</tbody></table>
+<p>下面每一段都是”<strong>先给代码，再给逐行注释表</strong>“，代码里不放注释，注释单独写，方便对照。</p>
+<h2 id="一、第-1-块：AdaptMLP-——-Adapter-的瓶颈模块"><a href="#一、第-1-块：AdaptMLP-——-Adapter-的瓶颈模块" class="headerlink" title="一、第 1 块：AdaptMLP —— Adapter 的瓶颈模块"></a>一、第 1 块：AdaptMLP —— Adapter 的瓶颈模块</h2><p>这一块是 5.3 那个 <code>Down → ReLU → Up</code> 的代码化，全文只有 10 行，但它是整个方法的核心。</p>
+<p><img src="/2026/11/28/p24-adapter-code-walkthrough/P24_02_adaptmlp.png" alt="课程中 AdaptMLP 的定义：down_proj &#x2F; relu &#x2F; up_proj 三层"></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">AdaptMLP</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, input_dim, hidden_dim</span>):</span><br><span class="line">        <span class="built_in">super</span>(AdaptMLP, <span class="variable language_">self</span>).__init__()</span><br><span class="line">        <span class="variable language_">self</span>.down_proj = nn.Linear(input_dim, hidden_dim)</span><br><span class="line">        <span class="variable language_">self</span>.relu = nn.ReLU(inplace=<span class="literal">True</span>)</span><br><span class="line">        <span class="variable language_">self</span>.up_proj = nn.Linear(hidden_dim, input_dim)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        x = <span class="variable language_">self</span>.down_proj(x)</span><br><span class="line">        x = <span class="variable language_">self</span>.relu(x)</span><br><span class="line">        x = <span class="variable language_">self</span>.up_proj(x)</span><br><span class="line">        <span class="keyword">return</span> x</span><br></pre></td></tr></table></figure>
+
+<h3 id="逐行注释"><a href="#逐行注释" class="headerlink" title="逐行注释"></a>逐行注释</h3><table>
+<thead>
+<tr>
+<th>行</th>
+<th>代码</th>
+<th>注释</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>class AdaptMLP(nn.Module):</code></td>
+<td>定义一个自定义模块。继承 <code>nn.Module</code> 后，PyTorch 才会自动登记它内部的 <code>nn.Linear</code> 参数，<code>.parameters()</code>、<code>.to(device)</code>、<code>.train()</code>&#x2F;<code>.eval()</code> 才能作用到它们身上。名字叫 <code>AdaptMLP</code> 是因为课程把 adapter 实现成了”两层 MLP 组成的瓶颈”</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>def __init__(self, input_dim, hidden_dim):</code></td>
+<td>构造参数只有两个。<code>input_dim</code> &#x3D; 要接进哪个维度（ViT-Small 是 384，课程口头举例用的是 1024，只是举大模型的例子）；<code>hidden_dim</code> &#x3D; 瓶颈维度（课程用 64）</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>super(AdaptMLP, self).__init__()</code></td>
+<td>调用父类 <code>nn.Module</code> 的初始化。<strong>必须写</strong>，否则后面 <code>self.down_proj = ...</code> 赋值时会报 “cannot assign module before Module.<strong>init</strong>() call”</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>self.down_proj = nn.Linear(input_dim, hidden_dim)</code></td>
+<td><strong>下采样层（down projection）</strong>。把 <code>[..., 384]</code> 压到 <code>[..., 64]</code>。<code>nn.Linear</code> 会自动创建权重 <code>W: [hidden_dim, input_dim]</code> 和偏置 <code>b: [hidden_dim]</code>，并默认 <code>requires_grad=True</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>self.relu = nn.ReLU(inplace=True)</code></td>
+<td>中间的非线性激活。<strong>这一步不能省</strong>：如果只有两层线性，<code>W_up(W_down·x) = (W_up·W_down)·x</code> 仍然是一个线性变换，等于什么非线性都没加。<code>inplace=True</code> 表示原地修改，省一点显存</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>self.up_proj = nn.Linear(hidden_dim, input_dim)</code></td>
+<td><strong>上采样层（up projection）</strong>。把 <code>[..., 64]</code> 还原回 <code>[..., 384]</code>。<strong>注意方向和 ViT 原 MLP 相反</strong>：原 MLP 是先升维再降维，adapter 是先降维再升维</td>
+</tr>
+<tr>
+<td>7</td>
+<td>（空行）</td>
+<td>—</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>def forward(self, x):</code></td>
+<td>定义前向计算。<code>x</code> 的形状是 <code>[B, N, 384]</code>（<code>B</code>&#x3D;batch，<code>N</code>&#x3D;token 数，ViT-Small 中 <code>N=197</code>）</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>x = self.down_proj(x)</code></td>
+<td>下采样：<code>[B, 197, 384] → [B, 197, 64]</code>。<code>nn.Linear</code> 只作用在最后一维，前面维度原样广播，所以 batch 和 token 维度完全不受影响</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>x = self.relu(x)</code></td>
+<td>非线性：形状不变 <code>[B, 197, 64]</code>，负数清零</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>x = self.up_proj(x)</code></td>
+<td>上采样：<code>[B, 197, 64] → [B, 197, 384]</code>。<strong>输出维度必须回到 384</strong>，否则后面和原 MLP 输出相加时形状对不上</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>return x</code></td>
+<td>返回这一支的输出，形状 <code>[B, 197, 384]</code>，与输入同形。正因为它同形，才能和原 MLP 的输出直接相加</td>
+</tr>
+</tbody></table>
+<h3 id="参数量算一下"><a href="#参数量算一下" class="headerlink" title="参数量算一下"></a>参数量算一下</h3><p><code>384×64 + 64</code>（down）+ <code>64×384 + 384</code>（up）&#x3D; 24,576 + 64 + 24,576 + 384 &#x3D; <strong>49,600</strong>，约 5 万参数。</p>
+<p>对比一个 ViT-Small block 里的原 MLP（<code>384→1536→384</code>）：<code>384×1536 + 1536 + 1536×384 + 384 ≈ 1.18M</code>。<strong>adapter 只有原 MLP 的 4%</strong>。12 个 block 全挂上也才 60 万参数左右，占 ViT-Small 22M 的 2.7%。</p>
+<p><img src="/2026/11/28/p24-adapter-code-walkthrough/P24_01_file_structure.png" alt="PyCharm 中的代码结构：Adapter 类定义，右侧是模型架构图"></p>
+<h2 id="二、第-2-块：Adapter-类的-init-——-冻结-挂模块-换头"><a href="#二、第-2-块：Adapter-类的-init-——-冻结-挂模块-换头" class="headerlink" title="二、第 2 块：Adapter 类的 __init__ —— 冻结 + 挂模块 + 换头"></a>二、第 2 块：Adapter 类的 <code>__init__</code> —— 冻结 + 挂模块 + 换头</h2><p>这一段做三件事，顺序不能错：<strong>先冻结主干 → 再给每个 block 挂 adapter → 最后换分类头</strong>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Adapter</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, num_classes, hidden_dim</span>):</span><br><span class="line">        <span class="built_in">super</span>(Adapter, <span class="variable language_">self</span>).__init__()</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.vit = timm.create_model(<span class="string">&#x27;vit_small_patch16_224&#x27;</span>, pretrained=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> param <span class="keyword">in</span> <span class="variable language_">self</span>.vit.parameters():</span><br><span class="line">            param.requires_grad = <span class="literal">False</span></span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.adapter_mlps = nn.ModuleList()</span><br><span class="line">        <span class="keyword">for</span> i, block <span class="keyword">in</span> <span class="built_in">enumerate</span>(<span class="variable language_">self</span>.vit.blocks):</span><br><span class="line">            <span class="keyword">for</span> param <span class="keyword">in</span> block.parameters():</span><br><span class="line">                param.requires_grad = <span class="literal">False</span></span><br><span class="line">            <span class="variable language_">self</span>.adapter_mlps.append(</span><br><span class="line">                AdaptMLP(input_dim=<span class="variable language_">self</span>.vit.embed_dim, hidden_dim=hidden_dim)</span><br><span class="line">            )</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.vit.head = nn.Linear(<span class="variable language_">self</span>.vit.head.in_features, num_classes)</span><br></pre></td></tr></table></figure>
+
+<h3 id="逐行注释-1"><a href="#逐行注释-1" class="headerlink" title="逐行注释"></a>逐行注释</h3><table>
+<thead>
+<tr>
+<th>行</th>
+<th>代码</th>
+<th>注释</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>class Adapter(nn.Module):</code></td>
+<td>整个”带 adapter 的 ViT”模型类。注意它是<strong>一个完整模型</strong>，不是一个小模块——里面既装了 backbone，又装了 12 个 adapter，还装了 head</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>def __init__(self, num_classes, hidden_dim):</code></td>
+<td><code>num_classes</code> &#x3D; 下游任务类别数（CIFAR-10 是 10）；<code>hidden_dim</code> &#x3D; adapter 的瓶颈维度（课程用 64）</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>self.vit = timm.create_model(&#39;vit_small_patch16_224&#39;, pretrained=True)</code></td>
+<td>建 ViT-Small：patch 尺寸 16×16，输入 224×224（所以 196 个 patch），<code>embed_dim=384</code>，12 层 block，12 个 attention head。<code>pretrained=True</code> 自动下载并载入 ImageNet 预训练权重——这是”迁移”的前提</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>for param in self.vit.parameters():</code></td>
+<td>遍历<strong>整个 backbone 的所有参数</strong>：patch_embed 的卷积核、12 个 block 里的 qkv&#x2F;proj&#x2F;MLP&#x2F;LayerNorm、最后的 norm、以及原来的 1000 类分类头</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>param.requires_grad = False</code></td>
+<td>把梯度开关全部关掉。之后 <code>loss.backward()</code> 不会为这些参数计算梯度，<code>optimizer.step()</code> 也就改不动它们。<strong>这就是”主干冻结”在代码层面的全部含义</strong></td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>self.adapter_mlps = nn.ModuleList()</code></td>
+<td>准备一个容器，用来装 12 个 <code>AdaptMLP</code>。<strong>必须用 <code>nn.ModuleList</code>，不能用普通 <code>[]</code></strong>：普通 <code>list</code> 里的 <code>nn.Module</code> 不会被登记进 <code>self._modules</code>，后果是 <code>self.parameters()</code> 拿不到它们、<code>optimizer</code> 优化不到、<code>.to(device)</code> 也不会搬它们，而且保存 <code>state_dict</code> 时会整个丢失（见文末”可改进点 1”）</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>for i, block in enumerate(self.vit.blocks):</code></td>
+<td>遍历 ViT 的 12 个 block。<code>self.vit.blocks</code> 是 <code>nn.Sequential</code>，<code>enumerate</code> 同时给出序号 <code>i</code>（0~11）和 block 对象。<strong>序号 <code>i</code> 不能丢</strong>，因为后面 forward 里要靠它取”这个 block 对应的 adapter”</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>for param in block.parameters():</code></td>
+<td>再对这个 block 单独遍历一次参数</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>param.requires_grad = False</code></td>
+<td>又冻结一遍。这一步在上一行已经全覆盖过，这里是<strong>课程故意写出的”双保险”</strong>，口语里也强调了”方便遍历：把原有 ViT block 的参数冻结”。重复设置 <code>False</code> 不会有副作用，只是冗余</td>
+</tr>
+<tr>
+<td>13-15</td>
+<td><code>self.adapter_mlps.append(AdaptMLP(input_dim=self.vit.embed_dim, hidden_dim=hidden_dim))</code></td>
+<td>为这个 block <strong>新建一个独立的 adapter</strong>，压进容器。三个要点：①<code>input_dim</code> 取 <code>self.vit.embed_dim</code>（&#x3D;384，ViT-Small 的特征维度），也可以写死 384；②每个 block 一个 adapter，<strong>12 个 adapter 互不共享权重</strong>；③<code>hidden_dim</code> 由用户传进来（64），是整个方法唯一的”旋钮”——越小越省参数，越大越能适配</td>
+</tr>
+<tr>
+<td>17</td>
+<td><code>self.vit.head = nn.Linear(self.vit.head.in_features, num_classes)</code></td>
+<td>把 1000 类分类头换成 10 类头。<code>self.vit.head.in_features</code> 是原头的输入维度 384。<strong>新建的 <code>nn.Linear</code> 默认 <code>requires_grad=True</code>，而且它是在冻结循环之后才创建的，所以不会被冻住</strong>——这个顺序很关键，和第 5.2 节 linear probing 的坑是同一个</td>
+</tr>
+</tbody></table>
+<h3 id="这件事做完之后，模型里到底哪些参数可训练？"><a href="#这件事做完之后，模型里到底哪些参数可训练？" class="headerlink" title="这件事做完之后，模型里到底哪些参数可训练？"></a>这件事做完之后，模型里到底哪些参数可训练？</h3><table>
+<thead>
+<tr>
+<th>参数来源</th>
+<th>状态</th>
+<th>有没有被优化器更新</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>self.vit</code> 全部（patch_embed &#x2F; 12 个 block &#x2F; norm）</td>
+<td><code>requires_grad=False</code></td>
+<td>不更新</td>
+</tr>
+<tr>
+<td>旧的 <code>head</code>（1000 类）</td>
+<td>已被替换掉，不再存在于计算图</td>
+<td>—</td>
+</tr>
+<tr>
+<td>新的 <code>self.vit.head</code>（10 类）</td>
+<td><code>requires_grad=True</code></td>
+<td>更新</td>
+</tr>
+<tr>
+<td><code>self.adapter_mlps[0..11]</code> 共 12 个 <code>AdaptMLP</code></td>
+<td><code>requires_grad=True</code></td>
+<td>更新</td>
+</tr>
+</tbody></table>
+<p><img src="/2026/11/28/p24-adapter-code-walkthrough/P24_03_freeze_and_insert.png" alt="冻结预训练参数并插入 Adapter 模块的逻辑"></p>
+<h2 id="三、第-3-块：forward-手写-ViT-前向-——-为什么这么长"><a href="#三、第-3-块：forward-手写-ViT-前向-——-为什么这么长" class="headerlink" title="三、第 3 块：forward 手写 ViT 前向 —— 为什么这么长"></a>三、第 3 块：<code>forward</code> 手写 ViT 前向 —— 为什么这么长</h2><p>先说清思路：<strong>原版 ViT 的 forward 是这么写的（伪代码）</strong>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">x = patch_embed(img)</span><br><span class="line">x = cat(cls_token, x)</span><br><span class="line">x = x + pos_embed</span><br><span class="line">x = pos_drop(x)</span><br><span class="line">for block in blocks:</span><br><span class="line">    x = x + attn(norm1(x))</span><br><span class="line">    x = x + mlp(norm2(x))</span><br><span class="line">x = norm(x)</span><br><span class="line">x = x[:, 0]</span><br><span class="line">x = head(x)</span><br></pre></td></tr></table></figure>
+
+<p>课程要在 <code>x = x + mlp(norm2(x))</code> 这一步<strong>并联 adapter</strong>，所以把它展开成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x = x + attn(norm1(x))</span><br><span class="line">x = mlp(norm2(x)) + adapter[i](x)</span><br></pre></td></tr></table></figure>
+
+<p>其余步骤一行不改地照抄。所以整段 forward 可以拆成 5 段来读：</p>
+<table>
+<thead>
+<tr>
+<th>段</th>
+<th>行范围</th>
+<th>干什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>① 切 patch</td>
+<td><code>patch_embed</code></td>
+<td><code>[B,3,224,224] → [B,196,384]</code></td>
+</tr>
+<tr>
+<td>② 拼 cls token</td>
+<td><code>cls_token.expand</code> + <code>cat</code></td>
+<td><code>[B,196,384] → [B,197,384]</code></td>
+</tr>
+<tr>
+<td>③ 加位置编码</td>
+<td><code>pos_embed</code> + <code>pos_drop</code></td>
+<td>形状不变 <code>[B,197,384]</code></td>
+</tr>
+<tr>
+<td>④ 12 个 block 循环</td>
+<td>前半 attention 残差 &#x2F; 后半 MLP+adapter</td>
+<td>形状不变</td>
+</tr>
+<tr>
+<td>⑤ 收尾</td>
+<td><code>norm</code> + 取第 0 个 token + <code>head</code></td>
+<td><code>[B,197,384] → [B,10]</code></td>
+</tr>
+</tbody></table>
+<h3 id="3-1-段①②③：切-patch、拼-cls-token、加位置编码"><a href="#3-1-段①②③：切-patch、拼-cls-token、加位置编码" class="headerlink" title="3.1 段①②③：切 patch、拼 cls token、加位置编码"></a>3.1 段①②③：切 patch、拼 cls token、加位置编码</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">    x = <span class="variable language_">self</span>.vit.patch_embed(x)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="variable language_">self</span>.vit.cls_token <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        cls_tokens = <span class="variable language_">self</span>.vit.cls_token.expand(x.shape[<span class="number">0</span>], -<span class="number">1</span>, -<span class="number">1</span>)</span><br><span class="line">        x = torch.cat((cls_tokens, x), dim=<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="variable language_">self</span>.vit.pos_embed <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        x = x + <span class="variable language_">self</span>.vit.pos_embed.expand(x.shape[<span class="number">0</span>], -<span class="number">1</span>, -<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    x = <span class="variable language_">self</span>.vit.pos_drop(x)</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>行</th>
+<th>代码</th>
+<th>注释</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>def forward(self, x):</code></td>
+<td>输入 <code>x</code> 是一个 batch 的图像张量，形状 <code>[B, 3, 224, 224]</code>（<code>3</code>&#x3D;RGB 通道，224×224 是 Resize 后的尺寸）</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>x = self.vit.patch_embed(x)</code></td>
+<td><strong>切 patch + 线性映射</strong>，一步完成。内部是一个 <code>kernel=16, stride=16</code> 的卷积：把图像切成 <code>14×14=196</code> 个 16×16 的小块，每块映射成 384 维向量。输出 <code>[B, 196, 384]</code>。等价说法：<code>196 = (224/16)²</code>，<code>384 = embed_dim</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>if self.vit.cls_token is not None:</code></td>
+<td>判断这个 ViT 是否使用 cls token。timm 的 ViT 默认有（<code>class_token=True</code>），所以这个分支会进来。之所以要判断，是因为有些变体用 global average pooling 代替 cls token，那时就没有这一步</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>cls_tokens = self.vit.cls_token.expand(x.shape[0], -1, -1)</code></td>
+<td><code>cls_token</code> 是一个<strong>可学习的向量</strong>，形状 <code>[1, 1, 384]</code>（只有一份，属于 backbone 参数，已冻结）。<code>expand(B, -1, -1)</code> 把它在 batch 维上”复制” B 份，得到 <code>[B, 1, 384]</code>。注意 <code>expand</code> 不真的复制内存，只改 stride，所以省显存</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>x = torch.cat((cls_tokens, x), dim=1)</code></td>
+<td>在<strong>第 1 维（token 维）<strong>把 cls token 拼到最前面：<code>[B,1,384]</code> 与 <code>[B,196,384]</code> 拼接 → <code>[B,197,384]</code>。拼接后</strong>第 0 个 token 永远是 cls token</strong>，这个”位置约定”是后面 <code>x[:, 0]</code> 能取到分类特征的前提</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>if self.vit.pos_embed is not None:</code></td>
+<td>判断是否有可学习位置编码。ViT 必须有（否则 Transformer 对 token 顺序完全无感，图像的空间结构就丢了）</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>x = x + self.vit.pos_embed.expand(x.shape[0], -1, -1)</code></td>
+<td>加上位置编码。<code>pos_embed</code> 形状 <code>[1, 197, 384]</code>（第 0 个位置对应 cls token，后 196 个对应 196 个 patch），<code>expand</code> 成 <code>[B, 197, 384]</code> 后逐元素相加。<strong>为什么要 expand</strong>：pos_embed 只有一份，batch 内每张图共用同一套位置编码</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>x = self.vit.pos_drop(x)</code></td>
+<td>对加完位置编码的 token 做 dropout（timm 里 <code>pos_drop</code> 是 <code>nn.Dropout(p=pos_drop_rate)</code>，默认 p&#x3D;0）。<strong>只改数值、不改形状</strong>，形状仍 <code>[B,197,384]</code></td>
+</tr>
+</tbody></table>
+<p><img src="/2026/11/28/p24-adapter-code-walkthrough/P24_04_patch_embed.png" alt="前向传播中的张量尺寸变化与位置编码嵌入"></p>
+<h3 id="3-2-段④前半：12-个-block-里的-attention-路径（残差照抄原版）"><a href="#3-2-段④前半：12-个-block-里的-attention-路径（残差照抄原版）" class="headerlink" title="3.2 段④前半：12 个 block 里的 attention 路径（残差照抄原版）"></a>3.2 段④前半：12 个 block 里的 attention 路径（残差照抄原版）</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i, block <span class="keyword">in</span> <span class="built_in">enumerate</span>(<span class="variable language_">self</span>.vit.blocks):</span><br><span class="line">    block_input = x</span><br><span class="line">    x = block.norm1(x)</span><br><span class="line">    x = block.attn(x)</span><br><span class="line">    x = block_input + x</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>行</th>
+<th>代码</th>
+<th>注释</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>for i, block in enumerate(self.vit.blocks):</code></td>
+<td>依次流过 12 个 Transformer block。<code>i</code> 用来取对应的 adapter（<code>self.adapter_mlps[i]</code>），<code>block</code> 是本层冻结的注意力+MLP</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>block_input = x</code></td>
+<td><strong>把进入本层的 x 先存一份</strong>。这份”快照”就是残差连接要加回去的恒等项。之所以要专门存，是因为第 3 行会把 <code>x</code> 覆盖成 norm 之后的版本，原值就丢了</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>x = block.norm1(x)</code></td>
+<td>第 1 个 LayerNorm（Pre-Norm 结构：先归一化再进子层）。形状不变 <code>[B,197,384]</code>，作用是稳定数值，让 attention 的输入分布可控</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>x = block.attn(x)</code></td>
+<td>Multi-Head Self-Attention：12 个头，每个头 32 维（<code>384/12</code>），输出拼回 384 维。<strong>这一步做全局 token 之间的信息交换</strong>——每个 patch 都能看到其他所有 patch。形状不变 <code>[B,197,384]</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>x = block_input + x</code></td>
+<td><strong>残差相加</strong>：把快照 <code>block_input</code> 加上 attention 的输出。这一行等价于原版 ViT 的 <code>x = x + attn(norm1(x))</code>。残差的作用是让梯度有一条”高速公路”直通浅层，22M 参数的深网络才训得动</td>
+</tr>
+<tr>
+<td>6</td>
+<td>（空行）</td>
+<td>下面进入本节真正改写的地方</td>
+</tr>
+</tbody></table>
+<p><img src="/2026/11/28/p24-adapter-code-walkthrough/P24_05_block_attn.png" alt="block 前半段：LayerNorm → Multi-Head Attention → 残差相加"></p>
+<h3 id="3-3-段④后半：MLP-与-adapter-两路并行相加（本节核心）"><a href="#3-3-段④后半：MLP-与-adapter-两路并行相加（本节核心）" class="headerlink" title="3.3 段④后半：MLP 与 adapter 两路并行相加（本节核心）"></a>3.3 段④后半：MLP 与 adapter 两路并行相加（<strong>本节核心</strong>）</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">original_mlp_output = block.norm2(x)</span><br><span class="line">original_mlp_output = block.mlp(original_mlp_output)</span><br><span class="line"></span><br><span class="line">adapt_mlp_output = <span class="variable language_">self</span>.adapter_mlps[i](x)</span><br><span class="line"></span><br><span class="line">x = original_mlp_output + adapt_mlp_output</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>行</th>
+<th>代码</th>
+<th>注释</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>original_mlp_output = block.norm2(x)</code></td>
+<td>第 2 个 LayerNorm。注意变量名虽然叫 <code>original_mlp_output</code>，这一步其实只是归一化，<strong>还没过 MLP</strong>，名字是课程起的，读的时候别被带偏</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>original_mlp_output = block.mlp(original_mlp_output)</code></td>
+<td>走<strong>原 MLP 这条路</strong>：<code>384 → 1536 → GELU → 384</code>（timm ViT 的 <code>mlp_ratio=4</code>）。这一层参数<strong>已冻结</strong>，只做前向、不产生梯度。输出 <code>[B,197,384]</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>adapt_mlp_output = self.adapter_mlps[i](x)</code></td>
+<td>走<strong>新加的 adapter 这条路</strong>：<code>x → down(384→64) → ReLU → up(64→384)</code>，输出 <code>[B,197,384]</code>。三条要点：①输入用的是 <code>x</code>，即 attention 残差相加之后、<strong>未经过 norm2</strong> 的 hidden state，所以原路和 adapter 路吃的是”同一份 x”的两个分支（并行而非串行）；②<code>self.adapter_mlps[i]</code> 里存的正是第 i 个 block 专属的 adapter；③这一路参数可训练，梯度会回传到它</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>x = original_mlp_output + adapt_mlp_output</code></td>
+<td><strong>两路输出逐元素相加</strong>，结果作为本层输出，形状 <code>[B,197,384]</code>。这就是 5.3 那张图的代码化：原 MLP 输出 + adapter 输出。这一步等价于在残差结构里”多绕了一个模块再汇入相加点”</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>一句话记住这段</strong>：<code>x = MLP(norm2(x)) + Adapter(x)</code>。原路不变，新路并联，两路同形相加。</p>
+</blockquote>
+<p><img src="/2026/11/28/p24-adapter-code-walkthrough/P24_06_block_mlp.png" alt="Transformer Block 中 MLP 与 Adapter 两路的并行计算"></p>
+<h3 id="3-4-段⑤：收尾-——-归一化、取-cls-token、过分类头"><a href="#3-4-段⑤：收尾-——-归一化、取-cls-token、过分类头" class="headerlink" title="3.4 段⑤：收尾 —— 归一化、取 cls token、过分类头"></a>3.4 段⑤：收尾 —— 归一化、取 cls token、过分类头</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">x = <span class="variable language_">self</span>.vit.norm(x)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> <span class="variable language_">self</span>.vit.cls_token <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">    x = x[:, <span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">x = <span class="variable language_">self</span>.vit.head(x)</span><br><span class="line"><span class="keyword">return</span> x</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>行</th>
+<th>代码</th>
+<th>注释</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>x = self.vit.norm(x)</code></td>
+<td>12 层跑完后，对全部 token 再做一次 LayerNorm（timm 里叫 <code>norm</code>，也就是整个 ViT 的 final norm）。形状 <code>[B,197,384]</code>。这一步不能省：最后一层的输出没有归一化，数值范围不稳定，直接接分类头会掉点</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>if self.vit.cls_token is not None:</code></td>
+<td>同样先判断有没有 cls token</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>x = x[:, 0]</code></td>
+<td><strong>只取第 0 个 token（cls token）</strong>：<code>[B,197,384] → [B,384]</code>。为什么只取它？因为 cls token 从第 0 层开始就和所有 patch 做 attention，是唯一一个”聚合了全图信息”的向量；而 196 个 patch token 各自只代表局部。ViT 的分类就是拿这个全局向量去做分类</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>x = self.vit.head(x)</code></td>
+<td>过分类头：<code>[B,384] → [B,10]</code>，得到 CIFAR-10 的 10 类 logits（未经过 softmax）。这一层是<strong>新建且可训练</strong>的</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>return x</code></td>
+<td>返回 logits，供外面用 <code>nn.CrossEntropyLoss()</code> 计算损失（该损失内部自带 softmax，所以这里不要手动加）</td>
+</tr>
+</tbody></table>
+<p><img src="/2026/11/28/p24-adapter-code-walkthrough/P24_07_tail.png" alt="完整 forward 的收尾：final norm → 取 cls token → head"></p>
+<h2 id="四、把所有形状串成一张表（背下来就不容易晕）"><a href="#四、把所有形状串成一张表（背下来就不容易晕）" class="headerlink" title="四、把所有形状串成一张表（背下来就不容易晕）"></a>四、把所有形状串成一张表（背下来就不容易晕）</h2><table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>代码</th>
+<th>形状</th>
+<th>谁在变</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>输入</td>
+<td><code>x</code></td>
+<td><code>[B, 3, 224, 224]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>切 patch</td>
+<td><code>patch_embed(x)</code></td>
+<td><code>[B, 196, 384]</code></td>
+<td>196 &#x3D; (224&#x2F;16)²</td>
+</tr>
+<tr>
+<td>拼 cls</td>
+<td><code>cat((cls_tokens, x), dim=1)</code></td>
+<td><code>[B, 197, 384]</code></td>
+<td>+1 个 token</td>
+</tr>
+<tr>
+<td>加位置编码</td>
+<td><code>x + pos_embed</code></td>
+<td><code>[B, 197, 384]</code></td>
+<td>不变</td>
+</tr>
+<tr>
+<td>dropout</td>
+<td><code>pos_drop(x)</code></td>
+<td><code>[B, 197, 384]</code></td>
+<td>不变</td>
+</tr>
+<tr>
+<td>attention 路</td>
+<td><code>block_input + block.attn(norm1(x))</code></td>
+<td><code>[B, 197, 384]</code></td>
+<td>不变</td>
+</tr>
+<tr>
+<td>原 MLP 路</td>
+<td><code>block.mlp(norm2(x))</code></td>
+<td><code>[B, 197, 384]</code></td>
+<td>中间曾到 1536，出来回 384</td>
+</tr>
+<tr>
+<td>adapter 路</td>
+<td><code>adapter_mlps[i](x)</code></td>
+<td><code>[B, 197, 384]</code></td>
+<td>中间到 64，出来回 384</td>
+</tr>
+<tr>
+<td>两路相加</td>
+<td><code>orig + adapt</code></td>
+<td><code>[B, 197, 384]</code></td>
+<td>不变</td>
+</tr>
+<tr>
+<td>final norm</td>
+<td><code>vit.norm(x)</code></td>
+<td><code>[B, 197, 384]</code></td>
+<td>不变</td>
+</tr>
+<tr>
+<td>取 cls</td>
+<td><code>x[:, 0]</code></td>
+<td><code>[B, 384]</code></td>
+<td>去掉 196 个 patch token</td>
+</tr>
+<tr>
+<td>分类头</td>
+<td><code>vit.head(x)</code></td>
+<td><code>[B, 10]</code></td>
+<td>10 类 logits</td>
+</tr>
+</tbody></table>
+<p>三个”魔法数字”的来源：<strong>196</strong> 来自 <code>(224/16)²</code>，<strong>197</strong> &#x3D; 196 + 1（cls token），<strong>384</strong> 来自 ViT-Small 的 <code>embed_dim</code>。换模型时这三个数字都会变（ViT-Base 是 768），代码里尽量用 <code>self.vit.embed_dim</code> 而不是写死 384。</p>
+<h2 id="五、和前两节放在一起看"><a href="#五、和前两节放在一起看" class="headerlink" title="五、和前两节放在一起看"></a>五、和前两节放在一起看</h2><table>
+<thead>
+<tr>
+<th></th>
+<th>线性探测</th>
+<th>全微调</th>
+<th><strong>Adapter</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>主干参数</td>
+<td>冻结</td>
+<td>更新</td>
+<td><strong>冻结</strong></td>
+</tr>
+<tr>
+<td>新增模块</td>
+<td>只有一个线性头</td>
+<td>无</td>
+<td><strong>12 个瓶颈模块 + 头</strong></td>
+</tr>
+<tr>
+<td>可训练参数</td>
+<td>≈3.8K</td>
+<td>22M</td>
+<td><strong>≈600K</strong></td>
+</tr>
+<tr>
+<td>是否要改前向</td>
+<td>不用</td>
+<td>不用</td>
+<td><strong>要，必须手写 forward</strong></td>
+</tr>
+<tr>
+<td>适配能力</td>
+<td>弱</td>
+<td>强（易过拟合）</td>
+<td>中（性价比最高）</td>
+</tr>
+</tbody></table>
+<p>Adapter 唯一”麻烦”的地方就是第三节那段手写 forward。理解了”<strong>原路不变、新路并联、同形相加</strong>“这十二个字，那 20 行代码就只是把 ViT 原来藏在 <code>timm</code> 里的前向过程摊开摆给你看。</p>
+<h2 id="六、课程代码的四处可改进点（读懂后再看这段，能少踩坑）"><a href="#六、课程代码的四处可改进点（读懂后再看这段，能少踩坑）" class="headerlink" title="六、课程代码的四处可改进点（读懂后再看这段，能少踩坑）"></a>六、课程代码的四处可改进点（读懂后再看这段，能少踩坑）</h2><p>课程代码是为了讲清原理，直接拿来跑会有几个小问题。这里逐条列出，都属于”知道就好”的工程细节。</p>
+<h3 id="1-self-adapter-mlps-用普通-list-装模块（最严重）"><a href="#1-self-adapter-mlps-用普通-list-装模块（最严重）" class="headerlink" title="1. self.adapter_mlps = [] 用普通 list 装模块（最严重）"></a>1. <code>self.adapter_mlps = []</code> 用普通 list 装模块（最严重）</h3><p>普通 Python <code>list</code> 不会把里面的 <code>nn.Module</code> 登记为子模块，后果是：</p>
+<ul>
+<li><code>model.parameters()</code> 里<strong>看不到</strong>这 12 个 <code>AdaptMLP</code> 的参数；</li>
+<li>于是 <code>optimizer = torch.optim.Adam(model.parameters(), ...)</code> 根本不会更新 adapter —— 你以为在训 adapter，实际只有 head 在动；</li>
+<li><code>model.to(&#39;cuda&#39;)</code> 不会搬移它们；<code>state_dict()</code> 保存模型时它们整个丢失。</li>
+</ul>
+<p>修正：用 <code>nn.ModuleList()</code>（本文第二节代码已按修正版写）。若坚持先建 list 再赋值，也必须在该模块 <code>__init__</code> 里给 <code>nn.ModuleList</code> 赋值一次，不能是裸 list。</p>
+<p>判断标准：写完打印一下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sum</span>(p.numel() <span class="keyword">for</span> p <span class="keyword">in</span> model.parameters() <span class="keyword">if</span> p.requires_grad)</span><br></pre></td></tr></table></figure>
+
+<p>Adapter 版应该是 60 万量级；如果只有 3 千多，说明 adapter 没被登记进去。</p>
+<h3 id="2-MLP-那一步丢了恒等项"><a href="#2-MLP-那一步丢了恒等项" class="headerlink" title="2. MLP 那一步丢了恒等项"></a>2. MLP 那一步丢了恒等项</h3><p>课程写的是：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x = original_mlp_output + adapt_mlp_output</span><br></pre></td></tr></table></figure>
+
+<p>严格对应原版 ViT 的残差结构应该是：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x = block_input_after_attn + original_mlp_output + adapt_mlp_output</span><br></pre></td></tr></table></figure>
+
+<p>也就是”进 MLP 之前的 x + 原 MLP 输出 + adapter 输出”三项相加。课程版本少了恒等项，等价于把残差连接去掉了，深层网络会难训、且和”在原残差上做加法”的原意有偏差。工程上建议补上（注意 <code>block_input</code> 在第 2 行已被覆盖，需要另存一个变量，如 <code>mlp_input = x</code>）。</p>
+<h3 id="3-adapter-分支吃的是未归一化的-x"><a href="#3-adapter-分支吃的是未归一化的-x" class="headerlink" title="3. adapter 分支吃的是未归一化的 x"></a>3. adapter 分支吃的是未归一化的 x</h3><p>课程里 <code>adapt_mlp_output = self.adapter_mlps[i](x)</code> 用的 <code>x</code> 是 attention 残差之后、<strong>没经过 <code>norm2</code></strong> 的张量。而原 MLP 吃的是 <code>norm2(x)</code>。两路输入尺度不同，相加时权重不好平衡。Houlsby 原版是把 adapter 接在 LayerNorm 之后。想更稳可以改成：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">adapt_mlp_output = <span class="variable language_">self</span>.adapter_mlps[i](block.norm2(x))</span><br></pre></td></tr></table></figure>
+
+<p>（注意此时 <code>norm2(x)</code> 只算一次，两路共用，别重复算。）</p>
+<h3 id="4-少了一个-drop-path"><a href="#4-少了一个-drop-path" class="headerlink" title="4. 少了一个 drop_path"></a>4. 少了一个 drop_path</h3><p>timm 的 <code>Block</code> 里除了 <code>norm1/attn/norm2/mlp</code>，还有一个 <code>drop_path</code>（随机深度），作用于两个残差分支的输出。手写 forward 时被漏掉了，影响是：训练时正则化变弱，可能更容易过拟合。补法：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x = block_input + block.drop_path(block.attn(block.norm1(block_input)))</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-训练时也要记得关掉主干的随机性"><a href="#5-训练时也要记得关掉主干的随机性" class="headerlink" title="5. 训练时也要记得关掉主干的随机性"></a>5. 训练时也要记得关掉主干的随机性</h3><p>和 5.2 的 linear probing 一样，做 adapter 微调时主干虽然冻结，但里面的 dropout&#x2F;droppath 在 <code>model.train()</code> 下仍会随机丢激活。规范做法：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">model.train()</span><br><span class="line">model.vit.<span class="built_in">eval</span>()          <span class="comment"># 主干走推理模式</span></span><br><span class="line"><span class="keyword">for</span> m <span class="keyword">in</span> model.adapter_mlps:</span><br><span class="line">    m.train()</span><br><span class="line">model.vit.head.train()</span><br></pre></td></tr></table></figure>
+
+<h2 id="七、整理版完整代码（可直接跑）"><a href="#七、整理版完整代码（可直接跑）" class="headerlink" title="七、整理版完整代码（可直接跑）"></a>七、整理版完整代码（可直接跑）</h2><p>下面这份是本文按上述修正整理后的版本，与课程一致的部分保留原样，改动处已在第六节说明。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> timm</span><br><span class="line"><span class="keyword">from</span> torch.utils.data <span class="keyword">import</span> DataLoader</span><br><span class="line"><span class="keyword">import</span> torchvision.transforms <span class="keyword">as</span> transforms</span><br><span class="line"><span class="keyword">from</span> torchvision.datasets <span class="keyword">import</span> CIFAR10</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">AdaptMLP</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, input_dim, hidden_dim</span>):</span><br><span class="line">        <span class="built_in">super</span>(AdaptMLP, <span class="variable language_">self</span>).__init__()</span><br><span class="line">        <span class="variable language_">self</span>.down_proj = nn.Linear(input_dim, hidden_dim)</span><br><span class="line">        <span class="variable language_">self</span>.relu = nn.ReLU(inplace=<span class="literal">True</span>)</span><br><span class="line">        <span class="variable language_">self</span>.up_proj = nn.Linear(hidden_dim, input_dim)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.up_proj(<span class="variable language_">self</span>.relu(<span class="variable language_">self</span>.down_proj(x)))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Adapter</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, num_classes=<span class="number">10</span>, hidden_dim=<span class="number">64</span></span>):</span><br><span class="line">        <span class="built_in">super</span>(Adapter, <span class="variable language_">self</span>).__init__()</span><br><span class="line">        <span class="variable language_">self</span>.vit = timm.create_model(<span class="string">&#x27;vit_small_patch16_224&#x27;</span>, pretrained=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> param <span class="keyword">in</span> <span class="variable language_">self</span>.vit.parameters():</span><br><span class="line">            param.requires_grad = <span class="literal">False</span></span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.adapter_mlps = nn.ModuleList()</span><br><span class="line">        <span class="keyword">for</span> i, block <span class="keyword">in</span> <span class="built_in">enumerate</span>(<span class="variable language_">self</span>.vit.blocks):</span><br><span class="line">            <span class="keyword">for</span> param <span class="keyword">in</span> block.parameters():</span><br><span class="line">                param.requires_grad = <span class="literal">False</span></span><br><span class="line">            <span class="variable language_">self</span>.adapter_mlps.append(</span><br><span class="line">                AdaptMLP(input_dim=<span class="variable language_">self</span>.vit.embed_dim, hidden_dim=hidden_dim)</span><br><span class="line">            )</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.vit.head = nn.Linear(<span class="variable language_">self</span>.vit.head.in_features, num_classes)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        x = <span class="variable language_">self</span>.vit.patch_embed(x)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> <span class="variable language_">self</span>.vit.cls_token <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">            cls_tokens = <span class="variable language_">self</span>.vit.cls_token.expand(x.shape[<span class="number">0</span>], -<span class="number">1</span>, -<span class="number">1</span>)</span><br><span class="line">            x = torch.cat((cls_tokens, x), dim=<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> <span class="variable language_">self</span>.vit.pos_embed <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">            x = x + <span class="variable language_">self</span>.vit.pos_embed.expand(x.shape[<span class="number">0</span>], -<span class="number">1</span>, -<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">        x = <span class="variable language_">self</span>.vit.pos_drop(x)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> i, block <span class="keyword">in</span> <span class="built_in">enumerate</span>(<span class="variable language_">self</span>.vit.blocks):</span><br><span class="line">            block_input = x</span><br><span class="line">            x = block_input + block.attn(block.norm1(block_input))</span><br><span class="line"></span><br><span class="line">            mlp_input = x</span><br><span class="line">            original_mlp_output = block.mlp(block.norm2(mlp_input))</span><br><span class="line">            adapt_mlp_output = <span class="variable language_">self</span>.adapter_mlps[i](block.norm2(mlp_input))</span><br><span class="line"></span><br><span class="line">            x = mlp_input + original_mlp_output + adapt_mlp_output</span><br><span class="line"></span><br><span class="line">        x = <span class="variable language_">self</span>.vit.norm(x)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> <span class="variable language_">self</span>.vit.cls_token <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">            x = x[:, <span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.vit.head(x)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">load_cifar10_dataset</span>(<span class="params">batch_size=<span class="number">4</span></span>):</span><br><span class="line">    transform = transforms.Compose([</span><br><span class="line">        transforms.Resize((<span class="number">224</span>, <span class="number">224</span>)),</span><br><span class="line">        transforms.ToTensor(),</span><br><span class="line">    ])</span><br><span class="line">    train_dataset = CIFAR10(root=<span class="string">&#x27;./cifar10&#x27;</span>, train=<span class="literal">True</span>, download=<span class="literal">True</span>, transform=transform)</span><br><span class="line">    <span class="keyword">return</span> DataLoader(train_dataset, batch_size=batch_size, shuffle=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">train_one_epoch</span>(<span class="params">model, loader, optimizer, criterion, device</span>):</span><br><span class="line">    model.train()</span><br><span class="line">    model.vit.<span class="built_in">eval</span>()</span><br><span class="line">    <span class="keyword">for</span> m <span class="keyword">in</span> model.adapter_mlps:</span><br><span class="line">        m.train()</span><br><span class="line">    model.vit.head.train()</span><br><span class="line"></span><br><span class="line">    total_loss, correct, total = <span class="number">0.0</span>, <span class="number">0</span>, <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> images, labels <span class="keyword">in</span> loader:</span><br><span class="line">        images, labels = images.to(device), labels.to(device)</span><br><span class="line">        logits = model(images)</span><br><span class="line">        loss = criterion(logits, labels)</span><br><span class="line"></span><br><span class="line">        optimizer.zero_grad()</span><br><span class="line">        loss.backward()</span><br><span class="line">        optimizer.step()</span><br><span class="line"></span><br><span class="line">        total_loss += loss.item()</span><br><span class="line">        correct += (logits.argmax(dim=<span class="number">1</span>) == labels).<span class="built_in">sum</span>().item()</span><br><span class="line">        total += labels.size(<span class="number">0</span>)</span><br><span class="line">    <span class="keyword">return</span> total_loss / <span class="built_in">max</span>(total, <span class="number">1</span>), correct / <span class="built_in">max</span>(total, <span class="number">1</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    device = <span class="string">&#x27;cuda&#x27;</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">&#x27;cpu&#x27;</span></span><br><span class="line">    loader = load_cifar10_dataset(batch_size=<span class="number">4</span>)</span><br><span class="line">    model = Adapter(num_classes=<span class="number">10</span>, hidden_dim=<span class="number">64</span>).to(device)</span><br><span class="line"></span><br><span class="line">    trainable = <span class="built_in">sum</span>(p.numel() <span class="keyword">for</span> p <span class="keyword">in</span> model.parameters() <span class="keyword">if</span> p.requires_grad)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;trainable params: <span class="subst">&#123;trainable&#125;</span>&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    criterion = nn.CrossEntropyLoss()</span><br><span class="line">    optimizer = torch.optim.Adam(</span><br><span class="line">        [p <span class="keyword">for</span> p <span class="keyword">in</span> model.parameters() <span class="keyword">if</span> p.requires_grad], lr=<span class="number">1e-3</span></span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>):</span><br><span class="line">        loss, acc = train_one_epoch(model, loader, optimizer, criterion, device)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&#x27;epoch <span class="subst">&#123;epoch&#125;</span>: loss=<span class="subst">&#123;loss:<span class="number">.4</span>f&#125;</span>, acc=<span class="subst">&#123;acc:<span class="number">.4</span>f&#125;</span>&#x27;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
+
+<p>跑起来后第一件事是看打印出来的 <code>trainable params</code>：</p>
+<ul>
+<li>若是 <strong>60 万左右</strong> → adapter 已被正确登记，训练会同时更新 adapter 和 head；</li>
+<li>若只有 <strong>3 千多</strong> → adapter 没进 <code>parameters()</code>，问题就在 <code>nn.ModuleList</code> 那一步；</li>
+<li>若是 <strong>22M</strong> → 冻结没生效，检查 <code>requires_grad</code> 循环的位置是否在换头之前。</li>
+</ul>
+<h2 id="八、来源与范围"><a href="#八、来源与范围" class="headerlink" title="八、来源与范围"></a>八、来源与范围</h2><ul>
+<li>内容依据课程 P24（5.4 Adapter 代码详解，19:44）的字幕与逐帧截图整理；代码主体（<code>AdaptMLP</code>、<code>Adapter.__init__</code>、<code>forward</code> 的五段结构）与课程一致，课程截图未完全显示或存在工程瑕疵的位置已在第六节逐条标注，未凭空补写。</li>
+<li>课程公开目录：<a target="_blank" rel="noopener" href="https://www.hyouit.com/4219.html">https://www.hyouit.com/4219.html</a></li>
+<li>关联阅读：P23（5.3 Adapter 方法）、P21-P22（线性探测与微调）。</li>
+</ul>
+
+  </div>
+
+  <footer class="article-reactions">
+    <div class="reaction-group">
+      <button type="button" class="reaction reaction--comment" aria-label="跳转到评论区" data-action="scroll-to-comments">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-message-circle"></use></svg>
+
+      </button>
+      <span class="reaction-label">评论</span>
+      
+    </div>
+    <div class="reaction-group reaction-group--right">
+      
+      <button type="button" class="reaction reaction--share" aria-label="分享" data-action="share">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2 flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-share-2"></use></svg>
+
+      </button>
+      <span class="reaction-label">分享</span>
+    </div>
+  </footer>
+
+  
+
+
+  <nav class="article-actions">
+    
+      <span class="article-action article-action--prev is-disabled" aria-disabled="true">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-left"></use></svg>
+
+        <span class="action-label">上一篇</span>
+        <span class="action-title">没有更早的文章了</span>
+      </span>
+    
+    
+      <a class="article-action article-action--next" href="/2026/11/28/p23-adapter-method/">
+        <span class="action-label">下一篇</span>
+        <span class="action-title">P23 Adapter 方法：不动主干、只挂小模块的第三种迁移方式</span>
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-right"></use></svg>
+
+      </a>
+    
+  </nav>
+</article>
+</div>
+
+<button type="button" class="back-to-top" data-action="scroll-to-top" aria-label="返回顶部" hidden>
+  
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-up"></use></svg>
+
+</button>
+
+
+  <section class="related-paper">
+    <header class="related-paper__head">
+      <h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-link"></use></svg>
+相关文章</h2>
+      <a class="related-paper__more" href="/archives/">
+        <span>查看更多</span>
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-arrow-right"></use></svg>
+
+      </a>
+    </header>
+    <div class="related-paper__grid">
+      
+        <a class="related-card" href="/2026/11/28/p23-adapter-method/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-0 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/2026/11/28/p23-adapter-method/P23_01_adapter_position.png" alt="P23 Adapter 方法：不动主干、只挂小模块的第三种迁移方式" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">P23 Adapter 方法：不动主干、只挂小模块的第三种迁移方式</strong>
+            <em class="related-card__date">2026-11-28</em>
+          </span>
+        </a>
+      
+        <a class="related-card" href="/2026/11/28/p21-p22-linear-probing-and-finetuning/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-1 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/2026/11/28/p21-p22-linear-probing-and-finetuning/P22_04_compare.png" alt="P21-P22 线性探测与微调：ViT 下游迁移代码笔记" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">P21-P22 线性探测与微调：ViT 下游迁移代码笔记</strong>
+            <em class="related-card__date">2026-11-28</em>
+          </span>
+        </a>
+      
+        <a class="related-card" href="/2026/11/26/dino-code-walkthrough/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-2 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/2026/11/26/dino-code-walkthrough/dino-p10-fig01-flow.jpg" alt="DINO 代码详解｜无标签自蒸馏如何落到 100 行 PyTorch" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">DINO 代码详解｜无标签自蒸馏如何落到 100 行 PyTorch</strong>
+            <em class="related-card__date">2026-11-26</em>
+          </span>
+        </a>
+      
+        <a class="related-card" href="/2026/11/27/p8-moco-v3/">
+          <span class="related-card__thumb">
+            
+<div class="paper-thumb paper-thumb-0 paper-thumb--cover">
+  
+    <img class="paper-thumb__img" src="/2026/11/27/p8-moco-v3/P8_25.png" alt="3.2 MoCo v3 自监督骨干网络" loading="lazy" referrerpolicy="no-referrer">
+  
+</div>
+
+          </span>
+          <span class="related-card__body">
+            <strong class="related-card__title">3.2 MoCo v3 自监督骨干网络</strong>
+            <em class="related-card__date">2026-11-27</em>
+          </span>
+        </a>
+      
+    </div>
+  </section>
+
+
+      
+
+
+    </section>
+    
+  </main>
+
+  <div class="sidebar-backdrop js-sidebar-close" aria-hidden="true"></div>
+
+  
+<footer class="site-footer">
+  <span class="site-footer__left">© 2026 By lorena</span>
+  
+    <span class="site-footer__right">
+      
+        <span class="site-footer__row"><span class="site-footer__powered-prefix">Powered by Theme</span> <a href="https://github.com/Homulilly/hexo-theme-flatpaper" target="_blank" rel="noopener">FlatPaper</a></span>
+      
+    </span>
+  
+</footer>
+
+  
+<div class="search-panel" aria-hidden="true" data-index-url="/flatpaper-search.json">
+  <div class="search-backdrop js-search-close"></div>
+  <section class="search-dialog" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <span class="tape tape--top-left" aria-hidden="true"></span>
+    <header class="search-head">
+      <h2><span class="green-dot"></span>搜索文章</h2>
+      <button class="icon-button js-search-close" type="button" aria-label="关闭搜索">
+        
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-x"></use></svg>
+
+      </button>
+    </header>
+    <label class="search-field">
+      
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search flatpaper-icon flatpaper-icon--lucide" aria-hidden="true"><use href="/icons.svg#flatpaper-icon-lucide-search"></use></svg>
+
+      <input id="flatpaper-search" class="search-input" type="search" placeholder="输入关键词，按 Esc 关闭" autocomplete="off">
+    </label>
+    <div class="search-results" data-empty="输入关键词后显示匹配的文章">
+      <p class="search-empty">输入关键词后显示匹配的文章</p>
+    </div>
+  </section>
+</div>
+
+  <script>
+  window.FLATPAPER_I18N = {"language":"zh-CN","common.posts":"文章","common.categories":"分类","common.tags":"标签","common.comments":"评论","common.share":"分享","common.page":"页面","common.archive":"归档","common.post_list":"文章列表","common.search_posts":"搜索文章","common.random_posts":"随机文章","common.reward":"赞赏","common.view_all":"查看全部","pagination.prev":"上一页","pagination.next":"下一页","pagination.post_pager":"文章分页","pagination.archive_pager":"归档分页","index.featured":"精选文章","index.pinned":"置顶","index.read_more":"阅读全文","index.previous_slide":"上一张","index.next_slide":"下一张","index.carousel_pagination":"轮播页码","index.carousel_slide":"第 %d 张","index.latest_posts":"最新文章","index.empty_posts":"还没有文章。创建第一篇文章后，这里会显示最新内容。","archive.title":"归档","archive.post_list":"文章列表","taxonomy.category_count":"%d 篇","taxonomy.empty_categories":"暂时还没有分类。","taxonomy.empty_tags":"暂时还没有标签。","links.label":"友链","links.title":"友情链接","links.empty_data":"暂未加载到友链数据。请确认 source/_data/links.yml 存在并已 hexo clean。","links.rss_label":"%s 的 RSS","friends_feed.label":"朋友圈","friends_feed.title":"友链朋友圈","friends_feed.loading":"正在加载友链动态…","friends_feed.missing_url":"暂未配置 all.json 地址。","friends_feed.load_failed":"友链动态加载失败，请稍后再试。","friends_feed.empty":"暂时没有抓取到友链文章。","friends_feed.load_more":"加载更多","friends_feed.updated_at":"更新于 %s","friends_feed.friend_count":"%d 位友邻","friends_feed.active_count":"%d 位活跃","friends_feed.article_count":"%d 篇文章","friends_feed.unknown_author":"未知站点","friends_feed.date_unknown":"时间未知","guestbook.label":"留言板","guestbook.title":"留言板","guestbook.loading":"正在铺开留言墙…","guestbook.missing_config":"留言墙需要评论系统：请在主题配置中设置 comments: twikoo（并填写 envId）或 comments: artalk（并填写 server）。","guestbook.load_failed":"留言加载失败，请稍后再试。","guestbook.empty":"墙上还空着，来贴第一张留言吧！","guestbook.load_more":"展开更多留言","guestbook.total_count":"共 %d 条留言","guestbook.latest_note":"墙上展示最新 %d 条","guestbook.jump_to_comment":"查看留言","guestbook.sort_time":"查看最新","guestbook.sort_random":"随机排序","guestbook.anonymous":"匿名访客","guestbook.write_hint":"在下方留言，刷新后就会贴到墙上","post.scroll_to_comments":"跳转到评论区","post.previous":"上一篇","post.next":"下一篇","post.no_previous":"没有更早的文章了","post.no_next":"已经是最新的一篇","post.back_to_top":"返回顶部","post.related_posts":"相关文章","post.view_more":"查看更多","not_found.label":"页面走丢了","not_found.title":"找不到这个页面","not_found.text":"这个地址可能已经移动、删除，或者从未存在。","not_found.home":"返回首页","not_found.search":"搜索文章","search.placeholder":"输入关键词，按 Esc 关闭","search.empty":"输入关键词后显示匹配的文章","search.loading":"正在加载搜索索引…","search.load_failed":"搜索索引加载失败，请重新打开搜索重试","search.no_result":"没有找到与 \"%s\" 相关的文章","search.close":"关闭搜索","code.copy":"复制代码","code.collapse":"折叠代码","code.expand":"展开代码","heading.anchor":"链接到此节: %s","head.tag":"标签：%s","head.category":"分类：%s","head.archive":"归档","head.archive_with_date":"归档：%s","head.page_number":"第 %d 页","navigation.primary":"主导航","navigation.mobile":"移动端导航","navigation.brand_home":"FlatPaper 首页","navigation.brand_menu":"打开站点导航","navigation.open_sidebar":"打开侧边栏","navigation.close_sidebar":"关闭侧边栏","navigation.sidebar":"侧边栏","navigation.sidebar_tools":"侧边栏工具","navigation.site_links":"站点链接","navigation.site_info":"站点信息","colors.choose_theme_color":"选择主题色","colors.theme_color":"主题色","colors.toggle_color_mode":"切换颜色模式","colors.green":"绿色","colors.purple":"紫色","colors.pink":"粉色","colors.sakura":"樱花粉","colors.blue":"蓝色","colors.orange":"橙色","colors.black":"黑色","profile.default_bio":"热爱生活，热爱代码，喜欢分享技术与生活中的点滴。","profile.email_copied":"邮箱已复制","welcome.cta":"开始阅读","welcome.title":"欢迎来到 FlatPaper","welcome.text":"一个专注于内容与阅读体验的博客主题。","home_hero.label":"首页开屏","home_hero.enter":"开始阅读","home_hero.note":"今日","home_hero.default_subtitle":"日常记录","home_hero.nav_links":"开屏导航","home_hero.profile_links":"个人链接","home_hero.tools":"开屏工具","home_hero.shuffle_stickers":"打乱贴纸位置","home_hero.link":"链接","home_hero.sticker_image":"贴纸图片","home_hero.visit_confirm":"要访问 %s 吗？","home_hero.visit":"访问","home_hero.cancel":"取消","toc.title":"文章目录","toc.empty":"目录会根据文章标题自动生成。","toc.expand_all":"展开全部目录","toc.collapse_all":"收起全部目录","sidebar.hot_tags":"热门标签","sidebar.latest_posts":"最新文章"};
+  </script>
+  
+<script src="/js/main.js"></script>
+
+  
+  <script src="/js/twojian-ui.js" defer></script>
+  
+</body>
+</html>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="700" viewBox="0 0 1400 700">
+<defs><marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#78877b"/></marker>
+<style>
+.bg{fill:#fbfaf6}
+.title{font:700 34px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#26372c}
+.subtitle{font:400 17px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#68766b}
+.h{font:700 20px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#26372c;text-anchor:middle}
+.p{font:400 15px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#58675d;text-anchor:middle}
+.small{font:400 13px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#66736a;text-anchor:middle}
+.note{font:500 15px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#536258}
+.tag{font:700 14px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#4d654f;text-anchor:middle}
+.arrow{fill:none;stroke:#78877b;stroke-width:2.5;marker-end:url(#arr)}
+.line{fill:none;stroke:#aab4aa;stroke-width:2}
+</style>
+</defs>
+<rect class="bg" width="1400" height="700" rx="22"/>
+<text class="title" x="54" y="62">Adaptive-RAG：先判断，再选择执行路线</text>
+<text class="subtitle" x="54" y="96">同一个入口，根据问题类型进入不同处理路径</text>
+<rect x="530" y="140" width="340" height="85" rx="16" fill="#ffffff" stroke="#9ba99d" stroke-width="2.2"/><text class="h" x="700.0" y="175.5">用户提出问题</text><text class="p" x="700.0" y="204.5">user_query</text><path class="arrow" d="M700 225 V285"/><rect x="485" y="285" width="430" height="90" rx="16" fill="#fff4dc" stroke="#b99d5d" stroke-width="2.2"/><text class="h" x="700.0" y="323.0">意图识别 + 策略判断</text><text class="p" x="700.0" y="352.0">Intent：想做什么？  Strategy：怎么处理？</text><path class="arrow" d="M700 375 V425"/><path class="line" d="M700 425 H170 V470 M700 425 H480 V470 M700 425 H800 V470 M700 425 H1190 V470"/><rect x="55" y="470" width="230" height="130" rx="16" fill="#e7f0e3" stroke="#789574" stroke-width="2.2"/><text class="h" x="170.0" y="528.0">DIRECT</text><text class="p" x="170.0" y="557.0">直接生成回答</text><rect x="365" y="470" width="230" height="130" rx="16" fill="#e5edf7" stroke="#8098b5" stroke-width="2.2"/><text class="h" x="480.0" y="528.0">SINGLE / MULTI</text><text class="p" x="480.0" y="557.0">知识检索路线</text><rect x="685" y="470" width="230" height="130" rx="16" fill="#f5edda" stroke="#b99d5d" stroke-width="2.2"/><text class="h" x="800.0" y="528.0">AGENT</text><text class="p" x="800.0" y="557.0">规划并调用工具</text><rect x="1075" y="470" width="230" height="130" rx="16" fill="#f8e9e6" stroke="#bd8278" stroke-width="2.2"/><text class="h" x="1190.0" y="528.0">REFUSE</text><text class="p" x="1190.0" y="557.0">拒绝处理</text><text class="small" x="170" y="645" text-anchor="middle">不需要检索或工具</text><text class="small" x="480" y="645" text-anchor="middle">Retriever → Reranker → 回答</text><text class="small" x="800" y="645" text-anchor="middle">Planner → Executor → Tool</text><text class="small" x="1190" y="645" text-anchor="middle">安全或策略拒绝</text></svg>

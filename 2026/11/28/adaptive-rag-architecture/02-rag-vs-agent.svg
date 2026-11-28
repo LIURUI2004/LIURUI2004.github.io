@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="650" viewBox="0 0 1400 650">
+<defs><marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#78877b"/></marker>
+<style>
+.bg{fill:#fbfaf6}
+.title{font:700 34px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#26372c}
+.subtitle{font:400 17px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#68766b}
+.h{font:700 20px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#26372c;text-anchor:middle}
+.p{font:400 15px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#58675d;text-anchor:middle}
+.small{font:400 13px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#66736a;text-anchor:middle}
+.note{font:500 15px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#536258}
+.tag{font:700 14px 'Microsoft YaHei','Noto Sans SC',sans-serif;fill:#4d654f;text-anchor:middle}
+.arrow{fill:none;stroke:#78877b;stroke-width:2.5;marker-end:url(#arr)}
+.line{fill:none;stroke:#aab4aa;stroke-width:2}
+</style>
+</defs>
+<rect class="bg" width="1400" height="650" rx="22"/>
+<text class="title" x="54" y="62">RAG 与 Agent：解决的问题不同</text>
+<text class="subtitle" x="54" y="96">RAG 主要获取知识；Agent 主要规划任务并调用工具</text>
+<rect x="80" y="170" width="560" height="110" rx="16" fill="#ffffff" stroke="#9ba99d" stroke-width="2.2"/><text class="h" x="360.0" y="218.0">用户问题</text><text class="p" x="360.0" y="247.0">例如：订单取消规则是什么？</text><rect x="80" y="355" width="560" height="115" rx="16" fill="#e5edf7" stroke="#8098b5" stroke-width="2.2"/><text class="h" x="360.0" y="405.5">Retriever（检索器）</text><text class="p" x="360.0" y="434.5">从知识库查找相关文档</text><path class="arrow" d="M360 280 V345"/><rect x="80" y="520" width="560" height="85" rx="16" fill="#edf4e9" stroke="#829b80" stroke-width="2.2"/><text class="h" x="360.0" y="555.5">LLM 根据文档生成回答</text><text class="p" x="360.0" y="584.5">RAG：用知识库内容支持回答</text><path class="arrow" d="M360 470 V510"/><rect x="760" y="170" width="560" height="110" rx="16" fill="#ffffff" stroke="#9ba99d" stroke-width="2.2"/><text class="h" x="1040.0" y="218.0">用户任务</text><text class="p" x="1040.0" y="247.0">例如：查询 ORD10003 的实时物流</text><rect x="760" y="330" width="560" height="100" rx="16" fill="#f5edda" stroke="#b99d5d" stroke-width="2.2"/><text class="h" x="1040.0" y="373.0">Planner（规划器）</text><text class="p" x="1040.0" y="402.0">确定需要调用什么工具、按什么步骤执行</text><rect x="760" y="475" width="260" height="100" rx="16" fill="#e7f0e3" stroke="#789574" stroke-width="2.2"/><text class="h" x="890.0" y="518.0">Executor（执行器）</text><text class="p" x="890.0" y="547.0">执行工具调用</text><rect x="1060" y="475" width="260" height="100" rx="16" fill="#e5edf7" stroke="#8098b5" stroke-width="2.2"/><text class="h" x="1190.0" y="518.0">Tool（工具）</text><text class="p" x="1190.0" y="547.0">查询物流 / 订单接口</text><path class="arrow" d="M1040 280 V320"/><path class="arrow" d="M1040 430 V465"/><path class="arrow" d="M1020 525 H1050"/><text class="tag" x="360" y="630" text-anchor="middle">RAG：检索知识 → 基于文档回答</text><text class="tag" x="1040" y="630" text-anchor="middle">Agent：规划步骤 → 调用工具 → 获取结果</text></svg>
